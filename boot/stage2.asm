@@ -3,7 +3,7 @@
 stage_two:
 	mov bx, MSG_STARTING2
 	call print_string	
-    ;call mem_detect
+    call mem_detect
 	mov bx, 0x8500
 	mov [bx], byte 'j'
     call switch_to_pm

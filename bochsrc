@@ -1,3 +1,5 @@
 #display_library: x, options="gui_debug"
 floppya: 1_44=os-image, status=inserted
 boot: a
+memory: guest=1024, host=128
+#log: bochsout.txt

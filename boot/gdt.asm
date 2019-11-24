@@ -6,7 +6,7 @@ gdt_null:	; the mandatory null descriptor
 	dd 0x0
 
 gdt_code:	; the code segment descriptor
-	dw 0xffff	; limit
+	dw 0xffffffff	; limit
 	dw 0x0		; base
 	db 0x0
 	db 10011010b
@@ -14,7 +14,7 @@ gdt_code:	; the code segment descriptor
 	db 0x0
 
 gdt_data:
-	dw 0xffff
+	dw 0xffffffff
 	dw 0x0
 	db 0x0
 	db 10010010b

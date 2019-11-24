@@ -2,8 +2,10 @@ CFLAGS=-m32
 
 C_SOURCES = $(wildcard kernel/*.c drivers/*.c)
 HEADERS = $(wildcard kernel/*.h drivers/*.h)
+ASM_SOURCES = $(wildcard kernel/*.s drivers/*.s)
 
 OBJ = ${C_SOURCES:.c=.o}
+ASM_OBJ = ${ASM_SOURCES:.s=.o}
 
 all: os-image
 
@@ -16,13 +18,16 @@ bochs: all
 os-image: boot/boot_sect.bin boot/stage2.bin kernel.bin
 		cat $^ > os-image
 
-kernel.bin: kernel/kernel_entry.o ${OBJ}
-		 ~/gcc_i386/i386-elf/bin/ld -o $@ $^ --oformat binary
+kernel.bin: kernel/kernel_entry.o ${OBJ} ${ASM_OBJ}
+		 ~/gcc_i386/i386-elf/bin/ld -o $@ -Tlink.ld  $^ --oformat binary
 
 %.o: %.c ${HEADERS}
-		~/gcc_i386/bin/i386-elf-gcc  ${CFLAGS} -ffreestanding -c $< -o $@
+		~/gcc_i386/bin/i386-elf-gcc -std=gnu99 -fno-exceptions ${CFLAGS} -ffreestanding -c $< -o $@
 
 %.o: %.asm
+		nasm $< -f elf32 -o $@
+
+%.o: %.s
 		nasm $< -f elf32 -o $@
 
 boot/boot_sect.bin: boot/boot_sect.asm

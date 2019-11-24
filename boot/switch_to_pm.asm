@@ -21,11 +21,8 @@ init_pm:
 	
 	mov ebp, 0x9000
 	mov esp, ebp
-
-	
 	mov ebx, MSG_PROT_MODE
 	call print_string_pm
 
-	
 	call BEGIN_PM
 
