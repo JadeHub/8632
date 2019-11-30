@@ -5,13 +5,6 @@
 #include "ordered_array.h"
 
 #include <kernel/fault.h>
-#include <kernel/utils.h>
-
-
-extern uint32_t kmalloc(uint32_t sz);
-
-
-
 int8_t standard_lessthan_predicate(type_t a, type_t b)
 {
     return (a<b)?1:0;
