@@ -5,6 +5,7 @@
 #include "kheap.h"
 
 #include <kernel/fault.h>
+#include <kernel/utils.h>
 #include <kernel/x86/interrupts.h>
 
 // The kernel's page directory

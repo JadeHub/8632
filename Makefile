@@ -57,4 +57,5 @@ boot/stage2.bin: boot/stage2.asm
 
 clean:
 		rm -f -r *.bin *.dis *.o os-image
-		rm -f -r kernel/*.o boot/*.bin drivers/*.o
+		find - -name "*.o" | xargs rm -f
+		
