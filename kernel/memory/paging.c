@@ -4,6 +4,7 @@
 #include "paging.h"
 #include "kheap.h"
 
+#include <kernel/fault.h>
 #include <kernel/x86/interrupts.h>
 
 // The kernel's page directory
@@ -86,15 +87,15 @@ static void page_fault(isr_state_t regs)
     int id = regs.err_code & 0x10;          // Caused by an instruction fetch?
 
     // Output an error message.
-   /* monitor_write("Page fault! ( ");
-    if (present) {monitor_write("present ");}
-    if (rw) {monitor_write("read-only ");}
-    if (us) {monitor_write("user-mode ");}
-    if (reserved) {monitor_write("reserved ");}
-    monitor_write(") at 0x");
-    monitor_write_hex(faulting_address);
-    monitor_write("\n");
-    PANIC("Page fault");*/
+    con_write("Page fault! ( ");
+    if (present) {con_write("present ");}
+    if (rw) {con_write("read-only ");}
+    if (us) {con_write("user-mode ");}
+    if (reserved) {con_write("reserved ");}
+    con_write(") at 0x");
+    con_write_hex(faulting_address);
+    con_write("\n");
+    KPANIC("Page fault");
 }
 
 // Function to allocate a frame.
