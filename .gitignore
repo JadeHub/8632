@@ -2,3 +2,4 @@
 *.bin
 os-image
 *.o
+temp/

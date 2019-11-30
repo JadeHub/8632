@@ -30,8 +30,8 @@ void dump(bios_mem_info* info)
 
 void mem_init()
 {
-    uint32_t len = *(uint32_t*)0x8000;
-    bios_mem_info* mem_block = (bios_mem_info*)0x8004;
+    uint32_t len = *(uint32_t*)0x0500;
+    bios_mem_info* mem_block = (bios_mem_info*)0x0504;
 
     con_write_hex(len);
     con_write("\n");

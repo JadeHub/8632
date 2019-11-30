@@ -1,11 +1,29 @@
 #include "interrupts.h"
-#include "utils.h"
-#include "../drivers/ioports.h"
-#include "../drivers/console.h"
+#include <kernel/utils.h>
+#include <drivers/ioports.h>
+#include <drivers/console.h>
 
-idt_entry_t idt_entries[256];
-idt_table_ptr_t idt_ptr;
-isr_callback_t isr_handlers[256];
+struct idt_entry {
+
+    uint16_t base_low;
+    uint16_t seg_sel;
+    uint8_t unused;
+    uint8_t flags;
+    uint16_t base_high;
+} __attribute__((packed));
+
+typedef struct idt_entry idt_entry_t;
+
+struct idt_table_ptr {
+    uint16_t limit;
+    uint32_t base;
+} __attribute__((packed));
+
+typedef struct idt_table_ptr idt_table_ptr_t;
+
+static idt_entry_t idt_entries[256];
+static idt_table_ptr_t idt_ptr;
+static isr_callback_t isr_handlers[256];
 
 static int MASTER_IRQ_COMMAND = 0x20;
 static int MASTER_IRQ_DATA = 0x21;
@@ -46,7 +64,6 @@ extern void isr28();
 extern void isr29();
 extern void isr30();
 extern void isr31();
-
 extern void irq0();
 extern void irq1();
 extern void irq2();
@@ -78,35 +95,31 @@ void idt_init()
     memset(&idt_entries, 0, sizeof(idt_entry_t)*256);
     memset(&isr_handlers, 0, sizeof(isr_callback_t)*256);
 
-    con_write("test ");
-    con_write_hex(0);
-    con_write("\n");
-
-    idt_ptr.base = &idt_entries;
+    idt_ptr.base = (uint32_t)&idt_entries;
     idt_ptr.limit = (sizeof(idt_entry_t)*256)-1;
 
-    idt_set_entry(0, (uint32_t) isr0);
-	idt_set_entry(1, (uint32_t) isr1);
-	idt_set_entry(2, (uint32_t) isr2);
-	idt_set_entry(3, (uint32_t) isr3);
-	idt_set_entry(4, (uint32_t) isr4);
-	idt_set_entry(5, (uint32_t) isr5);
-	idt_set_entry(6, (uint32_t) isr6);
-	idt_set_entry(7, (uint32_t) isr7);
-	idt_set_entry(8, (uint32_t) isr8);
-	idt_set_entry(9, (uint32_t) isr9);
-	idt_set_entry(10, (uint32_t) isr10);
-	idt_set_entry(11, (uint32_t) isr11);
-	idt_set_entry(12, (uint32_t) isr12);
-	idt_set_entry(13, (uint32_t) isr13);
-	idt_set_entry(14, (uint32_t) isr14);
-	idt_set_entry(15, (uint32_t) isr15);
-	idt_set_entry(16, (uint32_t) isr16);
-	idt_set_entry(17, (uint32_t) isr17);
-	idt_set_entry(18, (uint32_t) isr18);
-	idt_set_entry(19, (uint32_t) isr19);
-	idt_set_entry(20, (uint32_t) isr20);
-	idt_set_entry(21, (uint32_t) isr21);
+    idt_set_entry(0, (uint32_t) isr0); //Divide error
+	idt_set_entry(1, (uint32_t) isr1); //Debug
+	idt_set_entry(2, (uint32_t) isr2); //NMI Interrupt
+	idt_set_entry(3, (uint32_t) isr3); //Breakpoint
+	idt_set_entry(4, (uint32_t) isr4); //Overflow
+	idt_set_entry(5, (uint32_t) isr5); //Bound range exceeded
+	idt_set_entry(6, (uint32_t) isr6); //Invalid Opcode
+	idt_set_entry(7, (uint32_t) isr7); //Divice Not Available
+	idt_set_entry(8, (uint32_t) isr8); //Double Fault
+	idt_set_entry(9, (uint32_t) isr9); //Coprocessor error
+	idt_set_entry(10, (uint32_t) isr10); //Invalid TSS
+	idt_set_entry(11, (uint32_t) isr11); //Segment not present
+	idt_set_entry(12, (uint32_t) isr12); //Stack Segment Fault
+	idt_set_entry(13, (uint32_t) isr13); //GP Fault
+	idt_set_entry(14, (uint32_t) isr14); //Page Fault
+	idt_set_entry(15, (uint32_t) isr15); //Reserved
+	idt_set_entry(16, (uint32_t) isr16); //Floating point error
+	idt_set_entry(17, (uint32_t) isr17); //Alignment check
+	idt_set_entry(18, (uint32_t) isr18); //Machine check
+	idt_set_entry(19, (uint32_t) isr19); //SIMD Floating point exception
+	idt_set_entry(20, (uint32_t) isr20); //Virtualisation exception
+	idt_set_entry(21, (uint32_t) isr21); //Control protection exception
 	idt_set_entry(22, (uint32_t) isr22);
 	idt_set_entry(23, (uint32_t) isr23);
 	idt_set_entry(24, (uint32_t) isr24);
@@ -118,15 +131,16 @@ void idt_init()
 	idt_set_entry(30, (uint32_t) isr30);
 	idt_set_entry(31, (uint32_t) isr31);
 
-	// remap IRQ table
-	outb(MASTER_IRQ_COMMAND, 0x11);		// initialize master IRQ
-	outb(SLAVE_IRQ_COMMAND, 0x11);		// initialize slave IRQ
-	outb(MASTER_IRQ_DATA, 0x20);		// vector offset
-	outb(SLAVE_IRQ_DATA, 0x28);		// vector offset
-	outb(MASTER_IRQ_DATA, 0x04);		// tell there's slave IRQ at 0x0100
-	outb(SLAVE_IRQ_DATA, 0x02);		// tell it's cascade identity
-	outb(MASTER_IRQ_DATA, 0x01);		// 8086 mode
-	outb(SLAVE_IRQ_DATA, 0x01);		// 8086 mode
+	//Setup PIC
+	outb(MASTER_IRQ_COMMAND, 0x11);
+	outb(SLAVE_IRQ_COMMAND, 0x11);
+	//Offsets
+	outb(MASTER_IRQ_DATA, 0x20);
+	outb(SLAVE_IRQ_DATA, 0x28);
+	outb(MASTER_IRQ_DATA, 0x04);
+	outb(SLAVE_IRQ_DATA, 0x02);
+	outb(MASTER_IRQ_DATA, 0x01);
+	outb(SLAVE_IRQ_DATA, 0x01);
 	outb(MASTER_IRQ_DATA, 0x0);
 	outb(SLAVE_IRQ_DATA, 0x0);
 
@@ -148,10 +162,18 @@ void idt_init()
 	idt_set_entry(47, (uint32_t) irq15);
 
     idt_flush((uint32_t) &idt_ptr);
-
-  
+	enable_interrupts();
 }
 
+void enable_interrupts()
+{
+	asm volatile ("sti");
+}
+
+void disable_interrupts()
+{
+	asm volatile("cli");
+}
 
 void idt_register_handler(uint8_t n, isr_callback_t handler)
 {
@@ -162,6 +184,8 @@ void isr_handler(isr_state_t regs)
 {
     con_write("isr ");
     con_write_hex(regs.int_no);
+	con_write(" : ");
+	con_write_hex(regs.err_code);
     con_write("\n");
 	if (isr_handlers[regs.int_no] != 0)
     {
@@ -176,18 +200,10 @@ void isr_handler(isr_state_t regs)
 	}
 }
 
-
-
 void irq_handler(isr_state_t regs)
 {
-    con_write("irq ");
-    con_write_hex(regs.int_no-32);
-	con_write("\n");
-	if (regs.int_no >= 40) 
-	{
+    if (regs.int_no >= 40) 
 		outb(0xA0, 0x20);	// send reset signal to slave
-	}
-
 	outb(0x20, 0x20);		// send reset signal to master
 
 	if (isr_handlers[regs.int_no] != 0)

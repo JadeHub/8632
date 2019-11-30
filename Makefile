@@ -1,8 +1,24 @@
-CFLAGS=-m32
+CFLAGS=-m32 -std=gnu99 -fno-exceptions -ffreestanding -I ./
 
-C_SOURCES = $(wildcard kernel/*.c drivers/*.c)
-HEADERS = $(wildcard kernel/*.h drivers/*.h)
-ASM_SOURCES = $(wildcard kernel/*.s drivers/*.s)
+C_SOURCES = $(wildcard \
+kernel/*.c \
+kernel/memory/*.c \
+kernel/x86/*.c \
+drivers/*.c \
+drivers/keyboard/*.c \
+drivers/timer/*.c)
+
+HEADERS = $(wildcard \
+kernel/*.h \
+kernel/memory/*.h \
+kernel/x86/*.h \
+drivers/*.h \
+drivers/keyboard/*.h \
+drivers/timer/*.h)
+
+ASM_SOURCES = $(wildcard kernel/x86/*.s \
+kernel/memory/*.s \
+drivers/*.s)
 
 OBJ = ${C_SOURCES:.c=.o}
 ASM_OBJ = ${ASM_SOURCES:.s=.o}
@@ -22,7 +38,7 @@ kernel.bin: kernel/kernel_entry.o ${OBJ} ${ASM_OBJ}
 		 ~/gcc_i386/i386-elf/bin/ld -o $@ -Tlink.ld  $^ --oformat binary
 
 %.o: %.c ${HEADERS}
-		~/gcc_i386/bin/i386-elf-gcc -std=gnu99 -fno-exceptions ${CFLAGS} -ffreestanding -c $< -o $@
+		~/gcc_i386/bin/i386-elf-gcc ${CFLAGS} -c $< -o $@
 
 %.o: %.asm
 		nasm $< -f elf32 -o $@
@@ -40,5 +56,5 @@ boot/stage2.bin: boot/stage2.asm
 		nasm $< -f bin -o $@
 
 clean:
-		rm -fr *.bin *.dis *.o os-image
-		rm -fr kernel/*.o boot/*.bin drivers/*.o
+		rm -f -r *.bin *.dis *.o os-image
+		rm -f -r kernel/*.o boot/*.bin drivers/*.o

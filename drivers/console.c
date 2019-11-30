@@ -50,9 +50,9 @@ void con_putc(char c)
     dsp_set_cursor(cursor_x, cursor_y);
 }
 
-void con_write(char *str)
+void con_write(const char *str)
 {
-    char *c = str;
+    const char *c = str;
     while(*c)
     {
         con_putc(*c);
