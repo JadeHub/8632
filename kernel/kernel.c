@@ -9,7 +9,10 @@
 #include <drivers/timer/timer.h>
 #include "memory/paging.h"
 
-void kmain()
+#include "tasks/task.h"
+#include "syscall.h"
+
+void kmain(uint32_t esp)
 {
 	con_init();
 	con_write("Hello World\n");
@@ -20,6 +23,14 @@ void kmain()
 	initialise_paging();
 	
 	kb_init();
+
+	task_init(esp);
+
+	syscall_init();
+	switch_to_user_mode();
+
+	asm volatile("int $100");
+
 //	mem_init();
 
 //	uint32_t* add = 0xA0000000;

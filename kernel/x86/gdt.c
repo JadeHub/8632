@@ -92,6 +92,11 @@ static void write_tss(int32_t num, uint16_t ss0, uint32_t esp0)
    tss_entry.ss = tss_entry.ds = tss_entry.es = tss_entry.fs = tss_entry.gs = 0x13;
 }
 
+void set_kernel_stack(uint32_t stack)
+{
+    tss_entry.esp0 = stack;
+}
+
 void gdt_init()
 {
    gdt_ptr.base = (uint32_t)&gdt_entries;

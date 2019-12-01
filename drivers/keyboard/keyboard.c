@@ -2,6 +2,7 @@
 #include "keyboard.h"
 #include "kb_scancode_tables.h"
 
+#include <kernel/utils.h>
 #include <kernel/x86/interrupts.h>
 #include <drivers/console.h>
 #include <drivers/ioports.h>

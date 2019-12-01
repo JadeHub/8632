@@ -5,6 +5,8 @@
 #define ISR13 13
 #define ISR14 14
 
+#define ISR_SYSCALL 100
+
 #define IRQ0 32
 #define IRQ1 33
 

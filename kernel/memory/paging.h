@@ -1,8 +1,4 @@
-// paging.h -- Defines the interface for and structures relating to paging.
-//             Written for JamesM's kernel development tutorials.
-
-#ifndef PAGING_H
-#define PAGING_H
+#pragma once
 
 #include <stdint.h>
 
@@ -42,25 +38,13 @@ typedef struct page_directory
     uint32_t physicalAddr;
 } page_directory_t;
 
-/**
-   Sets up the environment, page directories etc and
-   enables paging.
-**/
+
+extern page_directory_t* current_directory;
+
 void initialise_paging();
 
-/**
-   Causes the specified page directory to be loaded into the
-   CR3 register.
-**/
 void switch_page_directory(page_directory_t *new);
 
-/**
-   Retrieves a pointer to the page required.
-   If make == 1, if the page-table in which this page should
-   reside isn't created, create it!
-**/
 page_t *get_page(uint32_t address, int make, page_directory_t *dir);
-
 void alloc_frame(page_t *page, int is_kernel, int is_writeable);
 void free_frame(page_t *page);
-#endif

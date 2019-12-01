@@ -4,6 +4,7 @@ C_SOURCES = $(wildcard \
 kernel/*.c \
 kernel/memory/*.c \
 kernel/x86/*.c \
+kernel/tasks/*.c \
 drivers/*.c \
 drivers/keyboard/*.c \
 drivers/timer/*.c)
@@ -12,12 +13,14 @@ HEADERS = $(wildcard \
 kernel/*.h \
 kernel/memory/*.h \
 kernel/x86/*.h \
+kernel/tasks/*.h \
 drivers/*.h \
 drivers/keyboard/*.h \
 drivers/timer/*.h)
 
 ASM_SOURCES = $(wildcard kernel/x86/*.s \
 kernel/memory/*.s \
+kernel/tasks/*.s \
 drivers/*.s)
 
 OBJ = ${C_SOURCES:.c=.o}

@@ -64,6 +64,7 @@ extern void isr28();
 extern void isr29();
 extern void isr30();
 extern void isr31();
+extern void isr100();
 extern void irq0();
 extern void irq1();
 extern void irq2();
@@ -88,6 +89,9 @@ static void idt_set_entry(uint8_t num, uint32_t base)
     idt_entries[num].seg_sel = 0x08; //kernel code selector
     idt_entries[num].flags = 0x8E;
     idt_entries[num].unused = 0;
+
+	if(num == ISR_SYSCALL)
+		idt_entries[num].flags |= 0x60;
 }
 
 void idt_init()
@@ -131,6 +135,7 @@ void idt_init()
 	idt_set_entry(30, (uint32_t) isr30);
 	idt_set_entry(31, (uint32_t) isr31);
 
+	idt_set_entry(100, (uint32_t) isr100);
 	//Setup PIC
 	outb(MASTER_IRQ_COMMAND, 0x11);
 	outb(SLAVE_IRQ_COMMAND, 0x11);
