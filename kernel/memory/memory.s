@@ -1,6 +1,5 @@
 [GLOBAL enable_paging]
 enable_paging:
-    ;xchg bx, bx,
     mov eax, cr0
     or eax, 0x80000000
     mov cr0, eax

@@ -1,2 +1,2 @@
-make clean && make && bochs -q -rc debug.rc 
+make && bochs -q -rc debug.rc 
 

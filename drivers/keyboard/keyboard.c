@@ -1,3 +1,4 @@
+//#if 0
 #include "keyboard.h"
 #include "kb_scancode_tables.h"
 
@@ -113,3 +114,4 @@ void kb_init()
     idt_register_handler(IRQ1, &kb_isr);
     kb_scancode_tables_init();
 }
+//#endif

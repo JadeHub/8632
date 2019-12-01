@@ -20,10 +20,10 @@ void kmain()
 	initialise_paging();
 	
 	kb_init();
-	mem_init();
+//	mem_init();
 
-	uint32_t* add = 0xA0000000;
-	uint32_t v = *add;
+//	uint32_t* add = 0xA0000000;
+//	uint32_t v = *add;
 
 	for (;;);
 }

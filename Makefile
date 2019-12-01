@@ -57,5 +57,5 @@ boot/stage2.bin: boot/stage2.asm
 
 clean:
 		rm -f -r *.bin *.dis *.o os-image
-		find - -name "*.o" | xargs rm -f
+		find . -name "*.o" | xargs rm -f
 		
