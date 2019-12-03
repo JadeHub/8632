@@ -6,6 +6,7 @@
 #ifndef KHEAP_H
 #define KHEAP_H
 
+#include "paging.h"
 #include "ordered_array.h"
 
 #include <stdint.h>
@@ -41,12 +42,13 @@ typedef struct
     uint32_t max_address;   // The maximum address the heap can be expanded to.
     uint8_t supervisor;     // Should extra pages requested by us be mapped as supervisor-only?
     uint8_t readonly;       // Should extra pages requested by us be mapped as read-only?
+	page_directory_t* page_dir;
 } heap_t;
 
 /**
    Create a new heap.
 **/
-heap_t *create_heap(uint32_t start, uint32_t end, uint32_t max, uint8_t supervisor, uint8_t readonly);
+heap_t *create_heap(page_directory_t*, uint32_t start, uint32_t end, uint32_t max, uint8_t supervisor, uint8_t readonly);
 
 /**
    Allocates a contiguous region of memory 'size' in size. If page_align==1, it creates that block starting
@@ -59,43 +61,5 @@ void *alloc(uint32_t size, uint8_t page_align, heap_t *heap);
 **/
 void free(void *p, heap_t *heap);
 
-/**
-   Allocate a chunk of memory, sz in size. If align == 1,
-   the chunk must be page-aligned. If phys != 0, the physical
-   location of the allocated chunk will be stored into phys.
-
-   This is the internal version of kmalloc. More user-friendly
-   parameter representations are available in kmalloc, kmalloc_a,
-   kmalloc_ap, kmalloc_p.
-**/
-uint32_t kmalloc_int(uint32_t sz, int align, uint32_t *phys);
-
-/**
-   Allocate a chunk of memory, sz in size. The chunk must be
-   page aligned.
-**/
-uint32_t kmalloc_a(uint32_t sz);
-
-/**
-   Allocate a chunk of memory, sz in size. The physical address
-   is returned in phys. Phys MUST be a valid pointer to uint32_t!
-**/
-uint32_t kmalloc_p(uint32_t sz, uint32_t *phys);
-
-/**
-   Allocate a chunk of memory, sz in size. The physical address 
-   is returned in phys. It must be page-aligned.
-**/
-uint32_t kmalloc_ap(uint32_t sz, uint32_t *phys);
-
-/**
-   General allocation function.
-**/
-uint32_t kmalloc(uint32_t sz);
-
-/**
-   General deallocation function.
-**/
-void kfree(void *p);
 
 #endif // KHEAP_H

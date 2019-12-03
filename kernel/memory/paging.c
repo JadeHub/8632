@@ -87,8 +87,6 @@ static void page_fault(isr_state_t regs)
     KPANIC("Page fault");
 }
 
-
-
 // Function to allocate a frame.
 void alloc_frame(page_t *page, int is_kernel, int is_writeable)
 {
@@ -133,7 +131,7 @@ static page_table_t *clone_table(page_table_t *src, uint32_t *physAddr)
 {
     // Make a new page table, which is page aligned.
     page_table_t *table = (page_table_t*)kmalloc_ap(sizeof(page_table_t), physAddr);
-    // Ensure that the new table is blank.
+	// Ensure that the new table is blank.
     memset(table, 0, sizeof(page_directory_t));
 
     // For every entry in the table...
@@ -151,6 +149,7 @@ static page_table_t *clone_table(page_table_t *src, uint32_t *physAddr)
         if (src->pages[i].user)    table->pages[i].user = 1;
         if (src->pages[i].accessed)table->pages[i].accessed = 1;
         if (src->pages[i].dirty)   table->pages[i].dirty = 1;
+
         // Physically copy the data across. This function is in process.s.
         copy_page_physical(src->pages[i].frame*0x1000, table->pages[i].frame*0x1000);
     }
@@ -195,7 +194,7 @@ page_directory_t *clone_directory(page_directory_t *src)
     return dir;
 }
 
-void initialise_paging()
+page_directory_t* paging_init()
 {
     //16mb mem
     uint32_t mem_end_page = 0x1000000;
@@ -220,7 +219,7 @@ void initialise_paging()
 
     //Map the first megabyte for use by the kernel
     i = 0;
-    while (i < 0xFFFFF)
+    while (i < 0x100000)
     {
         // Kernel code is readable but not writeable from userspace.
         alloc_frame(get_page(i, 1, kernel_directory), 0, 0);
@@ -235,15 +234,15 @@ void initialise_paging()
     switch_page_directory(kernel_directory);
 
     // Initialise the kernel heap.
-    kheap = create_heap(KHEAP_START, KHEAP_START+KHEAP_INITIAL_SIZE, 0xCFFFF000, 0, 0);
+    kheap = create_heap(kernel_directory, KHEAP_START, KHEAP_START+KHEAP_INITIAL_SIZE, 0xCFFFF000, 0, 0);
     current_directory = clone_directory(kernel_directory);
     switch_page_directory(current_directory);
+	
+	con_write("Virtual Memory mode\n");
 
-    con_write("\nJOSH3\n");
-    uint32_t* test = (uint32_t*)kmalloc(0x20000);
-    *test = 0x12341234;
-    con_write_hex(*test);
-    con_write("\n");
+	//test((void*)0xE0000000, 0x2000, kernel_directory);
+	
+	return kernel_directory;
 }
 
 void switch_page_directory(page_directory_t *dir)
@@ -271,8 +270,8 @@ page_t *get_page(uint32_t address, int make, page_directory_t *dir)
     {
         uint32_t tmp;
         dir->tables[table_idx] = (page_table_t*)kmalloc_ap(sizeof(page_table_t), &tmp);
-        memset(dir->tables[table_idx], 0, 0x1000);
-        dir->tablesPhysical[table_idx] = tmp | 0x7; // PRESENT, RW, US.
+		memset(dir->tables[table_idx], 0, 0x1000);
+        dir->tablesPhysical[table_idx] = tmp | 0x07; // PRESENT, RW, US.
         return &dir->tables[table_idx]->pages[address%1024];
     }
     return 0;

@@ -34,7 +34,7 @@ run: all
 bochs: all
 		bochs
 
-os-image: boot/boot_sect.bin boot/stage2.bin kernel.bin
+os-image: boot/boot_sect.bin boot/stage2.bin kernel.bin 
 		cat $^ > os-image
 
 kernel.bin: kernel/kernel_entry.o ${OBJ} ${ASM_OBJ}

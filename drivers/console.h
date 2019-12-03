@@ -1,9 +1,11 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdarg.h>
 
 void con_init();
 void con_write(const char *str);
 void con_set_cur(uint8_t col, uint8_t row);
 void con_write_hex(uint32_t n);
 void con_putc(char);
+void con_printf(const char* format, ...);

@@ -1,74 +1,43 @@
 #include "task.h"
 
+#include <kernel/memory/kheap.h>
 #include <kernel/memory/paging.h>
 #include <kernel/x86/interrupts.h>
-
-#include <stdint.h>
+#include <kernel/x86/gdt.h>
 #include <kernel/utils.h>
 
-void move_stack(void *new_stack_start, uint32_t size, uint32_t initial_esp)
+extern void move_stack(void *new_stack_start, uint32_t size, uint32_t initial_esp);
+
+#define KERNEL_STACK_SIZE 2048
+
+process_t* k_proc; //The kernal execution context
+thread_t* current_thread = 0;
+
+void switch_task()
 {
-    
-  uint32_t i;
-  // Allocate some space for the new stack.
-  for( i = (uint32_t)new_stack_start;
-       i >= ((uint32_t)new_stack_start-size);
-       i -= 0x1000)
-  {
-    // General-purpose stack is in user-mode.
-    alloc_frame( get_page(i, 1, current_directory), 0 /* User mode */, 1 /* Is writable */ );
-  }
-  
-  // Flush the TLB by reading and writing the page directory address again.
-  uint32_t pd_addr;
-  asm volatile("mov %%cr3, %0" : "=r" (pd_addr));
-  asm volatile("mov %0, %%cr3" : : "r" (pd_addr));
 
-  // Old ESP and EBP, read from registers.
-  uint32_t old_stack_pointer; asm volatile("mov %%esp, %0" : "=r" (old_stack_pointer));
-  uint32_t old_base_pointer;  asm volatile("mov %%ebp, %0" : "=r" (old_base_pointer));
-
-  // Offset to add to old stack addresses to get a new stack address.
-  uint32_t offset            = (uint32_t)new_stack_start - initial_esp;
-
-  // New ESP and EBP.
-  uint32_t new_stack_pointer = old_stack_pointer + offset;
-  uint32_t new_base_pointer  = old_base_pointer  + offset;
-
-  // Copy the stack.
-  memcpy((void*)new_stack_pointer, (void*)old_stack_pointer, initial_esp-old_stack_pointer);
-
-  // Backtrace through the original stack, copying new values into
-  // the new stack.  
-  for(i = (uint32_t)new_stack_start; i > (uint32_t)new_stack_start-size; i -= 4)
-  {
-    uint32_t tmp = * (uint32_t*)i;
-    // If the value of tmp is inside the range of the old stack, assume it is a base pointer
-    // and remap it. This will unfortunately remap ANY value in this range, whether they are
-    // base pointers or not.
-    if (( old_stack_pointer < tmp) && (tmp < initial_esp))
-    {
-      tmp = tmp + offset;
-      uint32_t *tmp2 = (uint32_t*)i;
-      *tmp2 = tmp;
-    }
-  }
-
-  // Change stacks.
-  asm volatile("mov %0, %%esp" : : "r" (new_stack_pointer));
-  asm volatile("mov %0, %%ebp" : : "r" (new_base_pointer));
 }
 
-#include <kernel/x86/gdt.h>
-
-void task_init(uint32_t initial_esp)
+void task_init(page_directory_t* kernel_pages, uint32_t initial_esp)
 {
     disable_interrupts();
 
     // Relocate the stack so we know where it is.
-    move_stack((void*)0xE0000000, 0x2000, initial_esp);
+    //move_stack((void*)0xE0000000, 0x2000, initial_esp);
+    set_kernel_stack(initial_esp);
 
-    set_kernel_stack(0xE0000000);
-
+	k_proc = (process_t*)kmalloc(sizeof(process_t));
+	k_proc->id = 0;
+	k_proc->pages = kernel_pages;
+	k_proc->next = 0;
+	k_proc->main_thread = (thread_t*)kmalloc(sizeof(thread_t));
+	k_proc->main_thread->process = k_proc;
+	k_proc->main_thread->ebp = 0;
+	k_proc->main_thread->esp = 0;
+	k_proc->main_thread->eip = 0;
+	k_proc->main_thread->k_stack = initial_esp - KERNEL_STACK_SIZE;
+	k_proc->main_thread->next = 0;
+	current_thread = k_proc->main_thread;
     enable_interrupts();
 }
+

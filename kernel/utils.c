@@ -16,6 +16,6 @@ void memcpy(uint8_t *dest, const uint8_t *src, uint32_t len)
 }
 
 void bochs_dbg()
-{
+{	
     asm volatile("xchg %bx, %bx");
 }

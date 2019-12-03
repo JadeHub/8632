@@ -63,12 +63,80 @@ void con_write(const char *str)
 void con_write_hex(uint32_t n)
 {
 	int i;
-	for (i = 28; i >= 0; i -= 4) {
+	for (i = 28; i >= 0; i -= 4) 
+	{
 		int digit = (n >> i) & 0xF;
-		if (digit < 10) {
+		if (digit < 10)
 			con_putc('0' + digit);
-		} else {
-			con_putc('a' + digit - 10);
+		else
+			con_putc('a' + digit - 10);		
+	}
+}
+
+static void int_out(uint32_t v, int base, const char* digits)
+{
+	char buff[64];
+	char* p = buff;
+
+	uint32_t counter = v;
+	do
+	{
+		p++;
+		counter = counter / base;
+
+	}while(counter);
+
+	*p = '\0';
+	do
+	{
+		*--p = digits[v % base];
+		v = v / base;
+
+	}while(v);
+	con_write(buff);
+}
+
+void con_printf(const char* format, ...)
+{
+	va_list args;
+
+	va_start(args, format);
+
+	const char* digits = "0123456789ABCDEF";
+
+	for (int i = 0; format[i]; i++)
+	{
+		if (format[i] != '%')
+		{
+			con_putc(format[i]);
+			continue;
+		}
+		
+		i++;
+		int32_t intv;
+
+		switch (format[i])
+		{
+			case 'd':
+				intv = va_arg(args, int32_t);
+				if (intv < 0)
+				{
+					con_putc('-');
+					intv *= -1;
+				}
+				int_out(intv, 10, digits);
+				break;
+			case 'u':
+				int_out(va_arg(args, uint32_t), 10, digits);
+				break;
+			case 'x':
+				con_write("0x");
+				int_out(va_arg(args, uint32_t), 16, digits);
+				break;
+			case 's':
+				con_write(va_arg(args, char*));
+				break;
 		}
 	}
+	va_end(args);
 }

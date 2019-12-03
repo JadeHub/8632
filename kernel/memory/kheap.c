@@ -85,7 +85,7 @@ static void expand(uint32_t new_size, heap_t *heap)
     uint32_t i = old_size;
     while (i < new_size)
     {
-        alloc_frame( get_page(heap->start_address+i, 1, kernel_directory),
+        alloc_frame( get_page(heap->start_address+i, 1, heap->page_dir),
                      (heap->supervisor)?1:0, (heap->readonly)?0:1);
         i += 0x1000 /* page size */;
     }
@@ -112,7 +112,7 @@ static uint32_t contract(uint32_t new_size, heap_t *heap)
     uint32_t i = old_size - 0x1000;
     while (new_size < i)
     {
-        free_frame(get_page(heap->start_address+i, 0, kernel_directory));
+        free_frame(get_page(heap->start_address+i, 0, heap->page_dir));
         i -= 0x1000;
     }
 
@@ -156,7 +156,7 @@ static int8_t header_t_less_than(void*a, void *b)
     return (((header_t*)a)->size < ((header_t*)b)->size)?1:0;
 }
 
-heap_t *create_heap(uint32_t start, uint32_t end_addr, uint32_t max, uint8_t supervisor, uint8_t readonly)
+heap_t* create_heap(page_directory_t* page_dir, uint32_t start, uint32_t end_addr, uint32_t max, uint8_t supervisor, uint8_t readonly)
 {
     heap_t *heap = (heap_t*)kmalloc(sizeof(heap_t));
 
@@ -164,6 +164,7 @@ heap_t *create_heap(uint32_t start, uint32_t end_addr, uint32_t max, uint8_t sup
     ASSERT(start%0x1000 == 0);
     ASSERT(end_addr%0x1000 == 0);
     
+	heap->page_dir = page_dir;
     // Initialise the index.
     heap->index = place_ordered_array( (void*)start, HEAP_INDEX_SIZE, &header_t_less_than);
     
