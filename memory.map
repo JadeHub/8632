@@ -12,7 +12,7 @@
 0x0000-7E00     0x0007-FFFF     free
 0x0000-7C00     0x0000-7DFF     boot sector
 
-0x0000-1000                 55*512 = 6e00
+0x0000-1000
 
 0x0000-0500     0x0000-7BFF     free
 0x0000-0400     0x0000-04FF     bios data
