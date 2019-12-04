@@ -58,9 +58,9 @@ void kmain(uint32_t esp)
 	heap_t* h = create_heap(pages, start, end, end, 0, 0);
 
 	
-	alloc(0x1000, 0, h);
-
-	con_write("switching\n");
+	uint32_t mem = alloc(0x1000, 0, h);
+	
+	con_printf("switching %x\n", mem);
 
 	switch_to_user_mode();
 	

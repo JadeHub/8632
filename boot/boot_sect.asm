@@ -1,7 +1,7 @@
 [bits 16]
 [org 0x7c00]
 
-KERNEL_OFFSET equ 0x1000
+KERNEL_OFFSET equ 0x9000
 
 	mov [BOOT_DRIVE], dl
 	mov bp, 0x70000
@@ -19,7 +19,7 @@ load_kernel:
 	mov bx, MSG_LOAD_KERNEL
 	call print_string
 	mov bx, KERNEL_OFFSET
-	mov dh, 50
+	mov dh, 53
 	mov dl, [BOOT_DRIVE]
 	call disk_load
 	popa

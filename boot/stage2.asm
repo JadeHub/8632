@@ -1,4 +1,4 @@
-[org 0x1000]
+[org 0x9000]
 
 stage_two:
 	mov bx, MSG_STARTING2
