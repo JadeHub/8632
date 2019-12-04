@@ -43,7 +43,22 @@ void kmain(uint32_t esp)
 	syscall_init();
 
 	page_directory_t* pages = clone_directory(kernel_directory);
-	heap_t* h = create_heap(pages, 0x00010000, 0x00010000+0x1000, 0x100000, 0, 0);
+	
+	switch_page_directory(pages);
+	
+	uint32_t start = 0x00200000;
+	uint32_t end = start + 0x100000;
+	uint32_t add = start;
+	while (add < end)
+	{
+		alloc_frame(get_page(add, 1, pages), 0, 1);
+		memset(add, 0, 0x1000);
+		add += 0x1000;
+	}
+	heap_t* h = create_heap(pages, start, end, end, 0, 0);
+
+	
+	alloc(0x1000, 0, h);
 
 	con_write("switching\n");
 
