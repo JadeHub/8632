@@ -113,12 +113,12 @@ isr_common_stub:
 [extern irq_handler]
 
 irq_common_stub:
-	pusha
+	pusha		;push all the registers
 
-	mov ax, ds
+	mov ax, ds	;push the current selector value
 	push eax
 
-	mov ax, 0x10
+	mov ax, 0x10	;change to gdt entry at 0x10
 	mov ds, ax
 	mov es, ax
 	mov fs, ax
@@ -126,13 +126,13 @@ irq_common_stub:
 
 	call irq_handler
 
-	pop ebx
+	pop ebx		;restore the selectors
 	mov ds, bx
 	mov es, bx
 	mov fs, bx
 	mov gs, bx
 
-	popa
+	popa	;pop all the registers
 
 	add esp, 8
 	sti

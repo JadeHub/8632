@@ -187,21 +187,15 @@ void idt_register_handler(uint8_t n, isr_callback_t handler)
 
 void isr_handler(isr_state_t regs)
 {
-    con_write("isr ");
-    con_write_hex(regs.int_no);
-	con_write(" : ");
-	con_write_hex(regs.err_code);
-    con_write("\n");
+    con_printf("isr %x err: %x\n", regs.int_no, regs.err_code);
 	if (isr_handlers[regs.int_no] != 0)
     {
 		isr_callback_t handler = isr_handlers[regs.int_no];
-		handler(regs);
+		handler(&regs);
 	}
     else 
     {
-		con_write("unhandled isr: ");
-		con_write_hex(regs.int_no);
-	    con_write("\n");
+		con_printf("unhandled isr: %x\n", regs.int_no);
 	}
 }
 
@@ -214,6 +208,6 @@ void irq_handler(isr_state_t regs)
 	if (isr_handlers[regs.int_no] != 0)
 	{
 		isr_callback_t handler = isr_handlers[regs.int_no];
-		handler(regs);
+		handler(&regs);
 	}
 }

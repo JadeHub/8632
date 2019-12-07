@@ -170,7 +170,7 @@ heap_t* create_heap(page_directory_t* page_dir, uint32_t start, uint32_t end_add
 	ASSERT((end_addr - start) > HEAP_INDEX_SIZE);
 	
 	heap->index = place_ordered_array( (void*)start, HEAP_INDEX_SIZE, &header_t_less_than);
-	bochs_dbg();
+	//bochs_dbg();
     // Shift the start address forward to resemble where we can start putting data.
     start += sizeof(type_t)*HEAP_INDEX_SIZE;
 

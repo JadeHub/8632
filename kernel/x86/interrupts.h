@@ -18,7 +18,7 @@ typedef struct isr_state
 	uint32_t eip, cs, eflags, useresp, ss;
 } isr_state_t;
 
-typedef void (*isr_callback_t)(isr_state_t);
+typedef void (*isr_callback_t)(isr_state_t*);
 void idt_register_handler(uint8_t n, isr_callback_t handler);
 
 void idt_init();

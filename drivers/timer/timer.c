@@ -6,7 +6,7 @@
 #define PIT_CMD_PORT 0x43
 #define PIT_CH0_PORT 0x40
 
-static void timer_isr(isr_state_t state)
+static void timer_isr(isr_state_t* state)
 {
     //con_write("Timer\n");
 }

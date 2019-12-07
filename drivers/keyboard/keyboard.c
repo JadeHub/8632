@@ -91,7 +91,7 @@ static bool is_special_code(uint8_t sc)
         sc == 0xFF;
 }
 
-static void kb_isr(isr_state_t state)
+static void kb_isr(isr_state_t* state)
 {
     uint8_t scan_code = inb(0x60);
     if(is_special_code(scan_code))

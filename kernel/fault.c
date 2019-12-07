@@ -4,12 +4,12 @@
 
 void panic_impl(const char*, const char*, uint32_t);
 
-static void gp_fault_handler(isr_state_t state)
+static void gp_fault_handler(isr_state_t* state)
 {
     con_write("GP Fault: ");
-    con_write_hex(state.err_code);
+    con_write_hex(state->err_code);
     con_write(" at: ");
-    con_write_hex(state.eip);
+    con_write_hex(state->eip);
     con_write("\n");
     KPANIC("GP Fault");
 }

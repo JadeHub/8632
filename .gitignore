@@ -3,4 +3,5 @@
 *.bin
 os-image
 *.o
+*.img
 temp/
