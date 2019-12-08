@@ -1,3 +1,4 @@
+#if 0
 #include <kernel/memory/paging.h>
 #include <kernel/utils.h>
 
@@ -58,3 +59,4 @@ void move_stack(void *new_stack_start, uint32_t size, uint32_t initial_esp)
 	asm volatile("mov %0, %%esp" : : "r" (new_stack_pointer));
 	asm volatile("mov %0, %%ebp" : : "r" (new_base_pointer));
 }
+#endif

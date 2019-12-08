@@ -276,3 +276,15 @@ page_t *get_page(uint32_t address, int make, page_directory_t *dir)
     }
     return 0;
 }
+
+uint32_t alloc_pages(page_directory_t* pages, uint32_t start, uint32_t end)
+{
+	uint32_t addr = start;
+
+	while (addr < end)
+	{
+		alloc_frame(get_page(addr, 1, pages), 0, 1);
+		addr += 0x1000;
+	}
+	return start;
+}

@@ -3,11 +3,14 @@
 #include <drivers/ioports.h>
 #include <drivers/console.h>
 
+#include <kernel/tasks/task.h>
+
 #define PIT_CMD_PORT 0x43
 #define PIT_CH0_PORT 0x40
 
 static void timer_isr(isr_state_t* state)
 {
+	//switch_task();
     //con_write("Timer\n");
 }
 

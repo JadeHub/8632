@@ -8,6 +8,7 @@ static uint32_t syscall_alloc(heap_t* h, uint32_t size)
 {
 	uint32_t ret = alloc(size, 0, h);
 	con_printf("Allocated %x bytes at %x\n", size, ret);
+	bochs_dbg();
 	return ret;
 }
 
@@ -16,22 +17,28 @@ static void syscall_print(const char* str)
 	con_printf("Passed back %x %s\n", str, str);
 }
 
+static void syscall_print_hex(const char* str, uint32_t v)
+{
+	con_printf("Value %s = %x\n", str, v);
+}
+
 static void syscall_exit(uint32_t code)
 {
 	con_printf("Exit ebx=%x\n", code);
 	for (;;);
 }
 
-static void* syscalls[3] =
+static void* syscalls[4] =
 {
 	&syscall_alloc,
 	&syscall_print,
-	&syscall_exit
+	&syscall_exit,
+	&syscall_print_hex
 };
 
 void syscall_handler(isr_state_t* regs)
 {
-   con_printf("syscall %x\n", regs->eax);
+   con_printf("syscall %x %x\n", regs->eax, regs->esp);
    void *location = syscalls[regs->eax-1];
 
    // We don't know how many parameters the function wants, so we just
