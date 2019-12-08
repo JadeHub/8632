@@ -1,7 +1,6 @@
 [GLOBAL switch_to_user_mode]
 switch_to_user_mode:
     cli
-   ; xchg bx, bx
     mov ax, 0x23
     mov ds, ax
     mov es, ax

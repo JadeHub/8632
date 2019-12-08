@@ -15,6 +15,7 @@ mov eax, 2		;syscall print
 int 0x64
 
 mov eax, 3		;syscall exit
+mov ebx, 0
 int 0x64
 
 MSG_LOAD_KERNEL db "Loading kernel into memory", 0
