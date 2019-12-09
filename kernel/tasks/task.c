@@ -32,7 +32,7 @@ void switch_task()
 {
 	if(!tt /*|| !current_thread*/)
 		return;
-	tt=0;
+	//tt=0;
 
 	//con_printf("switch_task()\n");
 
@@ -129,18 +129,18 @@ void task_new_proc(uint8_t* code, uint32_t len)
 	p->pages = clone_directory(kernel_directory);
 
 	switch_page_directory(p->pages);
-	//code at 0x00200000
-	uint32_t start = 0x00200000;
+	//code at 0x00500000
+	uint32_t start = 0x00500000;
 	uint32_t end = start + 0x1000;
 	alloc_pages(p->pages, start, end);
 	uint32_t entry = start;
 	memcpy((uint8_t*)start, code, len);
 
-	*((uint8_t*)start+0x400) = p->id + 7;
+	*((uint8_t*)start+0x400) = (uint8_t)p->id + 7;
 
 	
-	//heap at 0x00400000
-	start = 0x00400000;
+	//heap at 0x00700000
+	start = 0x00700000;
 	end = start + 0x100000;
 	alloc_pages(p->pages, start, end);
 	p->heap = create_heap(p->pages, start, end, end, 0, 0);
@@ -177,18 +177,15 @@ void task_new_proc(uint8_t* code, uint32_t len)
 		tt = 1;
 
 		switch_page_directory(test_p->pages);
-		con_printf("magic 0 %x %x\n", test_p->pages, *((uint8_t*)0x00200000 + 0x400));
+		con_printf("magic 0 %x %x\n", test_p->pages, *((uint8_t*)0x00500000 + 0x400));
 		switch_page_directory(test_p->next->pages);
-		con_printf("magic 1 %x %x\n", test_p->next->pages, *((uint8_t*)0x00200000 + 0x400));
-
-		
-
+		con_printf("magic 1 %x %x\n", test_p->next->pages, *((uint8_t*)0x00500000 + 0x400));
 	}
 	else
 	{
 		test_p = p;
 		switch_page_directory(test_p->pages);
-		con_printf("magic 0 %x %x\n", test_p->pages, *((uint8_t*)0x00200000 + 0x400));
+		con_printf("magic 0 %x %x\n", test_p->pages, *((uint8_t*)0x00500000 + 0x400));
 
 	}
 

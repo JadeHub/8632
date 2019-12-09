@@ -5,3 +5,4 @@ os-image
 *.o
 *.img
 temp/
+test/test
