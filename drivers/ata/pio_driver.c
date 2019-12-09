@@ -1,3 +1,4 @@
+#if 0
 #include "pio_driver.h"
 #include <drivers/ioports.h>
 #include <drivers/console.h>
@@ -238,3 +239,4 @@ void ide_initialize(unsigned int BAR0, unsigned int BAR1, unsigned int BAR2, uns
 		}
 }
 
+#endif

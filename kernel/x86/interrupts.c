@@ -187,7 +187,7 @@ void idt_register_handler(uint8_t n, isr_callback_t handler)
 
 void isr_handler(isr_state_t regs)
 {
-    con_printf("isr %x err: %x\n", regs.int_no, regs.err_code);
+   // con_printf("isr %x err: %x\n", regs.int_no, regs.err_code);
 	if (isr_handlers[regs.int_no] != 0)
     {
 		isr_callback_t handler = isr_handlers[regs.int_no];

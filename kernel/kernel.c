@@ -24,62 +24,108 @@ typedef struct proc
 	uint32_t esp, ebp, eip;
 	page_directory_t* pages;
 	heap_t* heap;
+	uint32_t id;
 
 } proc_t;
 
-void run_prog(uint8_t* data, uint32_t len)
+proc_t proc1, proc2;
+
+uint8_t do_sw;
+
+void switch_proc(proc_t* p)
+{
+
+}
+
+/*
+void on_timer(isr_state_t* regs)
+{
+	if(!do_sw) return;
+
+	proc_t* p;
+	if (do_sw == 2)
+	{
+		switch_proc(&proc1);
+	}
+	else
+	{
+		switch_proc(&proc2);	
+	}
+
+
+
+
+
+	if (do_sw == 2)
+		do_sw = 1;
+	else
+		do_sw = 2;
+
+	switch_page_directory(proc1.pages);
+
+	uint32_t h = proc1.id;
+	uint32_t ip = proc1.eip;
+	uint32_t st = proc1.esp;
+
+	asm volatile ("		\
+		cli;			\
+		mov %0, %%ebx;	\	
+		mov %1, %%eax;	\
+		mov %2, %%ebp;	\
+		mov %2, %%esp;	\
+		sti;			\
+		jmp %%eax		"
+		: : "r"(h), "r" (ip), "r"(st));
+
+	do_sw = 0;
+}*/
+
+void run_prog(uint8_t* data, uint32_t len, proc_t* p, uint32_t id)
 {
 	page_directory_t* pages = clone_directory(kernel_directory);
 
 	switch_page_directory(pages);
 
+	p->code = data;
+	p->code_len = len;
+	p->pages = pages;
+	p->id = id;
+
 	uint32_t start = 0x00200000;
 	uint32_t end = start + 0x1000;
-	uint32_t add = start;
-	while (add < end)
-	{
-		alloc_frame(get_page(add, 1, pages), 0, 1);
-		memset(add, 0, 0x1000);
-		add += 0x1000;
-	}
+	alloc_pages(pages, start, end);
 	uint32_t entry = start;
 	memcpy((uint8_t*)start, data, len);
 	con_printf("copied\n");
 
 	start = 0x00400000;
 	end = start + 0x100000;
-	add = start;
-	while (add < end)
-	{
-		alloc_frame(get_page(add, 1, pages), 0, 1);
-		memset(add, 0, 0x1000);
-		add += 0x1000;
-	}
+	alloc_pages(pages, start, end);
 	heap_t* h = create_heap(pages, start, end, end, 0, 0);
 
-	uint32_t stack = alloc(0x1000, 1, h) + 0x1000;
+	uint32_t stack = (uint32_t)alloc(0x1000, 1, h) + 0x1000;
 
 	con_printf("Allocated stack at %x\n", stack);
 	con_write("switching\n");
 
-	char* tt = (char*)stack;
+	p->esp = p->ebp = stack;
+	p->eip = entry;
+	p->heap = h;
 
-
-	//*tt = 'a';
-	
 	bochs_dbg();
-	
+	do_sw = 2;
+
+	switch_page_directory(kernel_directory);
+
 	switch_to_user_mode();
-	
-	//*tt = 'a';
-		
+	/*	
 	asm volatile ("		\
 		mov %0, %%ebx;	\	
 		mov %1, %%eax;	\		
 		mov %2, %%ebp;	\
 		mov %2, %%esp;	\
 		jmp %%eax		"
-		: : "r"(h), "r" (entry), "r"(stack));
+		: : "r"(h), "r" (entry), "r"(stack));*/
 	/*
 	
 	asm volatile ("mov %0, %%ebp" :: "r"(stack));
@@ -104,6 +150,8 @@ void run_prog(uint8_t* data, uint32_t len)
 
 void kmain(uint32_t esp)
 {
+	do_sw = 0;
+
 	con_init();
 	con_write("Hello World\n");
 	gdt_init();
@@ -128,60 +176,13 @@ void kmain(uint32_t esp)
 	con_printf("Read Prog %x %x %x %x\n", buff[0], buff[1], buff[2], buff[3]);
 
 	//set_kernel_stack(esp);
-	run_prog(buff, 512);
 
-	//ide_initialize(0x1F0, 0x3F4, 0x170, 0x374, 0x000);
+	task_new_proc(buff, 512);
+	task_new_proc(buff, 512);
+	//run_prog(buff, 512, &proc1, 1);	
 
-	/*page_directory_t* pages = clone_directory(kernel_directory);
-	
-	switch_page_directory(pages);
-	
-	uint32_t start = 0x00200000;
-	uint32_t end = start + 0x100000;
-	uint32_t add = start;
-	while (add < end)
-	{
-		alloc_frame(get_page(add, 1, pages), 0, 1);
-		memset(add, 0, 0x1000);
-		add += 0x1000;
-	}
-	heap_t* h = create_heap(pages, start, end, end, 0, 0);
+	switch_to_user_mode();
 
-	
-	uint32_t mem = alloc(0x1000, 0, h);
-	*/
-	//con_write("switching\n");
-
-	//switch_to_user_mode();
-	
-	//uint32_t b = (uint32_t)prog;
-	
-//	asm volatile ("mov %0, %%ebx" :: "r"(h));
-//	asm volatile ("mov %0, %%eax" :: "r"(b));
-//	asm volatile ("jmp %eax");
-//	asm volatile("mov $1024, %ecx");
-	//asm volatile ("mov %0, %%ebx" :: "r"(h));
-	//asm volatile("mov $1, %eax");
-	//asm volatile("int $100");
-
-	//asm volatile("mov %%eax, %0" : "=r"(b));
-
-	//asm volatile ("mov %0, %%ebx" :: "r"(b));
-	//asm volatile("mov $2, %eax");
-	//asm volatile("int $100");
-
-//	alloc(1024, 0, h);
-
-	//alloc()
-	//uint32_t* add = 0x1000;
-	//uint32_t val = *add; 
-
-	//asm volatile("int $100");
-
-//	mem_init();
-
-	//uint32_t* add = 0xA0000000;
-	//uint32_t v = *add;
 
 	for (;;);
 }

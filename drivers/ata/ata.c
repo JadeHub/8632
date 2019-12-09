@@ -2,7 +2,7 @@
 #include <drivers/ioports.h>
 #include <drivers/console.h>
 #include <kernel/fault.h>
-#include <kernel/memory/kheap.h>
+#include <kernel/memory/kmalloc.h>
 
 //Channels
 #define ATA_PRIMARY			0x00
@@ -73,6 +73,12 @@
 
 uint8_t ide_buf[512];
 
+void ide_400ns_delay(uint16_t io)
+{
+	for (int i = 0; i < 4; i++)
+		inb(io + ATA_REG_ALTSTATUS);
+}
+
 uint8_t ide_poll(uint16_t io)
 {
 	ide_400ns_delay(io);
@@ -130,12 +136,6 @@ void ata_detect()
 
 		con_printf("Disk is %s\n", str);
 	}
-}
-
-void ide_400ns_delay(uint16_t io)
-{
-	for (int i = 0; i < 4; i++)
-		inb(io + ATA_REG_ALTSTATUS);
 }
 
 uint8_t ata_read_one(uint8_t *buf, uint32_t lba)

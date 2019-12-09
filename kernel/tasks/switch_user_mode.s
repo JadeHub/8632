@@ -1,3 +1,5 @@
+
+
 [GLOBAL switch_to_user_mode]
 switch_to_user_mode:
     cli
@@ -20,4 +22,9 @@ switch_to_user_mode:
     iret
 cont:
     ret
+
+[GLOBAL read_eip]
+read_eip:
+    pop eax                     ; Get the return address
+    jmp eax
 

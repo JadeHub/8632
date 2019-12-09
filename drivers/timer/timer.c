@@ -8,8 +8,11 @@
 #define PIT_CMD_PORT 0x43
 #define PIT_CH0_PORT 0x40
 
+extern void on_timer(isr_state_t*);
+
 static void timer_isr(isr_state_t* state)
 {
+	on_timer(state);
 	//switch_task();
     //con_write("Timer\n");
 }

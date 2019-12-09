@@ -3,10 +3,11 @@
 #include <kernel/utils.h>
 #include <kernel/x86/interrupts.h>
 #include <kernel/memory/kheap.h>
+#include <drivers/console.h>
 
 static uint32_t syscall_alloc(heap_t* h, uint32_t size)
 {
-	uint32_t ret = alloc(size, 0, h);
+	uint32_t ret = (uint32_t)alloc(size, 0, h);
 	con_printf("Allocated %x bytes at %x\n", size, ret);
 	bochs_dbg();
 	return ret;
@@ -38,7 +39,7 @@ static void* syscalls[4] =
 
 void syscall_handler(isr_state_t* regs)
 {
-   con_printf("syscall %x %x\n", regs->eax, regs->esp);
+   //con_printf("syscall %x %x\n", regs->eax, regs->esp);
    void *location = syscalls[regs->eax-1];
 
    // We don't know how many parameters the function wants, so we just

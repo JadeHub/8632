@@ -1,5 +1,6 @@
 #include "paging.h"
 #include "kheap.h"
+#include "kmalloc.h"
 #include <kernel/fault.h>
 
 #include <kernel/utils.h>
@@ -232,12 +233,12 @@ page_directory_t* paging_init()
         alloc_frame( get_page(i, 1, kernel_directory), 0, 0);
 
     switch_page_directory(kernel_directory);
+	enable_paging();
 
     // Initialise the kernel heap.
     kheap = create_heap(kernel_directory, KHEAP_START, KHEAP_START+KHEAP_INITIAL_SIZE, 0xCFFFF000, 0, 0);
-    current_directory = clone_directory(kernel_directory);
-    switch_page_directory(current_directory);
-	
+   // current_directory = clone_directory(kernel_directory);
+    switch_page_directory(kernel_directory);
 	con_write("Virtual Memory mode\n");
 
 	//test((void*)0xE0000000, 0x2000, kernel_directory);
@@ -249,10 +250,7 @@ void switch_page_directory(page_directory_t *dir)
 {
     current_directory = dir;
     asm volatile("mov %0, %%cr3":: "r"(dir->physicalAddr));
-    uint32_t cr0;
-    asm volatile("mov %%cr0, %0": "=r"(cr0));
-    cr0 |= 0x80000000; // Enable paging flag
-    asm volatile("mov %0, %%cr0":: "r"(cr0));
+    
     
 }
 

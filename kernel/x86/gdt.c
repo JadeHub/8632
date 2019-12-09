@@ -94,7 +94,7 @@ static void write_tss(int32_t num, uint16_t ss0, uint32_t esp0)
 
 void set_kernel_stack(uint32_t stack)
 {
-	con_printf("Setting K Stack %x\n", stack);
+	//con_printf("Setting K Stack %x\n", stack);
     tss_entry.esp0 = stack;
 }
 
