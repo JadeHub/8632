@@ -7,7 +7,7 @@ typedef struct
     uint64_t length;
     uint32_t type;
     uint32_t unused;
-} bios_mem_info __attribute__((packed));
+} bios_mem_info ;
 
 void dump(bios_mem_info* info)
 {

@@ -27,8 +27,6 @@ typedef struct thread
 	struct thread* next;
 }thread_t;
 
-void switch_to_user_mode();
-
 void task_init(page_directory_t*, uint32_t);
 
 void task_new_proc(uint8_t* code, uint32_t len);

@@ -8,12 +8,15 @@
 #include <drivers/console.h>
 
 extern uint32_t read_eip();
+extern void perform_task_switch(uint32_t eip, uint32_t ebp, uint32_t esp, uint32_t dir_addr);
 
-extern void move_stack(void *new_stack_start, uint32_t size, uint32_t initial_esp);
+extern heap_t* kheap;
+
+//extern void move_stack(void *new_stack_start, uint32_t size, uint32_t initial_esp);
 
 #define KERNEL_STACK_SIZE 2048
 
-process_t* k_proc; //The kernal execution context
+process_t* k_proc = 0; //The kernal execution context
 thread_t* current_thread = 0;
 uint32_t next_pid = 0;
 
@@ -25,40 +28,39 @@ void switch_task();
 
 void on_timer(isr_state_t* regs)
 {
+	//con_printf("Timer\n");
 	switch_task();
 }
 
 void switch_task()
 {
-	if(!tt /*|| !current_thread*/)
+	if(tt < 2 /*|| !current_thread*/)
 		return;
 	//tt=0;
-
-	//con_printf("switch_task()\n");
+	process_t* next_proc = 0;
+	uint32_t dummy;
+	uint32_t* esp_ptr;
 
 	uint32_t esp, ebp, eip;
-	asm volatile("mov %%esp, %0" : "=r"(esp));
-	asm volatile("mov %%ebp, %0" : "=r"(ebp));
+	//asm volatile("mov %%esp, %0" : "=r"(esp));
+	//asm volatile("mov %%ebp, %0" : "=r"(ebp));
 	eip = read_eip();
 	if (eip == 0x12345)
-	{
-		//con_write("\n\nswitched\n\n");
 		return;
-	}
-
-	//con_printf("Saved eip %x\n", eip);
-
-	process_t* next_proc = 0;
 
 	if(current_thread)
 	{
 		current_thread->eip = eip;
 		current_thread->ebp = ebp;
 		current_thread->esp = esp;
+		esp_ptr = &current_thread->esp;
 		next_proc = current_thread->process->next;
 	}
 	if(next_proc == 0)
+	{
 		next_proc = test_p;
+		esp_ptr = &dummy;
+	}
 
 	current_thread = next_proc->main_thread;
 
@@ -67,56 +69,26 @@ void switch_task()
 	esp = current_thread->esp;
 	
 	//con_printf("Switching to %x eip %x ebp %x esp %x\n", next_proc->id, current_thread->eip, current_thread->ebp, current_thread->esp);
+	con_printf("Switching to %x %x\n", next_proc->id, esp);
 
-	//current_directory = next_proc->pages;
-
-	
-	/*
-	asm volatile("         \
-      cli;                 \
-	  mov %4, %%ebx; \
-      mov %0, %%ecx;       \
-      mov %1, %%esp;       \
-      mov %2, %%ebp;       \
-      mov %3, %%cr3;       \
-      mov $0x12345, %%eax; \
-      sti;                 \
-      jmp *%%ecx           "
-		: : "r"(eip), "r"(esp), "r"(ebp), "r"(current_directory->physicalAddr), "r"(next_proc->id));
-	//	tt=0;
-	*/
-	con_printf("Switching to %x\n", next_proc->id);
-
-	//switch_page_directory(next_proc->pages);
-	
-	//bochs_dbg();
-
-	
 	current_directory = next_proc->pages;
 	set_kernel_stack(current_thread->k_stack + KERNEL_STACK_SIZE);
-	
 	//bochs_dbg();
-	asm volatile ("		\
-		cli;			\
-		mov %0, %%ecx;	\
-		mov %1, %%ebp;	\
-		mov %2, %%esp;	\
-		mov %3, %%cr3;       \
-		mov $0x12345, %%eax; \
-		sti;			\
-		jmp %%ecx		"
-		: : "r" (next_proc->main_thread->eip),
-			"r"(next_proc->main_thread->ebp),
-			"r"(next_proc->main_thread->esp),
-			"r"(next_proc->pages->physicalAddr)
-		: "eax", "ecx");
+
+	perform_task_switch(next_proc->main_thread->eip,
+			esp_ptr,
+			next_proc->main_thread->esp,
+			next_proc->pages->physicalAddr);
+
+	//bochs_dbg();
+	//task_switch2()
 }
 
 void idle_task()
 {
-	for(;;);
+	for(;;)
+		con_write("Going idle\n");
 }
-
 
 void task_new_proc(uint8_t* code, uint32_t len)
 {
@@ -136,8 +108,7 @@ void task_new_proc(uint8_t* code, uint32_t len)
 	uint32_t entry = start;
 	memcpy((uint8_t*)start, code, len);
 
-	*((uint8_t*)start+0x400) = (uint8_t)p->id + 7;
-
+	*((uint8_t*)start+0x400) = (uint8_t)p->id;
 	
 	//heap at 0x00700000
 	start = 0x00700000;
@@ -155,44 +126,55 @@ void task_new_proc(uint8_t* code, uint32_t len)
 	if (p->id == 1)
 	{
 		p->main_thread->stack_top = (uint32_t)alloc(0x1000, 1, p->heap) + 0x1000;
-
 	}
 
 	p->main_thread->k_stack = kmalloc(KERNEL_STACK_SIZE);
+	uint32_t addr = p->main_thread->k_stack + KERNEL_STACK_SIZE - 4;
+	con_printf("addr = %x\n", addr);
+	*(uint32_t*)(p->main_thread->k_stack + KERNEL_STACK_SIZE - 4) = entry;
+//	if (p->id == 1)
+	//	*(uint32_t*)(p->main_thread->k_stack + KERNEL_STACK_SIZE - 4) = &idle_task;
+
+	*(uint32_t*)(p->main_thread->k_stack + KERNEL_STACK_SIZE - 8) = 1; //ebx
+	*(uint32_t*)(p->main_thread->k_stack + KERNEL_STACK_SIZE - 12) = 2; //esi
+	*(uint32_t*)(p->main_thread->k_stack + KERNEL_STACK_SIZE - 16) = 3; //edi
+	*(uint32_t*)(p->main_thread->k_stack + KERNEL_STACK_SIZE - 20) = p->main_thread->k_stack; //ebp
 
 	con_printf("Allocated stack at %x %x\n", p->main_thread->stack_top, p->main_thread->k_stack);
 
-	p->main_thread->esp = p->main_thread->ebp = p->main_thread->stack_top;
+	p->main_thread->esp = p->main_thread->ebp = p->main_thread->k_stack + KERNEL_STACK_SIZE - 20;
 	p->main_thread->eip = entry;
 
-	/*process_t* tmp = k_proc;
-	while(tmp->next)
-		tmp = tmp->next;
-	tmp->next = p;*/
 
-	
+	//bochs_dbg();
+	/*perform_task_switch(p->main_thread->eip,
+		p->main_thread->ebp,
+		p->main_thread->esp,
+		p->pages->physicalAddr);*/
+
+//	process_t* tmp = k_proc;
+	//while(tmp->next)
+		//tmp = tmp->next;
+	//tmp->next = p;
+	/*
+	if (!current_thread)
+		current_thread = p->main_thread;
+	else
+		current_thread->process->next = p;
+*/
 	if(test_p)
 	{
 		test_p->next = p;
-		tt = 1;
 
-		switch_page_directory(test_p->pages);
-		con_printf("magic 0 %x %x\n", test_p->pages, *((uint8_t*)0x00500000 + 0x400));
-		switch_page_directory(test_p->next->pages);
-		con_printf("magic 1 %x %x\n", test_p->next->pages, *((uint8_t*)0x00500000 + 0x400));
 	}
 	else
 	{
 		test_p = p;
-		switch_page_directory(test_p->pages);
-		con_printf("magic 0 %x %x\n", test_p->pages, *((uint8_t*)0x00500000 + 0x400));
-
 	}
-
+	
 	switch_page_directory(kernel_directory);
-	//tt = 1;
+	tt++;
 	enable_interrupts();
-
 }
 
 void task_init(page_directory_t* kernel_pages, uint32_t initial_esp)
@@ -204,15 +186,18 @@ void task_init(page_directory_t* kernel_pages, uint32_t initial_esp)
     set_kernel_stack(initial_esp);
 
 	k_proc = (process_t*)kmalloc(sizeof(process_t));
-	k_proc->id = 0;
+	k_proc->id = next_pid++;
 	k_proc->pages = kernel_pages;
+	k_proc->heap = kheap;
 	k_proc->next = 0;
 	k_proc->main_thread = (thread_t*)kmalloc(sizeof(thread_t));
 	k_proc->main_thread->process = k_proc;
-	k_proc->main_thread->ebp = initial_esp;
-	k_proc->main_thread->esp = initial_esp;
-	k_proc->main_thread->eip = (uint32_t)&idle_task;
-	k_proc->main_thread->k_stack = initial_esp - KERNEL_STACK_SIZE;
+	k_proc->main_thread->stack_top = (uint32_t)alloc(0x1000, 1, kheap) + 0x1000;
+
+	k_proc->main_thread->ebp = k_proc->main_thread->stack_top;
+	k_proc->main_thread->esp = k_proc->main_thread->stack_top;
+	k_proc->main_thread->eip = &idle_task;
+	k_proc->main_thread->k_stack = kmalloc_a(KERNEL_STACK_SIZE);
 	k_proc->main_thread->next = 0;
 	//current_thread = k_proc->main_thread;
     enable_interrupts();

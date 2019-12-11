@@ -87,11 +87,11 @@ static void idt_set_entry(uint8_t num, uint32_t base)
     idt_entries[num].base_high = (base >> 16) && 0xFFFF;
     idt_entries[num].base_low = base & 0xFFFF;
     idt_entries[num].seg_sel = 0x08; //kernel code selector
-    idt_entries[num].flags = 0x8E;
+    idt_entries[num].flags = 0x8E | 0x60;
     idt_entries[num].unused = 0;
 
-	if(num == ISR_SYSCALL)
-		idt_entries[num].flags |= 0x60;
+	//if(num == ISR_SYSCALL)
+		//idt_entries[num].flags |= 0x60;
 }
 
 void idt_init()

@@ -7,6 +7,8 @@
 #include <kernel/x86/interrupts.h>
 #include <drivers/console.h>
 
+extern void enable_paging();
+
 page_directory_t* kernel_directory = 0;
 page_directory_t* current_directory = 0;
 
