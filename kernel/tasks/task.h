@@ -19,12 +19,9 @@ typedef struct process
 typedef struct thread
 {
 	process_t* process;
-	uint32_t ebp;
 	uint32_t esp;
-	uint32_t eip;
 	uint32_t k_stack;
-	uint32_t stack_top;
-	struct thread* next;
+	//struct thread* next;
 }thread_t;
 
 void task_init(page_directory_t*, uint32_t);

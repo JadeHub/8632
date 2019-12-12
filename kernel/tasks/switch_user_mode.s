@@ -1,8 +1,7 @@
 [GLOBAL switch_to_user_mode]
 switch_to_user_mode:
     cli
-    xchg ebx, ebx
-    mov ax, 0x23
+    mov ax, 0x23    ; user data (gdt index 4)
     mov ds, ax
     mov es, ax
     mov fs, ax
@@ -16,39 +15,33 @@ switch_to_user_mode:
     pop eax
     or eax, 0x200
     push eax
-    push long 0x1B	;CS
+    push long 0x1B	;CS 0x1B = user code (gdt index 3)
     push $cont      ;Address
     iret
 cont:
     ret
 
-[GLOBAL read_eip]
-read_eip:
-    pop eax                     ; Get the return address
-    jmp eax
-
 [GLOBAL perform_task_switch]
 perform_task_switch:
 	;xchg bx, bx
-	mov edx, [esp+8]  ; esp ptr
-    mov eax, [esp+16] ; physical address of current directory
-    mov ecx, [esp+12] ; ESP
-	
-	push ebx
+	mov edx, [esp+4]    ; esp ptr
+    mov ecx, [esp+8]    ; ESP
+    mov eax, [esp+12]   ; physical address of current directory
+    
+    ;  For cdecl; EAX, ECX, and EDX are already saved by the caller and dont need to be saved again
+	push ebx            ; push the current state onto the stack
     push esi
     push edi
     push ebp
 
-	mov [edx], esp
-	mov esp, ecx
-	mov cr3, eax       ; set the page directory
+	mov [edx], esp      ; save the current esp
+	mov esp, ecx        ; set new esp
+	mov cr3, eax        ; set the page directory
 
-	pop ebp
+	pop ebp             ; now pop off the new stack
     pop edi
     pop esi
-    pop ebx
- 
+    pop ebx 
 	sti
     ret   
 	
-

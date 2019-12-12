@@ -94,21 +94,21 @@ static void write_tss(int32_t num, uint16_t ss0, uint32_t esp0)
 
 void set_kernel_stack(uint32_t stack)
 {
-	con_printf("Setting K Stack %x\n", stack);
+	//con_printf("Setting K Stack %x\n", stack);
     tss_entry.esp0 = stack;
 }
 
 void gdt_init()
 {
-   gdt_ptr.base = (uint32_t)&gdt_entries;
-   gdt_ptr.limit = (sizeof(gdt_entry_t) * 6) - 1;
+    gdt_ptr.base = (uint32_t)&gdt_entries;
+    gdt_ptr.limit = (sizeof(gdt_entry_t) * 6) - 1;
 	
-	gdt_set_gate(0, 0, 0, 0, 0);
-	gdt_set_gate(1, 0, 0xFFFFFFFF, 0x9A, 0xCF);	// code seg
-	gdt_set_gate(2, 0, 0xFFFFFFFF, 0x92, 0xCF);	// data seg
-	gdt_set_gate(3, 0, 0xFFFFFFFF, 0xFA, 0xCF);	// user code seg
-	gdt_set_gate(4, 0, 0xFFFFFFFF, 0xF2, 0xCF);	// user data seg
-   write_tss(5, 0x10, 0x0);
+    gdt_set_gate(0, 0, 0, 0, 0);
+    gdt_set_gate(1, 0, 0xFFFFFFFF, 0x9A, 0xCF);	// code seg
+    gdt_set_gate(2, 0, 0xFFFFFFFF, 0x92, 0xCF);	// data seg
+    gdt_set_gate(3, 0, 0xFFFFFFFF, 0xFA, 0xCF);	// user code seg
+    gdt_set_gate(4, 0, 0xFFFFFFFF, 0xF2, 0xCF);	// user data seg
+    write_tss(5, 0x10, 0x0);
 
    gdt_flush((uint32_t) &gdt_ptr);
    tss_flush();
