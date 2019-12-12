@@ -43,10 +43,19 @@ void kmain(uint32_t esp)
 
 	con_printf("Read Prog %x %x %x %x\n", buff[0], buff[1], buff[2], buff[3]);
 
+	disable_interrupts();
+
 	task_new_proc(buff, 512);
 	task_new_proc(buff, 512);
 
+	bochs_dbg();
 	switch_to_user_mode();
+
+	//uint32_t* add = 0x1000;
+	//*add = 0x42;
+	//uint32_t b = *add;
+
+	//con_printf("\n%x\n", *add);
 	
 	for (;;);
 }

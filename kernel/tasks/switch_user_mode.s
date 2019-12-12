@@ -1,6 +1,7 @@
 [GLOBAL switch_to_user_mode]
 switch_to_user_mode:
     cli
+    xchg ebx, ebx
     mov ax, 0x23
     mov ds, ax
     mov es, ax
@@ -28,10 +29,10 @@ read_eip:
 
 [GLOBAL perform_task_switch]
 perform_task_switch:
-	xchg bx, bx
+	;xchg bx, bx
 	mov edx, [esp+8]  ; esp ptr
-    mov eax, [esp+16]   ; physical address of current directory
-    mov ecx, [esp+12]  ; ESP
+    mov eax, [esp+16] ; physical address of current directory
+    mov ecx, [esp+12] ; ESP
 	
 	push ebx
     push esi

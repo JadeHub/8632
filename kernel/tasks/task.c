@@ -41,18 +41,18 @@ void switch_task()
 	uint32_t dummy;
 	uint32_t* esp_ptr;
 
-	uint32_t esp, ebp, eip;
+	//uint32_t esp, ebp, eip;
 	//asm volatile("mov %%esp, %0" : "=r"(esp));
 	//asm volatile("mov %%ebp, %0" : "=r"(ebp));
-	eip = read_eip();
-	if (eip == 0x12345)
-		return;
+	//eip = read_eip();
+	//if (eip == 0x12345)
+	//	return;
 
 	if(current_thread)
 	{
-		current_thread->eip = eip;
-		current_thread->ebp = ebp;
-		current_thread->esp = esp;
+	//	current_thread->eip = eip;
+		//current_thread->ebp = ebp;
+		//current_thread->esp = esp;
 		esp_ptr = &current_thread->esp;
 		next_proc = current_thread->process->next;
 	}
@@ -64,12 +64,12 @@ void switch_task()
 
 	current_thread = next_proc->main_thread;
 
-	eip = current_thread->eip;
-	ebp = current_thread->ebp;
-	esp = current_thread->esp;
+	//eip = current_thread->eip;
+	//ebp = current_thread->ebp;
+	//esp = current_thread->esp;
 	
 	//con_printf("Switching to %x eip %x ebp %x esp %x\n", next_proc->id, current_thread->eip, current_thread->ebp, current_thread->esp);
-	con_printf("Switching to %x %x\n", next_proc->id, esp);
+	con_printf("Switching to %x\n", next_proc->id);
 
 	current_directory = next_proc->pages;
 	set_kernel_stack(current_thread->k_stack + KERNEL_STACK_SIZE);
@@ -92,7 +92,7 @@ void idle_task()
 
 void task_new_proc(uint8_t* code, uint32_t len)
 {
-	disable_interrupts();
+	//disable_interrupts();
 
 	process_t* p = (process_t*)kmalloc(sizeof(process_t));
 	p->id = next_pid++;
@@ -103,7 +103,7 @@ void task_new_proc(uint8_t* code, uint32_t len)
 	switch_page_directory(p->pages);
 	//code at 0x00500000
 	uint32_t start = 0x00500000;
-	uint32_t end = start + 0x1000;
+	uint32_t end = start + 0x3000;
 	alloc_pages(p->pages, start, end);
 	uint32_t entry = start;
 	memcpy((uint8_t*)start, code, len);
@@ -165,6 +165,7 @@ void task_new_proc(uint8_t* code, uint32_t len)
 	if(test_p)
 	{
 		test_p->next = p;
+		p->next = test_p;
 
 	}
 	else
@@ -174,12 +175,12 @@ void task_new_proc(uint8_t* code, uint32_t len)
 	
 	switch_page_directory(kernel_directory);
 	tt++;
-	enable_interrupts();
+	//enable_interrupts();
 }
 
 void task_init(page_directory_t* kernel_pages, uint32_t initial_esp)
 {
-    disable_interrupts();
+   // disable_interrupts();
 
     // Relocate the stack so we know where it is.
     //move_stack((void*)0xE0000000, 0x2000, initial_esp);
@@ -200,6 +201,6 @@ void task_init(page_directory_t* kernel_pages, uint32_t initial_esp)
 	k_proc->main_thread->k_stack = kmalloc_a(KERNEL_STACK_SIZE);
 	k_proc->main_thread->next = 0;
 	//current_thread = k_proc->main_thread;
-    enable_interrupts();
+  //  enable_interrupts();
 }
 

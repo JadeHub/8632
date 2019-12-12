@@ -167,7 +167,7 @@ void idt_init()
 	idt_set_entry(47, (uint32_t) irq15);
 
     idt_flush((uint32_t) &idt_ptr);
-	enable_interrupts();
+	//enable_interrupts();
 }
 
 void enable_interrupts()
