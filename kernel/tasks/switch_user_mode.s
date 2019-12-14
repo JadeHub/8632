@@ -43,6 +43,29 @@ start_user_mode_thread:
     push ebx      ; Address
     iret
 
+[GLOBAL start_kernel_mode_thread]
+start_kernel_mode_thread:
+    cli
+    xchg ebx, ebx
+    mov ax, 0x10    ; data (gdt index 2)
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    
+    mov ebx, [esp+4]    ; addr    
+
+    mov eax, esp
+    push long 0x10  ;SS
+    push eax        ;ESP
+    pushf           ;Flags
+    pop eax
+    or eax, 0x200 ; enable interrupts
+    push eax
+    push long 0x08	;CS code (gdt index 1)
+    push ebx      ; Address
+    iret
+
 [GLOBAL perform_task_switch]
 perform_task_switch:
 	mov edx, [esp+4]    ; esp ptr

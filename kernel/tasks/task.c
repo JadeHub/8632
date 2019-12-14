@@ -8,6 +8,7 @@
 #include <kernel/fault.h>
 #include <drivers/console.h>
 
+extern void start_kernel_mode_thread(uint32_t entry);
 extern void start_user_mode_thread(uint32_t entry);
 extern void perform_task_switch(uint32_t* esp_out, uint32_t esp, uint32_t dir_addr);
 
@@ -44,6 +45,7 @@ void switch_task()
 	{
 		esp_ptr = &current_thread->esp;
 		current_thread = get_next_thread();
+		//dont switch to same thread
 		if (*esp_ptr == current_thread->esp) return;
 	}
 	else
@@ -74,11 +76,11 @@ void idle_task()
 //called by perform_task_switch() the first time a thread is run
 void thread_entry(uint32_t entry)
 {
-	//bochs_dbg();
+	//setup thread here
 	start_user_mode_thread(entry);
 }
 
-thread_t* create_thread(uint32_t entry)
+thread_t* create_thread(uint32_t entry, uint8_t kernel_mode)
 {
 	thread_t* t = (thread_t*)kmalloc(sizeof(thread_t));
 
@@ -87,7 +89,7 @@ thread_t* create_thread(uint32_t entry)
 	t->k_stack = kmalloc(KERNEL_STACK_SIZE);
 	//setup the stack so that we will return from perform_task_switch() to the entry point
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 4) = entry;
-	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 12) = &thread_entry;
+	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 12) = kernel_mode ? &start_kernel_mode_thread : &thread_entry;
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 16) = 0; //ebx
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 20) = 0; //esi
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 24) = 0; //edi
@@ -125,14 +127,9 @@ void task_new_proc(uint8_t* code, uint32_t len)
 
 	switch_page_directory(kernel_directory);
 
-	p->main_thread = create_thread(entry);
+	p->main_thread = create_thread(entry, 0);
 	p->main_thread->process = p;
 	
-	if (!k_proc)
-	{
-		k_proc = p;
-		return;
-	}
 	process_t* tmp = k_proc;
 	while (tmp->next)
 		tmp = tmp->next;
@@ -142,13 +139,12 @@ void task_new_proc(uint8_t* code, uint32_t len)
 void task_init(page_directory_t* kernel_pages, uint32_t initial_esp)
 {
 	set_kernel_stack(initial_esp);
-	return;
 	k_proc = (process_t*)kmalloc(sizeof(process_t));
 	k_proc->id = next_pid++;
 	k_proc->pages = kernel_pages;
 	k_proc->heap = kheap;
 	k_proc->next = 0;
-	k_proc->main_thread = create_thread(&idle_task);
+	k_proc->main_thread = create_thread((uint32_t)&idle_task, 1);
 	k_proc->main_thread->process = k_proc;
 }
 
