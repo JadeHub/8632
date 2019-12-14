@@ -21,9 +21,30 @@ switch_to_user_mode:
 cont:
     ret
 
+[GLOBAL start_user_mode_thread]
+start_user_mode_thread:
+    cli
+    mov ax, 0x23    ; user data (gdt index 4)
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    
+    mov ebx, [esp+4]    ; addr    
+
+    mov eax, esp
+    push long 0x23  ;SS
+    push eax        ;ESP
+    pushf           ;Flags
+    pop eax
+    or eax, 0x200 ; enable interrupts
+    push eax
+    push long 0x1B	;CS 0x1B = user code (gdt index 3)
+    push ebx      ; Address
+    iret
+
 [GLOBAL perform_task_switch]
 perform_task_switch:
-	;xchg bx, bx
 	mov edx, [esp+4]    ; esp ptr
     mov ecx, [esp+8]    ; ESP
     mov eax, [esp+12]   ; physical address of current directory
@@ -41,7 +62,6 @@ perform_task_switch:
 	pop ebp             ; now pop off the new stack
     pop edi
     pop esi
-    pop ebx 
-	sti
+    pop ebx
     ret   
 	

@@ -45,13 +45,11 @@ void kmain(uint32_t esp)
 
 	disable_interrupts();
 
-	for (uint32_t o = 0; o < 10; o++)
-	{
-		task_new_proc(buff, 512);
-	//	task_new_proc(buff, 512);
-	}
+	task_new_proc(buff, 512);
+	task_new_proc(buff, 512);
 
-//	bochs_dbg();
+
+	//bochs_dbg();
 	switch_to_user_mode();
 	
 	for (;;);
