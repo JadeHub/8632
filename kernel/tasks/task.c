@@ -52,7 +52,7 @@ void switch_task()
 	{
 		//launch first task
 		current_thread = k_proc->main_thread;
-		esp_ptr = &dummy;
+		//esp_ptr = &dummy;
 	}
 
 	current_directory = current_thread->process->pages;
@@ -78,6 +78,7 @@ void thread_entry(uint32_t entry)
 {
 	//setup thread here
 	start_user_mode_thread(entry);
+	//clean up here
 }
 
 thread_t* create_thread(uint32_t entry, uint8_t kernel_mode)
@@ -87,9 +88,9 @@ thread_t* create_thread(uint32_t entry, uint8_t kernel_mode)
 	t->process = 0;
 
 	t->k_stack = kmalloc(KERNEL_STACK_SIZE);
-	//setup the stack so that we will return from perform_task_switch() to the entry point
+	//setup the stack so that we will return from perform_task_switch() to the function with the entry point on the stack
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 4) = entry;
-	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 12) = kernel_mode ? &start_kernel_mode_thread : &thread_entry;
+	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 12) = kernel_mode ? (uint32_t)&start_kernel_mode_thread : (uint32_t)&thread_entry;
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 16) = 0; //ebx
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 20) = 0; //esi
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 24) = 0; //edi

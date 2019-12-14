@@ -1,4 +1,4 @@
-CFLAGS=-m32 -std=gnu99 -fno-exceptions -ffreestanding -I ./
+CFLAGS=-m32 -std=gnu99 -I ./
 
 C_SOURCES = $(wildcard \
 kernel/*.c \
@@ -8,7 +8,8 @@ kernel/tasks/*.c \
 drivers/*.c \
 drivers/keyboard/*.c \
 drivers/ata/*.c \
-drivers/timer/*.c)
+drivers/timer/*.c \
+drivers/serial/*.c)
 
 HEADERS = $(wildcard \
 kernel/*.h \
@@ -18,15 +19,18 @@ kernel/tasks/*.h \
 drivers/*.h \
 drivers/keyboard/*.h \
 drivers/ata/*.h \
-drivers/timer/*.h)
+drivers/timer/*.h \
+drivers/serial/*.h)
 
 ASM_SOURCES = $(wildcard kernel/x86/*.s \
 kernel/memory/*.s \
 kernel/tasks/*.s \
 drivers/*.s)
 
-OBJ = ${C_SOURCES:.c=.o}
+KERNEL_OBJ = ${C_SOURCES:.c=.o}
 ASM_OBJ = ${ASM_SOURCES:.s=.o}
+
+$(KERNEL_OBJ): K_CFLAGS := -fno-exceptions -ffreestanding
 
 all: os-image
 
@@ -39,11 +43,11 @@ bochs: all
 os-image: boot/boot_sect.bin boot/stage2.bin kernel.bin 
 		cat $^ > os-image
 
-kernel.bin: kernel/kernel_entry.o ${OBJ} ${ASM_OBJ}
+kernel.bin: kernel/kernel_entry.o ${KERNEL_OBJ} ${ASM_OBJ}
 		 ~/gcc_i386/i386-elf/bin/ld -o $@ -Tlink.ld  $^ --oformat binary
 
 %.o: %.c ${HEADERS}
-		~/gcc_i386/bin/i386-elf-gcc ${CFLAGS} -c $< -o $@
+		~/gcc_i386/bin/i386-elf-gcc ${CFLAGS} ${K_CFLAGS} -c $< -o $@
 
 %.o: %.asm
 		nasm $< -f elf32 -o $@

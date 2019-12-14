@@ -9,6 +9,7 @@
 
 #define IRQ0 32
 #define IRQ1 33
+#define IRQ4 36
 
 typedef struct isr_state
 {

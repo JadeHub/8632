@@ -84,9 +84,7 @@ static void page_fault(isr_state_t* regs)
     if (reserved) {con_write("reserved ");}
     con_write(") at 0x");
     con_write_hex(faulting_address);
-    con_write(" - EIP: ");
-    con_write_hex(regs->eip);
-    con_write("\n");
+    con_printf(" - EIP: %x\n", regs->eip);
     KPANIC("Page fault");
 }
 

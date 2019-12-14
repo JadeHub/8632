@@ -3,7 +3,7 @@ SECTIONS
 {
 	.text 0x91E6 :
 	{
-		code = .; _code = .; __code = .;
+		start = .; code = .; _code = .; __code = .;
 		*(.text)
 		. = ALIGN(4096);
 	}

@@ -12,6 +12,7 @@
 #include <kernel/memory/kheap.h>
 
 #include <drivers/ata/ata.h>
+#include <drivers/serial/serial_io.h>
 
 #include "tasks/task.h"
 #include "syscall.h"
@@ -26,30 +27,25 @@ void kmain(uint32_t esp)
 	gdt_init();
 	idt_init();
 	fault_init();
+	serial_init();
 	timer_init(1);
 	page_directory_t* kpages = paging_init();	
-	
-	//bochs_dbg();
 	task_init(kpages, esp);
-	//bochs_dbg();
 	kb_init();
 	syscall_init();
-
 	ata_init();
 
 	uint8_t buff [512];
-
 	ata_read(buff, 0, 1);
 
 	con_printf("Read Prog %x %x %x %x\n", buff[0], buff[1], buff[2], buff[3]);
 
-	disable_interrupts();
-
 	task_new_proc(buff, 512);
 	task_new_proc(buff, 512);
 
+	KLOG(LL_ERR, "KERNEL", "Kernel initialisation %x", 0);
 
-	//bochs_dbg();
+	bochs_dbg();
 	switch_to_user_mode();
 	
 	for (;;);

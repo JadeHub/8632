@@ -5,3 +5,5 @@ memory: guest=1024, host=128
 #log: bochsout.txt
 magic_break: enabled=1
 ata0-master: type=disk, path="hdd.img", mode=flat
+com1: enabled=1, mode=file, dev=serial.txt
+
