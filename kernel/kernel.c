@@ -23,14 +23,19 @@ extern void switch_to_user_mode();
 void kmain(uint32_t esp)
 {
 	con_init();
-	con_write("Hello World\n");
+	con_write("Hello World2\n");
 	gdt_init();
+	con_write("gdt\n");
 	idt_init();
+	con_write("idt\n");
 	fault_init();
-	serial_init();
+	//serial_init();
 	timer_init(1);
-	page_directory_t* kpages = paging_init();	
+	con_write("timer\n");
+	page_directory_t* kpages = paging_init();
+	con_write("paging\n");
 	task_init(kpages, esp);
+	con_write("Task\n");
 	kb_init();
 	syscall_init();
 	ata_init();

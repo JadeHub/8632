@@ -1,9 +1,11 @@
 #display_library: x, options="gui_debug"
-floppya: 1_44=os-image, status=inserted
-boot: a
+#floppya: 1_44=os-image, status=inserted
+#boot: a
+ata0-slave: type=cdrom, path=kernel.iso, status=inserted
+boot:cdrom
 memory: guest=1024, host=128
 #log: bochsout.txt
 magic_break: enabled=1
 ata0-master: type=disk, path="hdd.img", mode=flat
-com1: enabled=1, mode=term, dev=/dev/tty8
+#com1: enabled=1, mode=term, dev=/dev/tty8
 

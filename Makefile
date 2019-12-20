@@ -30,9 +30,9 @@ drivers/*.s)
 KERNEL_OBJ = ${C_SOURCES:.c=.o}
 ASM_OBJ = ${ASM_SOURCES:.s=.o}
 
-$(KERNEL_OBJ): K_CFLAGS := -fno-exceptions -ffreestanding
+$(KERNEL_OBJ): K_CFLAGS := -fno-exceptions -ffreestanding 
 
-all: os-image
+all: kernel.iso
 
 run: all
 		qemu-system-i386 -fda os-image
@@ -40,14 +40,14 @@ run: all
 bochs: all
 		bochs
 
-os-image: boot/boot_sect.bin boot/stage2.bin kernel.bin 
-		cat $^ > os-image
+kernel.iso: kernel.bin
+		./make_iso.sh
 
-kernel.bin: kernel/kernel_entry.o ${KERNEL_OBJ} ${ASM_OBJ}
-		 ~/gcc_i386/i386-elf/bin/ld -o $@ -Tlink.ld  $^ --oformat binary
+kernel.bin: multiboot/multiboot.o ${KERNEL_OBJ} ${ASM_OBJ}
+		i386-elf-gcc -T link.ld -o kernel.bin $^ -ffreestanding -O2 -nostdlib -lgcc 
 
 %.o: %.c ${HEADERS}
-		~/gcc_i386/bin/i386-elf-gcc ${CFLAGS} ${K_CFLAGS} -c $< -o $@
+		i386-elf-gcc ${CFLAGS} ${K_CFLAGS} -c $< -o $@
 
 %.o: %.asm
 		nasm $< -f elf32 -o $@
@@ -58,8 +58,8 @@ kernel.bin: kernel/kernel_entry.o ${KERNEL_OBJ} ${ASM_OBJ}
 boot/boot_sect.bin: boot/boot_sect.asm
 		nasm $< -f bin -o $@
 
-boot/stage2.bin: boot/stage2.asm
-		nasm $< -f bin -o $@	
+multiboot/multiboot.o: multiboot/multiboot.asm
+		nasm $< -felf -o $@
 
 %.bin: %.o
 		nasm $< -f bin -o $@

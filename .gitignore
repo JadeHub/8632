@@ -1,3 +1,5 @@
+isodir/
+*.iso
 serial.txt
 .vs/
 .vscode
