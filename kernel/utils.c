@@ -63,9 +63,13 @@ void printf_helper(void (*emit)(char), const char* format, va_list args)
 
 		i++;
 		int32_t intv;
-
+		uint8_t ch;
 		switch (format[i])
 		{
+		case 'c':
+			ch = va_arg(args, int);
+			(*emit)(ch);
+			break;
 		case 'd':
 			intv = va_arg(args, int32_t);
 			if (intv < 0)

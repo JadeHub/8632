@@ -1,2 +1,2 @@
-make && bochs -q -rc debug.rc 
+make && sudo bochs -q -rc debug.rc 
 

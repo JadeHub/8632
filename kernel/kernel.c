@@ -42,10 +42,10 @@ void kmain(uint32_t esp)
 
 	task_new_proc(buff, 512);
 	task_new_proc(buff, 512);
+	con_printf("writing\n");
+	KLOG(LL_ERR, "KERNEL", "Initialisation %x", 0);
 
-	KLOG(LL_ERR, "KERNEL", "Kernel initialisation %x", 0);
-
-	bochs_dbg();
+	//bochs_dbg();
 	switch_to_user_mode();
 	
 	for (;;);

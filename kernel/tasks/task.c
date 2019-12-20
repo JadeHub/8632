@@ -52,7 +52,7 @@ void switch_task()
 	{
 		//launch first task
 		current_thread = k_proc->main_thread;
-		//esp_ptr = &dummy;
+		esp_ptr = &dummy;
 	}
 
 	current_directory = current_thread->process->pages;
@@ -68,7 +68,7 @@ void idle_task()
 	for (;;)
 	{
 		disable_interrupts();
-		con_write("Going idle\n");
+	//	con_write("Going idle\n");
 		enable_interrupts();
 	}
 }

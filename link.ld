@@ -1,6 +1,7 @@
 ENTRY(start)
 SECTIONS
 {
+	/*0x91E6 = 0x9000 (kernel entry point) + 0x01E6 (486 size of stage 2)*/
 	.text 0x91E6 :
 	{
 		start = .; code = .; _code = .; __code = .;

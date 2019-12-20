@@ -193,7 +193,7 @@ void isr_handler(isr_state_t regs)
 		isr_callback_t handler = isr_handlers[regs.int_no];
 		handler(&regs);
 	}
-    else 
+    else
     {
 		con_printf("unhandled isr: %x\n", regs.int_no);
 	}
@@ -209,5 +209,9 @@ void irq_handler(isr_state_t regs)
 	{
 		isr_callback_t handler = isr_handlers[regs.int_no];
 		handler(&regs);
+	}
+	else
+	{
+		con_printf("unhandled irq: %x\n", regs.int_no);
 	}
 }

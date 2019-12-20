@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#define ISR6 6
 #define ISR13 13
 #define ISR14 14
 

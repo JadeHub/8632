@@ -20,7 +20,7 @@ static void syscall_print(const char* str)
 
 static void syscall_print_hex(const char* str, uint32_t v)
 {
-	con_printf("Value %s = %x\n", str, v);
+	//con_printf("Value %s = %x\n", str, v);
 }
 
 static void syscall_exit(uint32_t code)

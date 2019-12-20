@@ -16,11 +16,19 @@ typedef struct process
 	struct process* next;
 }process_t;
 
+typedef enum
+{
+	TS_RUNNING,
+	TS_READY_TO_RUN,
+	TS_BLOCKED
+} ThreadState;
+
 typedef struct thread
 {
 	process_t* process;
 	uint32_t esp;
 	uint32_t k_stack;
+	ThreadState state;
 	//struct thread* next;
 }thread_t;
 
