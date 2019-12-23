@@ -15,103 +15,34 @@ void memcpy(uint8_t *dest, const uint8_t *src, uint32_t len)
     for(; len != 0; len--) *dp++ = *sp++;
 }
 
-static void emit_str(void (*emit)(char), const char* str)
+uint32_t strlen(const char* buff)
 {
-	const char* c = str;
+	uint32_t res = 0;
+	while (*buff++ != '\0')
+		res++;
+	return res;
+}
 
-	while (*c)
+int strcmp(const char* lhs, const char* rhs)
+{
+	while (*lhs != 0 && *rhs != 0)
 	{
-		(emit)(*c);
-		c++;
+		if (*lhs != *rhs)
+			return *lhs - *rhs;
+		lhs++;
+		rhs++;
 	}
+	return 0;
 }
 
-static void int_out(uint32_t v, int base, const char* digits, void (*emit)(char))
+char* strcpy(char* dest, const char* source)
 {
-	char buff[64];
-	char* p = buff;
+	char* ret = dest;
 
-	uint32_t counter = v;
-	do
+	while (*source != '\0')
 	{
-		p++;
-		counter = counter / base;
-
-	} while (counter);
-
-	*p = '\0';
-	do
-	{
-		*--p = digits[v % base];
-		v = v / base;
-
-	} while (v);
-	emit_str(emit, buff);
-}
-
-void printf_helper(void (*emit)(char), const char* format, va_list args)
-{
-	const char* digits = "0123456789ABCDEF";
-
-	for (int i = 0; format[i]; i++)
-	{
-		if (format[i] != '%')
-		{
-			(*emit)(format[i]);
-			continue;
-		}
-
-		i++;
-		int32_t intv;
-		uint8_t ch;
-		switch (format[i])
-		{
-		case 'c':
-			ch = va_arg(args, int);
-			(*emit)(ch);
-			break;
-		case 'd':
-			intv = va_arg(args, int32_t);
-			if (intv < 0)
-			{
-				(*emit)('-');
-				intv *= -1;
-			}
-			int_out(intv, 10, digits, emit);
-			break;
-		case 'u':
-			int_out(va_arg(args, uint32_t), 10, digits, emit);
-			break;
-		case 'x':
-			emit_str(emit, "0x");
-			int_out(va_arg(args, uint32_t), 16, digits, emit);
-			break;
-		case 's':
-			emit_str(emit, va_arg(args, char*));
-			break;
-		}
+		*dest++ = *source++;
 	}
-}
-
-char* sprintf_buff = 0;
-
-void sprintf_emit(char c)
-{
-	*sprintf_buff = c;
-	sprintf_buff++;
-	*sprintf_buff = 0;
-}
-
-void vsprintf(char* buff, const char* format, va_list args)
-{
-	sprintf_buff = buff;
-	printf_helper(&sprintf_emit, format, args);
-}
-
-void sprintf(char* buff, const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-	vsprintf(buff, format, args);
-	va_end(args);
+	*dest = '\0';
+	return ret;
 }

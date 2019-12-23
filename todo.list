@@ -1,4 +1,11 @@
 
 processes and threads
+	waiting
+		io
+		time
 file system
+time
 ipc
+
+strict warnings
+libc

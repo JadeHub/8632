@@ -10,6 +10,7 @@ struct thread;
 typedef struct process
 {
 	uint32_t id;
+	char name[20];
 	page_directory_t* pages;
 	heap_t* heap;
 	struct thread* main_thread;
@@ -23,8 +24,22 @@ typedef enum
 	TS_BLOCKED
 } ThreadState;
 
+static inline const char* thread_state_name(ThreadState ts)
+{
+	switch (ts)
+	{
+	case TS_BLOCKED:
+		return "Blocked";
+	case TS_READY_TO_RUN:
+		return "Ready to run";
+	case TS_RUNNING:
+		return "Running";
+	}
+}
+
 typedef struct thread
 {
+	uint32_t id;
 	process_t* process;
 	uint32_t esp;
 	uint32_t k_stack;
@@ -35,3 +50,6 @@ typedef struct thread
 void task_init(page_directory_t*, uint32_t);
 
 void task_new_proc(uint8_t* code, uint32_t len);
+
+process_t* task_get_proc_list();
+thread_t* task_get_cur_thread();

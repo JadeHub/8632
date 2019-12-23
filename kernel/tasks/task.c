@@ -19,6 +19,7 @@ extern heap_t* kheap;
 process_t* k_proc = 0; //The kernal execution context
 thread_t* current_thread = 0;
 uint32_t next_pid = 0;
+uint32_t next_tid = 0;
 
 void switch_task();
 
@@ -68,13 +69,13 @@ void idle_task()
 	for (;;)
 	{
 		disable_interrupts();
-	//	con_write("Going idle\n");
+		//con_write("Going idle\n");
 		enable_interrupts();
 	}
 }
 
 //called by perform_task_switch() the first time a thread is run
-void thread_entry(uint32_t entry)
+void user_thread_entry(uint32_t entry)
 {
 	//setup thread here
 	start_user_mode_thread(entry);
@@ -86,11 +87,11 @@ thread_t* create_thread(uint32_t entry, uint8_t kernel_mode)
 	thread_t* t = (thread_t*)kmalloc(sizeof(thread_t));
 
 	t->process = 0;
-
+	t->id = next_tid++;
 	t->k_stack = kmalloc(KERNEL_STACK_SIZE);
 	//setup the stack so that we will return from perform_task_switch() to the function with the entry point on the stack
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 4) = entry;
-	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 12) = kernel_mode ? (uint32_t)&start_kernel_mode_thread : (uint32_t)&thread_entry;
+	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 12) = kernel_mode ? (uint32_t)&start_kernel_mode_thread : (uint32_t)&user_thread_entry;
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 16) = 0; //ebx
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 20) = 0; //esi
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 24) = 0; //edi
@@ -106,6 +107,7 @@ void task_new_proc(uint8_t* code, uint32_t len)
 
 	process_t* p = (process_t*)kmalloc(sizeof(process_t));
 	p->id = next_pid++;
+	sprintf(p->name, "user proc %x", p->id);
 	p->next = 0;
 
 	p->pages = clone_directory(kernel_directory);
@@ -142,6 +144,7 @@ void task_init(page_directory_t* kernel_pages, uint32_t initial_esp)
 	set_kernel_stack(initial_esp);
 	k_proc = (process_t*)kmalloc(sizeof(process_t));
 	k_proc->id = next_pid++;
+	strcpy(k_proc->name, "kidle");
 	k_proc->pages = kernel_pages;
 	k_proc->heap = kheap;
 	k_proc->next = 0;
@@ -149,3 +152,12 @@ void task_init(page_directory_t* kernel_pages, uint32_t initial_esp)
 	k_proc->main_thread->process = k_proc;
 }
 
+process_t* task_get_proc_list()
+{
+	return k_proc;
+}
+
+thread_t* task_get_cur_thread()
+{
+	return current_thread;
+}

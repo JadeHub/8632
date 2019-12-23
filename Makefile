@@ -5,6 +5,7 @@ kernel/*.c \
 kernel/memory/*.c \
 kernel/x86/*.c \
 kernel/tasks/*.c \
+kernel/dbg_monitor/*.c \
 drivers/*.c \
 drivers/keyboard/*.c \
 drivers/ata/*.c \
@@ -16,6 +17,7 @@ kernel/*.h \
 kernel/memory/*.h \
 kernel/x86/*.h \
 kernel/tasks/*.h \
+kernel/dbg_monitor/*.h \
 drivers/*.h \
 drivers/keyboard/*.h \
 drivers/ata/*.h \
@@ -34,9 +36,6 @@ $(KERNEL_OBJ): K_CFLAGS := -fno-exceptions -ffreestanding
 
 all: kernel.iso
 
-run: all
-		qemu-system-i386 -fda os-image
-
 bochs: all
 		bochs
 
@@ -48,9 +47,6 @@ kernel.bin: multiboot/multiboot.o ${KERNEL_OBJ} ${ASM_OBJ}
 
 %.o: %.c ${HEADERS}
 		i386-elf-gcc ${CFLAGS} ${K_CFLAGS} -c $< -o $@
-
-%.o: %.asm
-		nasm $< -f elf32 -o $@
 
 %.o: %.s
 		nasm $< -f elf32 -o $@

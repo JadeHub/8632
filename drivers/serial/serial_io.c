@@ -22,6 +22,8 @@
 #define LSR_EMPTY_RX 64
 #define LSR_FIFO_ERR 128
 
+serial_callback_t com1_handler = 0;
+
 static uint8_t line_status(uint16_t port)
 {
 	return inb(port + LINE_STATUS_REG);
@@ -31,7 +33,6 @@ static void handle_line_status(uint16_t port)
 {
 	uint8_t status = line_status(port);
 	KLOG(LL_INFO, "Serial", "Port %x status %x", port, status);
-	
 	
 	bochs_dbg();
 }
@@ -50,13 +51,16 @@ static void handle_interrupt(uint16_t port)
 		break;
 	case (0x02):
 		//ready to write
-		con_printf("Serial ready to write\n");
+		//con_printf("Serial ready to write\n");
 		break;
 	case (0x04):
 		//data available to read
 		while (line_status(port) & LSR_DATA_READY)
 		{
-			con_printf("%c", inb(port));
+			uint8_t data = inb(port);
+			if (com1_handler)
+				com1_handler(SERIAL_PORT_COM1, data);
+			//con_printf("test %c %x\n", data, data);
 		}
 		break;
 	case (0x06):
@@ -72,12 +76,12 @@ static void serial_isr(isr_state_t* state)
 	//COM2 ...
 }
 	
-int is_transmit_empty(uint16_t port)
+static int is_transmit_empty(uint16_t port)
 {
 	return line_status(port) & LSR_EMPTY_TX;
 }
 
-static void write_char(uint16_t port, char c)
+void serial_write(uint16_t port, uint8_t c)
 {
 	while (is_transmit_empty(port) == 0);
 
@@ -99,19 +103,18 @@ static void init_port(uint16_t port)
 	outb(port + INTERRUPT_EN_REG, 0x0F);	// 
 }
 
-static void write_str(uint16_t port, const char* string)
+void serial_write_str(uint16_t port, const char* str)
 {
-	const char* c = string;
-	while (*c)
+	while (*str)
 	{
-		write_char(port, *c);
-		c++;
+		serial_write(port, *str);
+		str++;
 	}
 }
 
 void serial_init()
 {
-	init_port(SERIAL_PORT_COM1);
+
 }
 
 void serial_printf(uint16_t port, const char* format, ...)
@@ -121,5 +124,11 @@ void serial_printf(uint16_t port, const char* format, ...)
 	va_start(args, format);
 	vsprintf(buff, format, args);
 	va_end(args);
-	write_str(port, buff);
+	serial_write_str(port, buff);
+}
+
+void serial_read(uint16_t port, serial_callback_t handler)
+{
+	init_port(SERIAL_PORT_COM1);
+	com1_handler = handler;
 }
