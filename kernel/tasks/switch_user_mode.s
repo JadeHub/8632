@@ -46,7 +46,6 @@ start_user_mode_thread:
 [GLOBAL start_kernel_mode_thread]
 start_kernel_mode_thread:
     cli
-    xchg ebx, ebx
     mov ax, 0x10    ; data (gdt index 2)
     mov ds, ax
     mov es, ax

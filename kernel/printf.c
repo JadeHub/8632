@@ -46,15 +46,10 @@ static void _int_out(uint32_t v, int base, const char* digits, uint32_t width, u
 	_emit_str(emit, buff, len, width, pad, r_justify);
 }
 
-static inline bool _is_digit(uint8_t ch)
-{
-	return (ch >= '0') && (ch <= '9');
-}
-
 static uint32_t _atoi(const char** str)
 {
 	uint32_t i = 0U;
-	while (_is_digit(**str))
+	while (is_digit(**str))
 	{
 		i = i * 10U + (uint32_t)(*((*str)++) - '0');
 	}
@@ -99,7 +94,7 @@ void printf_helper(void (*emit)(char), const char* format, va_list args)
 
 		//field width
 		width = 0;
-		if (_is_digit(*format))
+		if (is_digit(*format))
 		{
 			width = _atoi(&format);
 		}

@@ -46,3 +46,24 @@ char* strcpy(char* dest, const char* source)
 	*dest = '\0';
 	return ret;
 }
+
+int isspace(int c)
+{
+	return c == ' ' ||
+		c == '\t' ||
+		c == '\n' ||
+		c == '\v' ||
+		c == '\f' ||
+		c == '\r';
+}
+
+int atoi(const char* str)
+{
+	while (isspace(*str)) str++;
+	int i = 0;
+	while (*str >= '0' && *str <= '9')
+	{
+		i = i * 10U + (uint32_t)(*(str++) - '0');
+	}
+	return i;
+}

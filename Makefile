@@ -1,4 +1,4 @@
-CFLAGS=-m32 -std=gnu99 -I ./
+CFLAGS=-m32 -std=gnu99 -I ./ -Werror
 
 C_SOURCES = $(wildcard \
 kernel/*.c \
@@ -6,6 +6,7 @@ kernel/memory/*.c \
 kernel/x86/*.c \
 kernel/tasks/*.c \
 kernel/dbg_monitor/*.c \
+kernel/sync/*.c \
 drivers/*.c \
 drivers/keyboard/*.c \
 drivers/ata/*.c \
@@ -18,6 +19,7 @@ kernel/memory/*.h \
 kernel/x86/*.h \
 kernel/tasks/*.h \
 kernel/dbg_monitor/*.h \
+kernel/sync/*.h \
 drivers/*.h \
 drivers/keyboard/*.h \
 drivers/ata/*.h \
@@ -27,6 +29,7 @@ drivers/serial/*.h)
 ASM_SOURCES = $(wildcard kernel/x86/*.s \
 kernel/memory/*.s \
 kernel/tasks/*.s \
+kernel/sync/*.s \
 drivers/*.s)
 
 KERNEL_OBJ = ${C_SOURCES:.c=.o}

@@ -51,5 +51,7 @@ void task_init(page_directory_t*, uint32_t);
 
 void task_new_proc(uint8_t* code, uint32_t len);
 
-process_t* task_get_proc_list();
-thread_t* task_get_cur_thread();
+void task_switch_to_thread(thread_t* thread, uint32_t* esp_out);
+
+process_t* task_proc_list();
+process_t* task_kernel_proc();

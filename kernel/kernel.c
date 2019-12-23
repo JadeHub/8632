@@ -15,10 +15,13 @@
 #include <drivers/ata/ata.h>
 #include <drivers/serial/serial_io.h>
 
-#include "tasks/task.h"
+#include <kernel/tasks/proc.h>
+#include <kernel/tasks/sched.h>
 #include "syscall.h"
 #include "utils.h"
 #include "multiboot.h"
+
+#include <kernel/sync/spin_lock.h>
 
 extern void switch_to_user_mode();
 
@@ -60,6 +63,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	page_directory_t* kpages = paging_init();
 	con_write("paging\n");
 	task_init(kpages, esp);
+	sched_init(task_kernel_proc());
 	con_write("Task\n");
 	kb_init();
 	syscall_init();
@@ -72,11 +76,10 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 
 	task_new_proc(buff, 512);
 	task_new_proc(buff, 512);
-	//con_printf("writing\n");
-	//KLOG(LL_ERR, "KERNEL", "Initialisation %x", 0);
-
+	
 	dbg_mon_init();
 
+	
 	//bochs_dbg();
 	switch_to_user_mode();
 	

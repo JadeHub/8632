@@ -19,3 +19,9 @@ void vsprintf(char* buff, const char* format, va_list args);
 uint32_t strlen(const char* buff);
 int strcmp(const char* lhs, const char* rhs);
 char* strcpy(char* dest, const char* source);
+int atoi(const char*);
+int isspace(int c);
+static inline bool is_digit(uint8_t c)
+{
+	return (c >= '0') && (c <= '9');
+}

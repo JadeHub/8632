@@ -43,6 +43,12 @@ static void process_cmd(char* cmd)
 	{
 		*params = '\0';
 		params++;
+		while (isspace(*params))
+			params++;
+	}
+	else
+	{
+		params = 0;
 	}
 	//find the command
 	for (int i = 0; i < cmd_count; i++)
