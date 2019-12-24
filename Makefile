@@ -7,6 +7,7 @@ kernel/x86/*.c \
 kernel/tasks/*.c \
 kernel/dbg_monitor/*.c \
 kernel/sync/*.c \
+kernel/elf32/*.c \
 drivers/*.c \
 drivers/keyboard/*.c \
 drivers/ata/*.c \
@@ -20,6 +21,7 @@ kernel/x86/*.h \
 kernel/tasks/*.h \
 kernel/dbg_monitor/*.h \
 kernel/sync/*.h \
+kernel/elf32/*.h \
 drivers/*.h \
 drivers/keyboard/*.h \
 drivers/ata/*.h \

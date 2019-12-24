@@ -7,7 +7,7 @@ mov ecx, [0x00500000+0x400]
 mov ebx, MSG_THREAD
 mov eax, 4
 mov edx, [0x1000]
-int 0x64
+;int 0x64
 jmp start
 
 mov eax, 3		;syscall exit

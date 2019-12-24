@@ -11,7 +11,7 @@
 
 extern void start_kernel_mode_thread(uint32_t entry);
 extern void start_user_mode_thread(uint32_t entry);
-extern void perform_task_switch(uint32_t* esp_out, uint32_t esp, uint32_t dir_addr);
+extern void perform_task_switch(uint32_t* esp_out, uint32_t esp, uint32_t dir_addr, uint32_t* ebp_out);
 
 extern heap_t* kheap;
 
@@ -21,23 +21,42 @@ static process_t* kernel_proc = 0; //The kernal execution context
 static uint32_t next_pid = 0;
 static uint32_t next_tid = 0;
 
-void task_switch_to_thread(thread_t* thread, uint32_t* esp_out)
+void task_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_out)
 {
 	current_directory = thread->process->pages;
 	set_kernel_stack(thread->k_stack + KERNEL_STACK_SIZE);
 
 	perform_task_switch(esp_out,
 		thread->esp,
-		current_directory->physicalAddr);
+		current_directory->physicalAddr,
+		ebp_out);
+}
+
+void test5()
+{
+	asm("HLT");
+}
+
+void test1a()
+{
+	int t = 5;
+	test5();
+}
+
+void testa()
+{
+	test1a();
 }
 
 void idle_task()
 {
 	for (;;)
 	{
-		disable_interrupts();
+		//disable_interrupts();
 		//con_write("Going idle\n");
-		enable_interrupts();
+		//enable_interrupts();
+		testa();
+
 	}
 }
 
@@ -68,7 +87,7 @@ static thread_t* _create_thread(uint32_t entry, uint8_t kernel_mode)
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 16) = 0; //ebx
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 20) = 0; //esi
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 24) = 0; //edi
-	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 28) = t->k_stack; //ebp
+	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 28) = 0;// t->k_stack; //ebp
 
 	t->esp = t->k_stack + KERNEL_STACK_SIZE - 28;
 	return t;

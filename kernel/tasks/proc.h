@@ -42,6 +42,7 @@ typedef struct thread
 	uint32_t id;
 	process_t* process;
 	uint32_t esp;
+	uint32_t ebp;
 	uint32_t k_stack;
 	ThreadState state;
 	//struct thread* next;
@@ -51,7 +52,7 @@ void task_init(page_directory_t*, uint32_t);
 
 void task_new_proc(uint8_t* code, uint32_t len);
 
-void task_switch_to_thread(thread_t* thread, uint32_t* esp_out);
+void task_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_out);
 
 process_t* task_proc_list();
 process_t* task_kernel_proc();

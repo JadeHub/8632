@@ -15,8 +15,10 @@
 #include <drivers/ata/ata.h>
 #include <drivers/serial/serial_io.h>
 
+#include <kernel/elf32/elf32.h>
 #include <kernel/tasks/proc.h>
 #include <kernel/tasks/sched.h>
+#include <kernel/debug.h>
 #include "syscall.h"
 #include "utils.h"
 #include "multiboot.h"
@@ -35,23 +37,44 @@ void dump_mb(multiboot_data_t* data)
 	if (data->flags & MULTIBOOT_INFO_CMDLINE)
 		con_printf("MB Command line %s\n", data->cmdline);
 	if (data->flags & MULTIBOOT_INFO_ELF_SHDR)
-		con_printf("MB Has ELF Symbols %x\n", data->elf_sections.size);
+	{
+		con_printf("ELF Symbols count %d\n", data->elf_sections.count);
+		con_printf("ELF Symbols size %d\n", data->elf_sections.size);
+		con_printf("ELF Symbols address %08x\n", data->elf_sections.address);
+		con_printf("ELF Symbols shndx %x\n", data->elf_sections.shndx);
+	}
 	if (data->flags & MULTIBOOT_INFO_MEM_MAP)
-		con_printf("MB Has MMap\n");
+		con_printf("MB Has MMap %x\n", data->mmap);
 	if (data->flags & MULTIBOOT_INFO_DRIVE_INFO)
 		con_printf("MB Has Drive info\n");
 	if (data->flags & MULTIBOOT_INFO_BOOT_LOADER_NAME)
 		con_printf("MB Bootloader %s\n", data->bootloader_name);
+
+	mem_map_data_t* m = data->mmap ;
+	
+	while (m < data->mmap + data->mmap_size)
+	{
+		//con_printf("Memory: sz %x address %08x end %08x len %x type %d\n", m->sz, m->address_low, (m->address_low + m->size_low), m->size_low, m->type);
+		//m = (mem_map_data_t*)((uint32_t)m + m->sz + sizeof(m->sz));
+
+	}
+
+	bochs_dbg();
+	
 }
+
+extern uint32_t end;
+uint32_t t = (uint32_t)&end;
 
 void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
 	con_init();
 	con_write("Hello World\n");
 
-	con_printf("PT:%x\n", 0x12345);
-
-	dump_mb(mb_data);
+	mb_init(mb_data);
+	elf32_image_t* k_image = mb_get_kernel_elf32();
+	dbg_init(k_image);
+	//bochs_dbg();
 	gdt_init();
 	con_write("gdt\n");
 	idt_init();

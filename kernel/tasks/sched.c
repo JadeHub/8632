@@ -36,10 +36,12 @@ static void _switch_task()
 	ASSERT(kernel_proc);
 	uint32_t dummy;
 	uint32_t* esp_ptr;
+	uint32_t* ebp_ptr;
 
 	if (current_thread)
 	{
 		esp_ptr = &current_thread->esp;
+		ebp_ptr = &current_thread->ebp;
 		current_thread = _get_next_thread();
 		//dont switch to same thread
 		if (*esp_ptr == current_thread->esp) return;
@@ -49,8 +51,9 @@ static void _switch_task()
 		//launch first task
 		current_thread = kernel_proc->main_thread;
 		esp_ptr = &dummy;
+		ebp_ptr = &dummy;
 	}
-	task_switch_to_thread(current_thread, esp_ptr);
+	task_switch_to_thread(current_thread, esp_ptr, ebp_ptr);
 //	con_printf("Unlocked sched\n");
 	sched_unlock();	
 }

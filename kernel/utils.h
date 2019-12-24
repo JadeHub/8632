@@ -25,3 +25,8 @@ static inline bool is_digit(uint8_t c)
 {
 	return (c >= '0') && (c <= '9');
 }
+
+static inline bool streq(const char* str1, const char* str2)
+{
+	return strcmp(str1, str2) == 0;
+}

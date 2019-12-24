@@ -3,6 +3,8 @@
 #include <kernel/tasks/sched.h>
 #include <kernel/utils.h>
 
+#include <kernel/debug.h>
+
 #include <limits.h>
 
 static uint32_t _selcted_thread = UINT_MAX;
@@ -11,6 +13,7 @@ static void _output_thread(thread_t* t, const char* prefix)
 {
 	dbg_mon_output_line("%sThread: % %04x", prefix, t->id);
 	dbg_mon_output_line("%sThread esp: %08x", prefix, t->esp);
+	dbg_mon_output_line("%sThread ebp: %08x", prefix, t->ebp);
 	dbg_mon_output_line("%sThread stack: %08x", prefix, t->k_stack);
 	dbg_mon_output_line("%sThread state: %s", prefix, thread_state_name(t->state));
 }
@@ -57,6 +60,21 @@ void threads_cmd(const char* params)
 			dbg_mon_output_line("Unknown thread %04x", id);
 		if(_selcted_thread != UINT32_MAX)
 			dbg_mon_output_line("Selected thread %04x", _selcted_thread);
+	}
+	else if (streq(params, "s"))
+	{
+		///stack
+		thread_t* t = _find_thread(_selcted_thread);
+		if (!t)
+		{
+			dbg_mon_output_line("No or unknown thread selected");
+			return;
+		}
+
+		switch_page_directory(t->process->pages);
+		dbg_mon_output_line("unwinding");
+		dbg_unwind_stack(dbg_kernel_image(), t->ebp);
+		switch_page_directory(sched_cur_thread()->process->pages);
 	}
 	sched_run();
 }

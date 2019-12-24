@@ -67,9 +67,7 @@ start_kernel_mode_thread:
 
 [GLOBAL perform_task_switch]
 perform_task_switch:
-	mov edx, [esp+4]    ; esp ptr
-    mov ecx, [esp+8]    ; ESP
-    mov eax, [esp+12]   ; physical address of current directory
+    mov edx, esp ; save the stack pointer so that we can obtain the params later
     
     ;  For cdecl; EAX, ECX, and EDX are already saved by the caller and dont need to be saved again
 	push ebx            ; push the current state onto the stack
@@ -77,8 +75,13 @@ perform_task_switch:
     push edi
     push ebp
 
-	mov [edx], esp      ; save the current esp
-	mov esp, ecx        ; set new esp
+    mov ebx, [edx+16]   ; ebp_ptr
+    mov [ebx], ebp
+
+    mov ebx, [edx+4]   ; esp_ptr
+    mov [ebx], esp      ; save the current esp
+	mov esp, [edx+8]        ; set new esp
+    mov eax, [edx+12]   ; cant move from mem to cr3
 	mov cr3, eax        ; set the page directory
 
 	pop ebp             ; now pop off the new stack

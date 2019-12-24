@@ -1,5 +1,7 @@
 #pragma once
 
+#include <kernel/elf32/elf32.h>
+
 #include <stdint.h>
 
 #define MULTIBOOT_INFO_MEMORY                   0x00000001
@@ -24,8 +26,11 @@ typedef struct elf_section_data
 
 typedef struct mem_map_data
 {
-	uint64_t address;
-	uint64_t size;
+	uint32_t sz;
+	uint32_t address_low;
+	uint32_t address_high;
+	uint32_t size_low;
+	uint32_t size_high;
 	uint32_t type;
 }mem_map_data_t;
 
@@ -52,3 +57,9 @@ typedef struct multiboot_data
 	char* bootloader_name;
 	uint32_t apm_table;
 }multiboot_data_t;
+
+elf32_image_t* mb_get_kernel_elf32();
+
+void mb_init(const multiboot_data_t* data);
+
+uint32_t mb_highest_address(const multiboot_data_t* data);
