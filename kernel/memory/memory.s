@@ -1,11 +1,11 @@
-[GLOBAL enable_paging]
+[GLOBAL enable_paging:function]
 enable_paging:
     mov eax, cr0
     or eax, 0x80000000
     mov cr0, eax
     ret
 
-[GLOBAL copy_page_physical]
+[GLOBAL copy_page_physical:function]
 copy_page_physical:
     push ebx              ; According to __cdecl, we must preserve the contents of EBX.
     pushf                 ; push EFLAGS, so we can pop it and reenable interrupts

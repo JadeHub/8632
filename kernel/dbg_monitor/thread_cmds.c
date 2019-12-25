@@ -6,6 +6,8 @@
 #include <kernel/debug.h>
 
 #include <limits.h>
+#include <ctype.h>
+#include <stdlib.h>
 
 static uint32_t _selcted_thread = UINT_MAX;
 
@@ -29,6 +31,11 @@ static thread_t* _find_thread(uint32_t id)
 	}
 }
 
+static void _stack_unwind_cb(const char* name, uint32_t addr, uint32_t sz, uint32_t ebp, uint32_t ip)
+{
+	dbg_mon_output_line("%08x %-30s at: %08x to %08x ebp: %08x", ip, name, addr, addr + sz, ebp);
+}
+
 void threads_cmd(const char* params)
 {
 	dbg_mon_output_line("Threads command %s", params);
@@ -49,7 +56,7 @@ void threads_cmd(const char* params)
 			proc = proc->next;
 		}
 	}
-	else if(is_digit(*params))
+	else if(isdigit(*params))
 	{
 		//Select thread
 		int id = atoi(params);
@@ -72,9 +79,13 @@ void threads_cmd(const char* params)
 		}
 
 		switch_page_directory(t->process->pages);
-		dbg_mon_output_line("unwinding");
-		dbg_unwind_stack(dbg_kernel_image(), t->ebp);
+		dbg_mon_output_line("Unwinding stack...");
+		dbg_unwind_stack(dbg_kernel_image(), t->ebp, _stack_unwind_cb);
 		switch_page_directory(sched_cur_thread()->process->pages);
+	}
+	else
+	{
+		dbg_mon_output_line("Unknown threads command");
 	}
 	sched_run();
 }

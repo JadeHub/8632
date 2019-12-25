@@ -1,12 +1,11 @@
-[global idt_flush]
-
+[global idt_flush:function]
 idt_flush:
 	mov eax, [esp+4]
 	lidt [eax]
 	ret
 
 %macro ISR_NOERRCODE 1
-	[global isr%1]
+	[global isr%1:function]
 	isr%1:
 		cli
 		push byte 0
@@ -15,7 +14,7 @@ idt_flush:
 %endmacro
 
 %macro ISR_ERRCODE 1
-	[global isr%1]
+	[global isr%1:function]
 	isr%1:
 		cli
 		push byte %1
@@ -23,7 +22,7 @@ idt_flush:
 %endmacro
 
 %macro IRQ 2
-	[global irq%1]
+	[global irq%1:function]
 	irq%1:
 		cli
 		push byte 0
@@ -84,6 +83,7 @@ IRQ 15,	47
 
 [extern isr_handler]
 
+[GLOBAL isr_common_stub:function]
 isr_common_stub:
 	pusha
 
@@ -112,6 +112,7 @@ isr_common_stub:
 
 [extern irq_handler]
 
+[GLOBAL irq_common_stub:function]
 irq_common_stub:
 	pusha		;push all the registers
 

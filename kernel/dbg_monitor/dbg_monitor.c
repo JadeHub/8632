@@ -17,18 +17,21 @@ typedef void (*cmd_handler_t)(const char* params);
 
 typedef struct command
 {
+	char abbrev;
 	const char* text;
 	cmd_handler_t handler;
 } command_t;
 
 int cmd_count = 2;
 
-extern void threads_cmd(const char* params);
+extern void threads_cmd(const char*);
+extern void kernel_cmd(const char*);
 
 command_t commands[] = 
 { 
-	{"threads", &threads_cmd},
-	{"mem", 0}
+	{'t', "threads", &threads_cmd},
+	{'k', "kernel", &kernel_cmd},
+	{0, 0, 0}
 };
 
 static void process_cmd(char* cmd)
@@ -54,7 +57,7 @@ static void process_cmd(char* cmd)
 	for (int i = 0; i < cmd_count; i++)
 	{
 		if (strcmp(cmd, commands[i].text) == 0 ||
-			cmd[0] == commands[i].text[0]) //match on first char for now
+			cmd[0] == commands[i].abbrev)
 		{
 			commands[i].handler(params);
 			return;

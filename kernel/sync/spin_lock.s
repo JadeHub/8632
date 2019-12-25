@@ -1,4 +1,4 @@
-[global spin_lock]
+[global spin_lock:function]
 spin_lock:
     mov eax, [esp+4]
     test dword [eax], 1      ;Is the lock free?
@@ -8,7 +8,7 @@ spin_lock:
     jc spin_lock            ;Spin if locked ( organize code such that conditional jumps are typically not taken ) 
     ret                      ;Lock obtained
 
-[global spin_unlock]
+[global spin_unlock:function]
 spin_unlock:
     mov eax, [esp+4]
     mov dword [eax],0

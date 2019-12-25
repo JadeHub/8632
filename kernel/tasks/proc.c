@@ -9,6 +9,8 @@
 #include <kernel/fault.h>
 #include <drivers/console.h>
 
+#include <string.h>
+
 extern void start_kernel_mode_thread(uint32_t entry);
 extern void start_user_mode_thread(uint32_t entry);
 extern void perform_task_switch(uint32_t* esp_out, uint32_t esp, uint32_t dir_addr, uint32_t* ebp_out);
@@ -45,6 +47,10 @@ void test1a()
 
 void testa()
 {
+	for (int i = 0;i < 100000; i++)
+	{
+		;
+	}
 	test1a();
 }
 

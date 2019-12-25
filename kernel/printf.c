@@ -1,5 +1,7 @@
 #include <kernel/utils.h>
 
+#include <ctype.h>
+
 static void _emit_str(void (*emit)(char), const char* str, uint32_t len, uint32_t width, uint8_t pad, bool r_justify)
 {
 	width = width ? width : len;
@@ -49,7 +51,7 @@ static void _int_out(uint32_t v, int base, const char* digits, uint32_t width, u
 static uint32_t _atoi(const char** str)
 {
 	uint32_t i = 0U;
-	while (is_digit(**str))
+	while (isdigit(**str))
 	{
 		i = i * 10U + (uint32_t)(*((*str)++) - '0');
 	}
@@ -94,7 +96,7 @@ void printf_helper(void (*emit)(char), const char* format, va_list args)
 
 		//field width
 		width = 0;
-		if (is_digit(*format))
+		if (isdigit(*format))
 		{
 			width = _atoi(&format);
 		}

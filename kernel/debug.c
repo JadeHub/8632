@@ -19,19 +19,31 @@ const elf32_image_t* dbg_kernel_image()
 
 static fn_symbol_t* _find_fn_containing(const elf32_image_t* image, uint32_t addr)
 {
+	if (addr == 0)
+		return NULL;
+
 	fn_symbol_t* fn = image->fn_sym_list;
 
 	while (fn)
 	{
-		if (addr >= fn->address && addr < fn->address + fn->size)
-			return fn;
+		if (fn->address > addr)
+		{
+			return fn->prev;
+		}
+		//if (addr >= fn->address && (addr < fn->address + fn->size || fn->size == 0)) //asm fns have no length
+			//return fn;
 		fn = fn->next;
 	}
 
 	return fn;
 }
 
-uint32_t dbg_unwind_stack(const elf32_image_t* image, uint32_t ebp)
+fn_symbol_t* dbg_find_function(const elf32_image_t* image, uint32_t address)
+{
+	return _find_fn_containing(image, address);
+}
+
+uint32_t dbg_unwind_stack(const elf32_image_t* image, uint32_t ebp, dbg_stack_callback_t cb)
 {
 	con_printf("Unwinding %08x %x\n", ebp, image);
 	
@@ -44,13 +56,12 @@ uint32_t dbg_unwind_stack(const elf32_image_t* image, uint32_t ebp)
 		fn = _find_fn_containing(image, rtn_addr);
 		if (fn)
 		{
-			con_printf("Stack %s addr: %08x ebp: %08x\n", fn->name, rtn_addr, ebp);
-
-
+			(*cb)(fn->name, fn->address, fn->size, ebp, rtn_addr);
+			//con_printf("Stack %s addr: %08x ebp: %08x\n", fn->name, rtn_addr, ebp);
 		}
 		else
 		{
-			con_printf("Function not found addr: %08x ebp: %08x\n", rtn_addr, ebp);
+			(*cb)("Unknown function", rtn_addr, 0, ebp, rtn_addr);
 		}
 		ebp = *(uint32_t*)(ebp);
 		count++;

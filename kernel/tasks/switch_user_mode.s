@@ -1,4 +1,4 @@
-[GLOBAL switch_to_user_mode]
+[GLOBAL switch_to_user_mode:function]
 switch_to_user_mode:
     cli
     mov ax, 0x23    ; user data (gdt index 4)
@@ -21,7 +21,7 @@ switch_to_user_mode:
 cont:
     ret
 
-[GLOBAL start_user_mode_thread]
+[GLOBAL start_user_mode_thread:function]
 start_user_mode_thread:
     cli
     mov ax, 0x23    ; user data (gdt index 4)
@@ -43,7 +43,7 @@ start_user_mode_thread:
     push ebx      ; Address
     iret
 
-[GLOBAL start_kernel_mode_thread]
+[GLOBAL start_kernel_mode_thread:function]
 start_kernel_mode_thread:
     cli
     mov ax, 0x10    ; data (gdt index 2)
@@ -65,7 +65,7 @@ start_kernel_mode_thread:
     push ebx      ; Address
     iret
 
-[GLOBAL perform_task_switch]
+[GLOBAL perform_task_switch:function]
 perform_task_switch:
     mov edx, esp ; save the stack pointer so that we can obtain the params later
     
