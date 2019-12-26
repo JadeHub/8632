@@ -6,42 +6,16 @@
 
 #include <stddef.h>
 
-//http://www.skyfree.org/linux/references/ELF_Format.pdf
-//Section header
-typedef struct elf32_shdr
+static inline const char* _get_tbl_name(const elf_section_t* tbl, uint32_t name)
 {
-	uint32_t name;
-	uint32_t type;
-	uint32_t flags;
-	uint32_t addr;
-	uint32_t offset;
-	uint32_t size;
-	uint32_t link;
-	uint32_t addralign;
-	uint32_t entsize;
-} elf32_shdr_t;
-
-//Symbol table entry
-typedef struct elf32_sym
-{
-	uint32_t name;
-	uint32_t value;
-	uint32_t size;
-	uint8_t info;
-	uint8_t other;
-	uint16_t shndx; //index of section this symbol relates to 
-} elf32_sym_t;
-
-static inline const char* _get_tbl_name(const elf32_str_tbl_t* tbl, uint32_t name)
-{
-	ASSERT(name < tbl->len);
+	ASSERT(name < tbl->sz);
 	return (const char*)(tbl->data + name);
 }
 
-static void _add_fn_symbol(elf32_image_t* image, elf32_sym_t* symbol)
+static void _add_fn_symbol(elf_image_t* image, elf_sym_t* symbol)
 {
-	fn_symbol_t* fn = image->fn_sym_list;
-	fn_symbol_t* add = (fn_symbol_t*)kmalloc(sizeof(fn_symbol_t));
+	elf_fn_symbol_t* fn = image->fn_sym_list;
+	elf_fn_symbol_t* add = (elf_fn_symbol_t*)kmalloc(sizeof(elf_fn_symbol_t));
 	add->name = (const char*)(image->symbol_strs.data + symbol->name);
 	add->address = symbol->value;
 	add->section_idx = symbol->shndx;
@@ -76,35 +50,82 @@ static void _add_fn_symbol(elf32_image_t* image, elf32_sym_t* symbol)
 		}
 		fn = fn->next;
 	} while (fn);
-
 }
 
-elf32_image_t* elf_load_image(uint8_t* sections, uint32_t section_count, uint32_t section_size, uint32_t section_name_idx)
+static bool _is_valid_header(const elf_hdr_t* hdr)
 {
-	elf32_image_t* elf = (elf32_image_t*)kmalloc(sizeof(elf32_image_t));
-	memset(elf, 0, sizeof(elf32_image_t));
+	return hdr->ehsize >= sizeof(elf_hdr_t) &&
+		hdr->ident[0] == 0x7F &&
+		hdr->ident[1] == 'E' &&
+		hdr->ident[2] == 'L' &&
+		hdr->ident[3] == 'F';
+}
 
-	//section name table section, identified by shndx in boot data
-	elf32_shdr_t* section = (elf32_shdr_t*)(sections + section_name_idx * section_size);
+elf_image_t* elf_load_raw_image(const char* name, const uint8_t* data, uint32_t sz)
+{
+	ASSERT(sz >= sizeof(elf_hdr_t));
+	elf_hdr_t* hdr = (elf_hdr_t*)data;
+
+	if (!_is_valid_header(hdr) || hdr->type != ELF_TYPE_EXE || hdr->machine != ELF_MACH_I386)
+	{
+		KLOG(LL_ERR, "ELF", "failed to load Elf image %s\n", name);
+		con_printf("invalid %d %d %d %d\n", hdr->ident[0], hdr->ident[1], hdr->ident[2], hdr->ident[3]);
+		return NULL;
+	}
+
+	elf_image_t* elf = (elf_image_t*)kmalloc(sizeof(elf_image_t));
+	memset(elf, 0, sizeof(elf_image_t));
+	
+	elf = elf_load_section_data(name, (uint32_t)data, (uint8_t*)(data + hdr->shoff), hdr->shnum, hdr->shentsize, hdr->shstrndx);
+
+	elf_phdr_t* phdr;
+
+	for (int i = 0; i < hdr->phnum; i++)
+	{
+		phdr = (elf_phdr_t*)(data + hdr->phoff + (i * hdr->phentsize));
+
+		con_printf("PHeader type %x offset %08x vaddr %08x mem sz %08x\n", phdr->type, phdr->offset, phdr->vaddr, phdr->memsz);
+	}
+
+	return elf;
+_err_ret:
+	KLOG(LL_ERR, "ELF", "error loading Elf image %s\n", name);
+	kfree(elf);
+	return NULL;
+}
+
+elf_image_t* elf_load_section_data(const char* name, uint32_t base_address,
+		uint8_t* sections, uint32_t section_count, uint32_t section_size, uint32_t section_name_idx)
+{
+	elf_image_t* elf = (elf_image_t*)kmalloc(sizeof(elf_image_t));
+	memset(elf, 0, sizeof(elf_image_t));
+
+	//section name table section
+	elf_shdr_t* section = (elf_shdr_t*)(sections + section_name_idx * section_size);
 	elf->section_strs.data = (char*)kmalloc(section->size);
-	memcpy((uint8_t*)elf->section_strs.data, (const uint8_t*)section->addr, section->size);
-	elf->section_strs.len = section->size;
-
+	memcpy((uint8_t*)elf->section_strs.data, (const uint8_t*)base_address + section->offset, section->size);
+	elf->section_strs.sz = section->size;
+	elf->section_strs.name = _get_tbl_name(&elf->section_strs, section->name);
+	elf->section_strs.address = section->addr;
 	//find symbol name table section
 	for (int i = 0; i < section_count; i++)
 	{
-		section = (elf32_shdr_t*)(sections + (i * section_size));
+		section = (elf_shdr_t*)(sections + (i * section_size));
+
 		if (section->type == 3 && streq(_get_tbl_name(&elf->section_strs, section->name), ".strtab"))
 		{
 			elf->symbol_strs.data = (char*)kmalloc(section->size);
-			memcpy((uint8_t*)elf->symbol_strs.data, (const uint8_t*)section->addr, section->size);
-			elf->symbol_strs.len = section->size;
+			memcpy((uint8_t*)elf->symbol_strs.data, (const uint8_t*)base_address + section->offset, section->size);
+			elf->symbol_strs.sz = section->size;
+			elf->symbol_strs.name = _get_tbl_name(&elf->section_strs, section->name);
+			elf->symbol_strs.address = section->addr;
 			break;
 		}
 	}
 	if (!elf->symbol_strs.data)
 	{
-		//klog
+		KLOG(LL_ERR, "ELF", "failed to find .strtab section in %s\n", name);
+		con_printf("aaa\n");
 		goto _err_ret;
 	}
 
@@ -112,42 +133,57 @@ elf32_image_t* elf_load_image(uint8_t* sections, uint32_t section_count, uint32_
 	section = NULL;
 	for (int i = 0; i < section_count; i++)
 	{
-		elf32_shdr_t* tmp = (elf32_shdr_t*)(sections + (i * section_size));
+		elf_shdr_t* tmp = (elf_shdr_t*)(sections + (i * section_size));
 		if (tmp->type == 2)
 		{
-			//con_printf("SECTION %d add %d size %d\n", i, tmp->addr, tmp->size);
 			section = tmp;
 			break;
 		}
 	}
-	if (!section)
-	{
-		goto _err_ret;
-	}
-	uint32_t count = 0;
-	//Find the function symbols and add them
-	//con_printf("SECTION type %d size %d\n", section->type, section->size);
-
-	for (int i = 0; i < section->size; i += sizeof(elf32_sym_t))
-	{
-		elf32_sym_t* symbol = (elf32_sym_t*)(section->addr + i);
-		if (symbol->name && (symbol->info & 2))
+	if (section)
+	{		
+		//Find the function symbols and add them
+		for (int i = 0; i < section->size; i += sizeof(elf_sym_t))
 		{
-			//Function with a name
-			_add_fn_symbol(elf, symbol);
-			count++;
+			elf_sym_t* symbol = (elf_sym_t*)(base_address + section->offset + i);
+			if (symbol->name && (symbol->info & 2))
+			{
+				//Function with a name
+				_add_fn_symbol(elf, symbol);
+			}
 		}
 	}
-	//con_printf("ELF size %d %d symbols\n", section->size, count);
 
+	//find executable section
+	section = NULL;
+	for (int i = 0; i < section_count; i++)
+	{
+		elf_shdr_t* tmp = (elf_shdr_t*)(sections + (i * section_size));
+
+
+		if (tmp->flags & ELF_SECTION_EXECUTABLE)
+		{
+			section = tmp;
+			break;
+		}
+	}
+	if (section)
+	{
+		elf->exec_section.sz = section->size;
+		elf->exec_section.data = (uint8_t *)kmalloc(section->size);
+		memcpy(elf->exec_section.data, (void*)base_address + section->offset, section->size);
+		elf->exec_section.name = _get_tbl_name(&elf->section_strs, section->name);
+		elf->exec_section.address = section->addr;
+		con_printf("Found exe in %s section %s\n", name, elf->exec_section.name);
+	}
+
+	//.rodata
 	return elf;
 
 _err_ret:
-	con_printf("Elf Error\n");
-	if (elf)
-	{
-		kfree(elf);
-		elf = NULL;
-	}
+	kfree(elf->section_strs.data);
+	kfree(elf->symbol_strs.data);
+	kfree(elf->exec_section.data);
+	kfree(elf);
 	return NULL;
 }

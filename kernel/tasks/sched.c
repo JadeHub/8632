@@ -53,7 +53,7 @@ static void _switch_task()
 		esp_ptr = &dummy;
 		ebp_ptr = &dummy;
 	}
-	task_switch_to_thread(current_thread, esp_ptr, ebp_ptr);
+	proc_switch_to_thread(current_thread, esp_ptr, ebp_ptr);
 //	con_printf("Unlocked sched\n");
 	sched_unlock();	
 }

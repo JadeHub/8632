@@ -4,12 +4,12 @@
 
 #include <kernel/elf32/elf32.h>
 
-void dbg_init(const elf32_image_t* kernel_image);
+void dbg_init(const elf_image_t* kernel_image);
 
-const elf32_image_t* dbg_kernel_image();
+const elf_image_t* dbg_kernel_image();
 
 typedef void (*dbg_stack_callback_t)(const char* fn, uint32_t addr, uint32_t sz, uint32_t ebp, uint32_t ip);
 
-uint32_t dbg_unwind_stack(const elf32_image_t* image, uint32_t ebp, dbg_stack_callback_t cb);
+uint32_t dbg_unwind_stack(const elf_image_t* image, uint32_t ebp, dbg_stack_callback_t cb);
 
-fn_symbol_t* dbg_find_function(const elf32_image_t* image, uint32_t address);
+elf_fn_symbol_t* dbg_find_function(const elf_image_t* image, uint32_t address);

@@ -1,6 +1,6 @@
 CFLAGS=-m32 -std=gnu99 -I ./include -Werror
 LIBK_CFLAGS:=$(CFLAGS)  -ffreestanding
-AR = i386-elf-ar
+AR = i686-elf-ar
 
 C_SOURCES = $(wildcard \
 string/*.c \
@@ -20,7 +20,7 @@ libk.a: $(LIBK_OBJS)
 	$(AR) rcs $@ $(LIBK_OBJS)
 
 %.o: %.c
-	$(CC) ${LIBK_CFLAGS} -c $< -o $@ 
+	i686-elf-gcc ${LIBK_CFLAGS} -c $< -o $@ 
 
 clean:
 	rm -f -r *.bin *.o *.a

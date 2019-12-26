@@ -39,6 +39,14 @@ typedef struct drive_data
 
 }drive_data_t;
 
+typedef struct module_data
+{
+	uint32_t start;
+	uint32_t end;
+	const char* name;
+	uint32_t reserved;
+}module_data_t;
+
 typedef struct multiboot_data
 {
 	uint32_t flags;
@@ -47,7 +55,7 @@ typedef struct multiboot_data
 	uint32_t boot_device;
 	char* cmdline;
 	uint32_t mod_count;
-	uintptr_t modules;
+	module_data_t* modules;
 	elf_section_data_t elf_sections;
 	uint32_t mmap_size;
 	mem_map_data_t* mmap;
@@ -58,7 +66,7 @@ typedef struct multiboot_data
 	uint32_t apm_table;
 }multiboot_data_t;
 
-elf32_image_t* mb_get_kernel_elf32();
+elf_image_t* mb_get_kernel_elf();
 
 void mb_init(const multiboot_data_t* data);
 

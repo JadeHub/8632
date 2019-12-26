@@ -5,24 +5,24 @@
 
 #include <stddef.h>
 
-static const elf32_image_t* _k_image = NULL;
+static const elf_image_t* _k_image = NULL;
 
-void dbg_init(const elf32_image_t* kernel_image)
+void dbg_init(const elf_image_t* kernel_image)
 {
 	_k_image = kernel_image;
 }
 
-const elf32_image_t* dbg_kernel_image()
+const elf_image_t* dbg_kernel_image()
 {
 	return _k_image;
 }
 
-static fn_symbol_t* _find_fn_containing(const elf32_image_t* image, uint32_t addr)
+static elf_fn_symbol_t* _find_fn_containing(const elf_image_t* image, uint32_t addr)
 {
 	if (addr == 0)
 		return NULL;
 
-	fn_symbol_t* fn = image->fn_sym_list;
+	elf_fn_symbol_t* fn = image->fn_sym_list;
 
 	while (fn)
 	{
@@ -38,17 +38,17 @@ static fn_symbol_t* _find_fn_containing(const elf32_image_t* image, uint32_t add
 	return fn;
 }
 
-fn_symbol_t* dbg_find_function(const elf32_image_t* image, uint32_t address)
+elf_fn_symbol_t* dbg_find_function(const elf_image_t* image, uint32_t address)
 {
 	return _find_fn_containing(image, address);
 }
 
-uint32_t dbg_unwind_stack(const elf32_image_t* image, uint32_t ebp, dbg_stack_callback_t cb)
+uint32_t dbg_unwind_stack(const elf_image_t* image, uint32_t ebp, dbg_stack_callback_t cb)
 {
 	con_printf("Unwinding %08x %x\n", ebp, image);
 	
 	uint32_t rtn_addr;
-	fn_symbol_t* fn;
+	elf_fn_symbol_t* fn;
 	int count = 0;
 	while (ebp != 0)
 	{

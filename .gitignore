@@ -1,3 +1,4 @@
+*.a
 isodir/
 *.iso
 serial.txt

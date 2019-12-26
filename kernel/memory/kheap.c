@@ -41,7 +41,8 @@ uint32_t kmalloc_int(uint32_t sz, int align, uint32_t *phys)
 
 void kfree(void *p)
 {
-    free(p, kheap);
+    if (!p) return;
+    //free(p, kheap);
 }
 
 uint32_t kmalloc_a(uint32_t sz)
@@ -320,7 +321,7 @@ void *alloc(uint32_t size, uint8_t page_align, heap_t *heap)
     // ...And we're done!
     return (void *) ( (uint32_t)block_header+sizeof(header_t) );
 }
-
+/*
 void free(void *p, heap_t *heap)
 {
     // Exit gracefully for null pointers.
@@ -407,4 +408,4 @@ void free(void *p, heap_t *heap)
     if (do_add == 1)
         insert_ordered_array((void*)header, &heap->index);
 
-}
+}*/

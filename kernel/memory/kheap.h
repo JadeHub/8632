@@ -59,7 +59,7 @@ void *alloc(uint32_t size, uint8_t page_align, heap_t *heap);
 /**
    Releases a block allocated with 'alloc'.
 **/
-void free(void *p, heap_t *heap);
+//void free(void *p, heap_t *heap);
 
 
 #endif // KHEAP_H

@@ -22,7 +22,7 @@ static void _output_thread(thread_t* t, const char* prefix)
 
 static thread_t* _find_thread(uint32_t id)
 {
-	process_t* proc = task_proc_list();
+	process_t* proc = proc_proc_list();
 	while (proc)
 	{
 		if (proc->main_thread->id == id)
@@ -42,7 +42,7 @@ void threads_cmd(const char* params)
 
 	sched_pause();
 	thread_t* cur_thread = sched_cur_thread();
-	process_t* proc = task_proc_list();
+	process_t* proc = proc_proc_list();
 
 	if (!params)
 	{
@@ -70,7 +70,7 @@ void threads_cmd(const char* params)
 	}
 	else if (streq(params, "s"))
 	{
-		///stack
+		//stack
 		thread_t* t = _find_thread(_selcted_thread);
 		if (!t)
 		{

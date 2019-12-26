@@ -27,52 +27,19 @@
 
 extern void switch_to_user_mode();
 
-void dump_mb(multiboot_data_t* data)
-{
-	con_printf("MB Flags %x\n", data->flags);
-	if (data->flags & MULTIBOOT_INFO_MEMORY)
-		con_printf("MB Mem low %x high %x\n", data->mem_low, data->mem_high);
-	if (data->flags & MULTIBOOT_INFO_BOOTDEV)
-		con_printf("MB Boot device %x\n", data->boot_device);
-	if (data->flags & MULTIBOOT_INFO_CMDLINE)
-		con_printf("MB Command line %s\n", data->cmdline);
-	if (data->flags & MULTIBOOT_INFO_ELF_SHDR)
-	{
-		con_printf("ELF Symbols count %d\n", data->elf_sections.count);
-		con_printf("ELF Symbols size %d\n", data->elf_sections.size);
-		con_printf("ELF Symbols address %08x\n", data->elf_sections.address);
-		con_printf("ELF Symbols shndx %x\n", data->elf_sections.shndx);
-	}
-	if (data->flags & MULTIBOOT_INFO_MEM_MAP)
-		con_printf("MB Has MMap %x\n", data->mmap);
-	if (data->flags & MULTIBOOT_INFO_DRIVE_INFO)
-		con_printf("MB Has Drive info\n");
-	if (data->flags & MULTIBOOT_INFO_BOOT_LOADER_NAME)
-		con_printf("MB Bootloader %s\n", data->bootloader_name);
-
-	mem_map_data_t* m = data->mmap ;
-	
-	while (m < data->mmap + data->mmap_size)
-	{
-		//con_printf("Memory: sz %x address %08x end %08x len %x type %d\n", m->sz, m->address_low, (m->address_low + m->size_low), m->size_low, m->type);
-		//m = (mem_map_data_t*)((uint32_t)m + m->sz + sizeof(m->sz));
-
-	}
-
-	bochs_dbg();
-	
-}
-
-extern uint32_t end;
-uint32_t t = (uint32_t)&end;
+uint8_t buff[10000];
+uint32_t buf_len;
+char exe_name[128];
 
 void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
 	con_init();
-	con_write("Hello World\n");
-
+	con_printf("Hello World %d %x\n", mb_data->mod_count, *((uint8_t*)mb_data->modules->start));
 	mb_init(mb_data);
-	elf32_image_t* k_image = mb_get_kernel_elf32();
+	buf_len = mb_data->modules->end - mb_data->modules->start;
+	memcpy(buff, (void*)mb_data->modules->start, buf_len);
+	strcpy(exe_name, mb_data->modules->name);
+	elf_image_t* k_image = mb_get_kernel_elf();
 	dbg_init(k_image);
 	//bochs_dbg();
 	gdt_init();
@@ -85,20 +52,29 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	con_write("timer\n");
 	page_directory_t* kpages = paging_init();
 	con_write("paging\n");
-	task_init(kpages, esp);
-	sched_init(task_kernel_proc());
+	proc_init(kpages, esp);
+	sched_init(proc_kernel_proc());
 	con_write("Task\n");
 	kb_init();
 	syscall_init();
 	ata_init();
 
-	uint8_t buff [512];
-	ata_read(buff, 0, 1);
+	uint8_t atabuff [512];
+	ata_read(atabuff, 0, 1);
 
-	con_printf("Read Prog %x %x %x %x\n", buff[0], buff[1], buff[2], buff[3]);
 
-	task_new_proc(buff, 512);
-	task_new_proc(buff, 512);
+	con_printf("Hello World %08x %x\n", buff, *((uint8_t*)buff));
+	con_printf("Loading elf %x %s\n", buff[0], exe_name);
+	elf_image_t* elf = elf_load_raw_image(exe_name, buff, buf_len);
+	if (elf)
+	{
+		con_printf("Loaded elf %s %08x\n", exe_name, elf->entry);
+	}
+
+	
+
+	proc_new_proc(elf->exec_section.data, elf->exec_section.sz);
+	//proc_new_proc(atabuff, 512);
 	
 	dbg_mon_init();
 

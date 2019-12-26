@@ -23,7 +23,7 @@ static process_t* kernel_proc = 0; //The kernal execution context
 static uint32_t next_pid = 0;
 static uint32_t next_tid = 0;
 
-void task_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_out)
+void proc_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_out)
 {
 	current_directory = thread->process->pages;
 	set_kernel_stack(thread->k_stack + KERNEL_STACK_SIZE);
@@ -77,6 +77,7 @@ void user_thread_entry(uint32_t entry)
 {
 	//setup thread here
 	sched_unlock();
+	bochs_dbg();
 	start_user_mode_thread(entry);
 }
 
@@ -99,7 +100,12 @@ static thread_t* _create_thread(uint32_t entry, uint8_t kernel_mode)
 	return t;
 }
 
-void task_new_proc(uint8_t* code, uint32_t len)
+void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
+{
+
+}
+
+void proc_new_proc(uint8_t* code, uint32_t len)
 {
 	//disable_interrupts();
 
@@ -108,12 +114,14 @@ void task_new_proc(uint8_t* code, uint32_t len)
 	sprintf(p->name, "user proc %x", p->id);
 	p->next = 0;
 
+	con_printf("New proc %x\n", *code);
+
 	p->pages = clone_directory(kernel_directory);
 
 	switch_page_directory(p->pages);
 	//code at 0x00500000
 	uint32_t start = 0x00500000;
-	uint32_t end = start + 0x3000;
+	uint32_t end = start + 0x8000;
 	alloc_pages(p->pages, start, end);
 	uint32_t entry = start;
 	memcpy((uint8_t*)start, code, len);
@@ -137,7 +145,7 @@ void task_new_proc(uint8_t* code, uint32_t len)
 	tmp->next = p;
 }
 
-void task_init(page_directory_t* kernel_pages, uint32_t initial_esp)
+void proc_init(page_directory_t* kernel_pages, uint32_t initial_esp)
 {
 	set_kernel_stack(initial_esp);
 	kernel_proc = (process_t*)kmalloc(sizeof(process_t));
@@ -150,12 +158,12 @@ void task_init(page_directory_t* kernel_pages, uint32_t initial_esp)
 	kernel_proc->main_thread->process = kernel_proc;
 }
 
-process_t* task_kernel_proc()
+process_t* proc_kernel_proc()
 {
 	return kernel_proc;
 }
 
-process_t* task_proc_list()
+process_t* proc_proc_list()
 {
 	return kernel_proc;
 }

@@ -48,10 +48,10 @@ kernel.iso: kernel.bin
 		./make_iso.sh
 
 kernel.bin: multiboot/multiboot.o ${KERNEL_OBJ} ${ASM_OBJ} libc/libk.a
-		i386-elf-gcc -T link.ld -o kernel.bin $^ -ffreestanding -O2 -nostdlib -lgcc 
+		i686-elf-gcc -T link.ld -o kernel.bin $^ -ffreestanding -O2 -nostdlib -lgcc 
 
 %.o: %.c ${HEADERS}
-		i386-elf-gcc ${CFLAGS} ${K_CFLAGS} -c $< -o $@ -I libc/include
+		i686-elf-gcc ${CFLAGS} ${K_CFLAGS} -c $< -o $@ -I libc/include
 
 %.o: %.s
 		nasm $< -f elf32 -o $@

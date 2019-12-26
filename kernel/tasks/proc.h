@@ -5,6 +5,8 @@
 #include <kernel/memory/kheap.h>
 #include <kernel/memory/paging.h>
 
+#include <kernel/elf32/elf32.h>
+
 struct thread;
 
 typedef struct process
@@ -48,11 +50,13 @@ typedef struct thread
 	//struct thread* next;
 }thread_t;
 
-void task_init(page_directory_t*, uint32_t);
+void proc_init(page_directory_t*, uint32_t);
 
-void task_new_proc(uint8_t* code, uint32_t len);
+void proc_new_proc(uint8_t* code, uint32_t len);
 
-void task_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_out);
+void proc_new_elf_proc(const char* name, const elf_image_t* elf);
 
-process_t* task_proc_list();
-process_t* task_kernel_proc();
+void proc_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_out);
+
+process_t* proc_proc_list();
+process_t* proc_kernel_proc();
