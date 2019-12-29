@@ -6,6 +6,7 @@ char* strchr(const char* str, int ch)
 	{
 		if (*str == ch)
 			return (char*)str;
+		str++;
 	}
 	return NULL;
 }

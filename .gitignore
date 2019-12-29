@@ -1,3 +1,4 @@
+sysroot
 *.a
 isodir/
 *.iso

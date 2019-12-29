@@ -120,7 +120,7 @@ void ata_detect()
 			con_write("Disk Error\n");
 			return;
 		}
-		con_printf("Disk online\n");
+	//	con_printf("Disk online\n");
 		for (int i = 0; i<256; i++)
 		{
 			*(uint16_t *)(ide_buf + i * 2) = inw(base_port + ATA_REG_DATA);
@@ -181,6 +181,6 @@ void ata_init()
 	ata_detect();
 	ata_read(buffer, 0, 2);
 
-	con_printf("hdd read: %x %x\n", buffer[1022], buffer[1023]);
+	//con_printf("hdd read: %x %x\n", buffer[1022], buffer[1023]);
 
 }

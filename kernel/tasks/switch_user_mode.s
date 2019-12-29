@@ -40,11 +40,7 @@ start_user_mode_thread:
     or eax, 0x200 ; enable interrupts
     push eax
     push long 0x1B	;CS 0x1B = user code (gdt index 3)
-    push ebx      ; Address
-    ; setup user mode stack todo
-   ; mov ebp, 0x00505000
-   ; mov esp, ebp
-    
+    push ebx      ; Address    
     iret
 
 [GLOBAL start_kernel_mode_thread:function]

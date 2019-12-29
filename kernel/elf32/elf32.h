@@ -1,5 +1,7 @@
 #pragma once
 
+#include <kernel/memory/paging.h>
+
 #include <stdint.h>
 
 //http://www.skyfree.org/linux/references/ELF_Format.pdf
@@ -95,13 +97,9 @@ typedef struct elf_image
 	elf_fn_symbol_t* fn_sym_list;
 	elf_section_t section_strs;
 	elf_section_t symbol_strs;
-	elf_section_t exec_section;
-	elf_section_t rodata_section;
-
-	uint32_t entry;
 }elf_image_t;
 
-elf_image_t* elf_load_section_data(const char* name, uint32_t base_address,
+elf_image_t* elf_load_symbol_data(const char* name, uint32_t base_address,
 	uint8_t* sections, uint32_t section_count, uint32_t section_size, uint32_t section_name_idx);
 
-elf_image_t* elf_load_raw_image(const char* name, const uint8_t* data, uint32_t sz);
+uint32_t elf_load_raw_image(page_directory_t* pages, const char* name, const uint8_t* data, uint32_t sz);

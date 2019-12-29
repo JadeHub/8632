@@ -3,6 +3,7 @@
 #include <kernel/fault.h>
 #include <kernel/utils.h>
 #include <drivers/console.h>
+#include <kernel/memory/paging.h>
 
 #include <stddef.h>
 
@@ -61,7 +62,16 @@ static bool _is_valid_header(const elf_hdr_t* hdr)
 		hdr->ident[3] == 'F';
 }
 
-elf_image_t* elf_load_raw_image(const char* name, const uint8_t* data, uint32_t sz)
+static void _load_elf_data(page_directory_t* pages, const uint8_t* src, elf_phdr_t* phdr)
+{
+	alloc_pages(pages, phdr->vaddr, phdr->vaddr + phdr->memsz);
+	memcpy((void*)phdr->vaddr, src + phdr->offset, phdr->filesz);
+	if (phdr->memsz > phdr->filesz)
+		memset((void*)(phdr->vaddr + phdr->filesz), 0, phdr->memsz - phdr->filesz);
+	
+}
+
+uint32_t elf_load_raw_image(page_directory_t* pages, const char* name, const uint8_t* data, uint32_t sz)
 {
 	ASSERT(sz >= sizeof(elf_hdr_t));
 	elf_hdr_t* hdr = (elf_hdr_t*)data;
@@ -70,31 +80,27 @@ elf_image_t* elf_load_raw_image(const char* name, const uint8_t* data, uint32_t 
 	{
 		KLOG(LL_ERR, "ELF", "failed to load Elf image %s\n", name);
 		con_printf("invalid %d %d %d %d\n", hdr->ident[0], hdr->ident[1], hdr->ident[2], hdr->ident[3]);
-		return NULL;
+		return 0;
 	}
 
-	elf_image_t* elf = (elf_image_t*)kmalloc(sizeof(elf_image_t));
-	memset(elf, 0, sizeof(elf_image_t));
-	
-	elf = elf_load_section_data(name, (uint32_t)data, (uint8_t*)(data + hdr->shoff), hdr->shnum, hdr->shentsize, hdr->shstrndx);
-
 	elf_phdr_t* phdr;
-
 	for (int i = 0; i < hdr->phnum; i++)
 	{
 		phdr = (elf_phdr_t*)(data + hdr->phoff + (i * hdr->phentsize));
 
+		phdr->memsz = 0x8000;
+		_load_elf_data(pages, data, phdr);
 		con_printf("PHeader type %x offset %08x vaddr %08x mem sz %08x\n", phdr->type, phdr->offset, phdr->vaddr, phdr->memsz);
 	}
 
-	return elf;
+	return hdr->entry;
 _err_ret:
 	KLOG(LL_ERR, "ELF", "error loading Elf image %s\n", name);
-	kfree(elf);
-	return NULL;
+	//kfree(elf);
+	return 0;
 }
 
-elf_image_t* elf_load_section_data(const char* name, uint32_t base_address,
+elf_image_t* elf_load_symbol_data(const char* name, uint32_t base_address,
 		uint8_t* sections, uint32_t section_count, uint32_t section_size, uint32_t section_name_idx)
 {
 	elf_image_t* elf = (elf_image_t*)kmalloc(sizeof(elf_image_t));
@@ -154,36 +160,11 @@ elf_image_t* elf_load_section_data(const char* name, uint32_t base_address,
 		}
 	}
 
-	//find executable section
-	section = NULL;
-	for (int i = 0; i < section_count; i++)
-	{
-		elf_shdr_t* tmp = (elf_shdr_t*)(sections + (i * section_size));
-
-
-		if (tmp->flags & ELF_SECTION_EXECUTABLE)
-		{
-			section = tmp;
-			break;
-		}
-	}
-	if (section)
-	{
-		elf->exec_section.sz = section->size;
-		elf->exec_section.data = (uint8_t *)kmalloc(section->size);
-		memcpy(elf->exec_section.data, (void*)base_address + section->offset, section->size);
-		elf->exec_section.name = _get_tbl_name(&elf->section_strs, section->name);
-		elf->exec_section.address = section->addr;
-		con_printf("Found exe in %s section %s\n", name, elf->exec_section.name);
-	}
-
-	//.rodata
 	return elf;
 
 _err_ret:
 	kfree(elf->section_strs.data);
 	kfree(elf->symbol_strs.data);
-	kfree(elf->exec_section.data);
 	kfree(elf);
 	return NULL;
 }

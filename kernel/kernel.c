@@ -11,6 +11,7 @@
 #include <kernel/memory/paging.h>
 #include <kernel/memory/kheap.h>
 #include <kernel/dbg_monitor/dbg_monitor.h>
+#include <kernel/ramfs/ramfs.h>
 
 #include <drivers/ata/ata.h>
 #include <drivers/serial/serial_io.h>
@@ -22,23 +23,128 @@
 #include "syscall.h"
 #include "utils.h"
 #include "multiboot.h"
+#include "types/list.h"
 
 #include <kernel/sync/spin_lock.h>
 
 extern void switch_to_user_mode();
 
+void list_test()
+{
+	typedef struct Foo
+	{
+		int bar;
+		list_head_t list;
+	}Foo_t;
+
+	//Declare a list
+	
+	list_head_t my_list;
+	INIT_LIST_HEAD(&my_list);
+	//my_list = LIST_HEAD_INIT(my_list);
+//		LIST_HEAD(my_list);
+
+
+	con_printf("Empty = %d\n", list_empty(&my_list));
+
+	Foo_t f1;
+	f1.bar = 1;
+	list_add(&f1.list, &my_list);
+
+
+	con_printf("Empty = %d\n", list_empty(&my_list));
+
+	Foo_t f2;
+	f2.bar = 2;
+	list_add(&f2.list, &my_list);
+
+	Foo_t f3;
+	f3.bar = 3;
+	list_add(&f3.list, &my_list);
+
+	list_head_t* item;
+	list_for_each_rev(item, &my_list)
+	{
+		Foo_t* foo = list_entry(item, Foo_t, list);
+	//	con_printf("Foo %d\n", foo->bar);
+		if(foo->bar == 3)
+		{
+			list_delete(&foo->list);
+			break;
+		}
+	}
+
+	Foo_t* f;
+	list_for_each_entry(f, &my_list, list)
+	{
+		con_printf("Foo %d\n", f->bar);
+	}
+}
+
+#include <kernel/fs/fs.h>
+#include <kernel/fs/dir.h>
+
+void dump_dir(fs_node_t* d);
+
+bool write_fs(fs_node_t* p, fs_node_t* c)
+{
+	if ((c->flags & FS_DIR))
+	{
+		dump_dir(c);
+	}
+	else
+	{
+		con_printf("DUMP file %s in %s \n", c->name, p->name);
+	}
+	return true;
+}
+
+void dump_dir(fs_node_t* d)
+{
+	con_printf("DUMP dumping %s\n", d->name);
+	fs_read_dir(d, &write_fs);
+}
+
+void test_fs()
+{
+	uint32_t next_inode = 0;
+	fs_node_t* dir = fs_create_dir_node("root", next_inode++);
+	fs_node_t* sub = fs_create_dir_node("sub", next_inode++);
+	fs_add_child_node(dir, sub);
+
+	fs_node_t* file = fs_create_node("file");
+	file->len = 0;
+	file->inode = next_inode++;
+
+	dump_dir(dir);
+	dump_dir(sub);
+}
+
+
+
 uint8_t buff[10000];
-uint32_t buf_len;
+uint32_t buf_len = 10000;
 char exe_name[128];
+
+uint8_t ram_disk_buff[0x4000];
+uint32_t ram_disk_len = 0x4000;
 
 void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
 	con_init();
+	list_test();
 	con_printf("Hello World %d %x\n", mb_data->mod_count, *((uint8_t*)mb_data->modules->start));
 	mb_init(mb_data);
-	buf_len = mb_data->modules->end - mb_data->modules->start;
-	memcpy(buff, (void*)mb_data->modules->start, buf_len);
-	strcpy(exe_name, mb_data->modules->name);
+
+	buf_len = mb_copy_mod("/boot/user_space", buff, buf_len);
+	if(!buf_len)
+		KPANIC("Module /boot/user_space not found\n");
+	strcpy(exe_name, "/boot/user_space");
+
+	ram_disk_len = mb_copy_mod("/boot/ramdisk", ram_disk_buff, ram_disk_len);
+	if (!ram_disk_len)
+		KPANIC("Module /boot/ramdisk not found\n");
+	con_printf("Ram Disk %08x bytes\n", ram_disk_len);
 	elf_image_t* k_image = mb_get_kernel_elf();
 	dbg_init(k_image);
 	//bochs_dbg();
@@ -52,9 +158,13 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	con_write("timer\n");
 	page_directory_t* kpages = paging_init();
 	con_write("paging\n");
+	//test_fs();
+	//bochs_dbg();
+	ramfs_init(ram_disk_buff, ram_disk_len);
+	dump_dir(ramfs_root());
+
 	proc_init(kpages, esp);
 	sched_init(proc_kernel_proc());
-	con_write("Task\n");
 	kb_init();
 	syscall_init();
 	ata_init();
@@ -63,17 +173,10 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	ata_read(atabuff, 0, 1);
 
 
-	con_printf("Hello World %08x %x\n", buff, *((uint8_t*)buff));
-	con_printf("Loading elf %x %s\n", buff[0], exe_name);
-	elf_image_t* elf = elf_load_raw_image(exe_name, buff, buf_len);
-	if (elf)
-	{
-		con_printf("Loaded elf %s %08x\n", exe_name, elf->entry);
-	}
+	con_printf("Loading elf %x %d %s\n", buff[0], buf_len, exe_name);
+	proc_new_elf_proc(exe_name, buff, buf_len);
 
-	
-
-	proc_new_proc(elf->exec_section.data, elf->exec_section.sz);
+	//proc_new_proc(elf->exec_section.data, elf->exec_section.sz);
 	//proc_new_proc(atabuff, 512);
 	
 	dbg_mon_init();

@@ -102,7 +102,43 @@ static thread_t* _create_thread(uint32_t entry, uint8_t kernel_mode)
 
 void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 {
+	process_t* p = (process_t*)kmalloc(sizeof(process_t));
+	p->id = next_pid++;
+	sprintf(p->name, "user proc %s", name);
+	p->next = 0;
+	con_printf("New proc %s\n", name);
 
+	p->pages = clone_directory(kernel_directory);
+	switch_page_directory(p->pages);
+
+	uint32_t entry = elf_load_raw_image(p->pages, name, data, len);
+	if(entry)
+		con_printf("%s loaded into memory\n", name);
+
+	/*//code at 0x00500000
+	uint32_t start = 0x00500000;
+	uint32_t end = start + 0x8000;
+	alloc_pages(p->pages, start, end);
+	uint32_t entry = start;
+	memcpy((uint8_t*)start, code, len);
+
+	*((uint8_t*)start + 0x400) = (uint8_t)p->id;
+	*/
+	//heap at 0x00700000
+	uint32_t start = 0x00700000;
+	uint32_t end = start + 0x100000;
+	alloc_pages(p->pages, start, end);
+	p->heap = create_heap(p->pages, start, end, end, 0, 0);
+
+	switch_page_directory(kernel_directory);
+
+	p->main_thread = _create_thread(entry, 0);
+	p->main_thread->process = p;
+
+	process_t* tmp = kernel_proc;
+	while (tmp->next)
+		tmp = tmp->next;
+	tmp->next = p;
 }
 
 void proc_new_proc(uint8_t* code, uint32_t len)

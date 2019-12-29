@@ -70,4 +70,9 @@ elf_image_t* mb_get_kernel_elf();
 
 void mb_init(const multiboot_data_t* data);
 
-uint32_t mb_highest_address(const multiboot_data_t* data);
+module_data_t* mb_find_module(const char* name);
+
+/*
+Copy a named module into buff and return the length
+*/
+uint32_t mb_copy_mod(const char* name, uint8_t* buff, uint32_t len);

@@ -21,7 +21,7 @@ static elf_image_t* _load_kernel_image()
 		tmp->offset = tmp->addr;
 	}
 
-	return elf_load_section_data("kernel",
+	return elf_load_symbol_data("kernel",
 		0,
 		(uint8_t*)_mb_data->elf_sections.address,
 		_mb_data->elf_sections.count,
@@ -48,4 +48,32 @@ elf_image_t* mb_get_kernel_elf()
 		_kernel_elf = _load_kernel_image();
 	return _kernel_elf;
 	
+}
+
+module_data_t* mb_find_module(const char* name)
+{
+	const multiboot_data_t* data = _mb_data;
+	for (int i = 0; i < data->mod_count; i++)
+	{
+		module_data_t* mod = &data->modules[i];
+		if(strcmp(mod->name, name) == 0)
+		{
+			con_printf("Module %s at %08x\n", mod->name, mod->start);
+			return mod;
+		}
+	}
+	return NULL;
+}
+
+uint32_t mb_copy_mod(const char* name, uint8_t* buff, uint32_t buff_len)
+{
+	module_data_t* mod = mb_find_module(name);
+	if(!mod)
+		return 0;
+
+	uint32_t len = mod->end - mod->start;
+	if((len) > buff_len)
+		return 0;
+	memcpy(buff, (void*)mod->start, len);
+	return len;
 }

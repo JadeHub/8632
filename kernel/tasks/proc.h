@@ -54,7 +54,7 @@ void proc_init(page_directory_t*, uint32_t);
 
 void proc_new_proc(uint8_t* code, uint32_t len);
 
-void proc_new_elf_proc(const char* name, const elf_image_t* elf);
+void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len);
 
 void proc_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_out);
 
