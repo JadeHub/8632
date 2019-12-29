@@ -82,3 +82,37 @@ fs_node_t* fs_install_root_fs(fs_node_t* n)
 	return fs_add_child_node(_root, n);
 }
 
+static fs_node_t* _get_node(fs_node_t* n, const char* path, fs_node_t** parent)
+{
+	char* sep = strchr(path, '/');
+	if (sep)
+	{
+		//Given "blah/blah2/file"
+		*sep = '\0';
+		sep++;
+		//path = "blah"
+		//sep = "blah2/file"
+		fs_node_t* sub = fs_find_child(n, path);
+		//handle "blah/" case
+		if (*sep == '\0')
+		{
+			if (parent)
+				*parent = n;
+			return sub;
+		}
+		return sub ? _get_node(sub, sep, parent) : NULL;
+	}
+	fs_node_t* child = fs_find_child(n, path);
+
+	if (child && parent)
+		*parent = n;
+	return child;
+}
+
+fs_node_t* fs_get_abs_path(const char* path, fs_node_t** parent)
+{
+	if (path[0] == '/')
+		path++;
+	return _get_node(_root, path, parent);
+}
+

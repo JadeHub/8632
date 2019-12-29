@@ -77,7 +77,6 @@ void user_thread_entry(uint32_t entry)
 {
 	//setup thread here
 	sched_unlock();
-	bochs_dbg();
 	start_user_mode_thread(entry);
 }
 
