@@ -1,7 +1,7 @@
 #include "dir.h"
 
 #include <kernel/memory/kmalloc.h>
-#include <drivers/console.h>
+#include <kernel/fs/fs.h>
 
 #include <string.h>
 
@@ -19,22 +19,22 @@ static dirent_t* _create_dirent(fs_node_t* n)
 	return dir;
 }
 
-static bool _dir_remove(fs_node_t* parent, fs_node_t* child)
+static bool _dir_remove(fs_node_t* parent, fs_node_t* n)
 {
 	if (!_is_dir(parent))
 		return false;
 	
 	//Remove the dirent_t representing the child from the parent's list
 	dirent_t* dir = (dirent_t*)parent->data;
-	dirent_t* c;
-	list_for_each_entry(c, &dir->child_list, list)
+	dirent_t* child;
+	list_for_each_entry(child, &dir->child_list, list)
 	{
-		if (c->node == child)
+		if (child->node == n)
 		{
-			list_delete(&c->child_list);
-			if (_is_dir(c->node))
-				c->node->data = NULL;
-			kfree(c);
+			list_delete(&child->child_list);
+			if (_is_dir(child->node))
+				child->node->data = NULL;
+			kfree(child);
 			return true;
 		}
 	}
@@ -71,7 +71,7 @@ static fs_node_t* _dir_add_child(fs_node_t* parent, fs_node_t* child)
 {
 	if (!_is_dir(parent))
 		return NULL;
-
+	
 	dirent_t* p_dir = (dirent_t*)parent->data;
 	dirent_t* entry = _create_dirent(child);
 	if(_is_dir(child))
@@ -89,8 +89,37 @@ fs_node_t* fs_create_dir_node(char* name, uint32_t inode)
 	n->remove_child = &_dir_remove;
 	n->read_dir = &_read_dir;
 	n->find_child = &_find_child;
-	dirent_t* dir = _create_dirent(n);
-	n->data = dir;
 	return n;
 }
 
+fs_node_t* fs_create_root_node(uint32_t inode)
+{
+	fs_node_t* root = fs_create_dir_node("", inode);
+	root->data = _create_dirent(root);
+	return root;
+}
+
+static bool _walk_dir(fs_node_t* parent, fs_node_t* n, fs_read_dir_cb_fn_t cb)
+{
+	if (!cb(parent, n))
+		return false;
+
+	if (_is_dir(n))
+	{
+		dirent_t* dir = (dirent_t*)n->data;
+		dirent_t* child;
+		list_for_each_entry(child, &dir->child_list, list)
+		{
+			if (!_walk_dir(n, child->node, cb))
+				return false;
+		}
+	}
+	return true;
+}
+
+void fs_walk_dir(fs_node_t* n, fs_read_dir_cb_fn_t cb)
+{
+	if(!_is_dir(n))
+		return;
+	_walk_dir(NULL, n, cb);
+}

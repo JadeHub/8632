@@ -105,23 +105,6 @@ void dump_dir(fs_node_t* d)
 	fs_read_dir(d, &write_fs);
 }
 
-void test_fs()
-{
-	uint32_t next_inode = 0;
-	fs_node_t* dir = fs_create_dir_node("root", next_inode++);
-	fs_node_t* sub = fs_create_dir_node("sub", next_inode++);
-	fs_add_child_node(dir, sub);
-
-	fs_node_t* file = fs_create_node("file");
-	file->len = 0;
-	file->inode = next_inode++;
-
-	dump_dir(dir);
-	dump_dir(sub);
-}
-
-
-
 uint8_t buff[10000];
 uint32_t buf_len = 10000;
 char exe_name[128];
@@ -136,10 +119,10 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	con_printf("Hello World %d %x\n", mb_data->mod_count, *((uint8_t*)mb_data->modules->start));
 	mb_init(mb_data);
 
-	buf_len = mb_copy_mod("/boot/user_space", buff, buf_len);
-	if(!buf_len)
-		KPANIC("Module /boot/user_space not found\n");
-	strcpy(exe_name, "/boot/user_space");
+	//buf_len = mb_copy_mod("/boot/user_space", buff, buf_len);
+	//if(!buf_len)
+	//	KPANIC("Module /boot/user_space not found\n");
+	
 
 	ram_disk_len = mb_copy_mod("/boot/ramdisk", ram_disk_buff, ram_disk_len);
 	if (!ram_disk_len)
@@ -158,23 +141,35 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	con_write("timer\n");
 	page_directory_t* kpages = paging_init();
 	con_write("paging\n");
-	//test_fs();
-	//bochs_dbg();
-	ramfs_init(ram_disk_buff, ram_disk_len);
-	dump_dir(ramfs_root());
-
 	proc_init(kpages, esp);
 	sched_init(proc_kernel_proc());
+	con_write("sched\n");
+	fs_init();
+	con_write("fs\n");
+	ramfs_init(ram_disk_buff, ram_disk_len);
+	dump_dir(ramfs_root());	
+	con_write("initrd\n");
 	kb_init();
 	syscall_init();
+	con_write("ata\n");
 	ata_init();
 
 	uint8_t atabuff [512];
 	ata_read(atabuff, 0, 1);
 
-
-	con_printf("Loading elf %x %d %s\n", buff[0], buf_len, exe_name);
-	proc_new_elf_proc(exe_name, buff, buf_len);
+	fs_node_t* bin = fs_find_child(ramfs_root(), "bin");
+	if (bin)
+	{
+		fs_node_t* f = fs_find_child(bin, "user_space");
+		if(f)
+		{
+			strcpy(exe_name, "/bin/user_space");
+			fs_read(f, buff, 0, buf_len);
+			con_printf("Loading elf %x %d %s\n", buff[0], buf_len, exe_name);
+			proc_new_elf_proc(exe_name, buff, buf_len);
+		}
+	}
+	
 
 	//proc_new_proc(elf->exec_section.data, elf->exec_section.sz);
 	//proc_new_proc(atabuff, 512);

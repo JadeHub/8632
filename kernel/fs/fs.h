@@ -5,6 +5,7 @@
 void fs_init();
 
 fs_node_t* fs_root();
+fs_node_t* fs_install_root_fs(fs_node_t* n);
 
 void fs_open(fs_node_t*, uint32_t flags);
 void fs_close(fs_node_t*);

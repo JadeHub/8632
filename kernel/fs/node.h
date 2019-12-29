@@ -6,10 +6,12 @@
 
 struct fs_node;
 
+//file io
 typedef void (*fs_open_fn_t)(struct fs_node*, uint32_t flags); //return fd?
 typedef void (*fs_close_fn_t)(struct fs_node*);
 typedef size_t (*fs_read_fn_t)(struct fs_node*, uint8_t* buff, size_t off, size_t sz);
 typedef size_t (*fs_write_fn_t)(struct fs_node*, uint8_t* buff, size_t off, size_t sz);
+//dir related
 typedef bool(*fs_read_dir_cb_fn_t)(struct fs_node* parent, struct fs_node* child);
 typedef uint32_t (*fs_read_dir_fn_t)(struct fs_node*, fs_read_dir_cb_fn_t);
 typedef struct fs_node* (*fs_find_child_fn_t)(struct fs_node*, const char* name); //find a child by name

@@ -1,5 +1,9 @@
 #include "fs.h"
 
+#include <kernel/fs/dir.h>
+#include <kernel/fault.h>
+#include <kernel/utils.h>
+
 #include <stddef.h>
 
 static fs_node_t* _root = NULL;
@@ -11,8 +15,7 @@ static inline bool _is_dir(const fs_node_t* n)
 
 void fs_init()
 {
-	_root = fs_create_node("");
-	_root->flags = FS_DIR;
+	_root = fs_create_root_node(0);
 }
 
 fs_node_t* fs_root()
@@ -72,5 +75,10 @@ bool fs_remove_child_node(fs_node_t* n, fs_node_t* child)
 	if (_is_dir(n) && n->remove_child)
 		return (*n->remove_child)(n, child);
 	return false;
+}
+
+fs_node_t* fs_install_root_fs(fs_node_t* n)
+{
+	return fs_add_child_node(_root, n);
 }
 

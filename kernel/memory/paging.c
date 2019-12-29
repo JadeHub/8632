@@ -2,7 +2,7 @@
 #include "kheap.h"
 #include "kmalloc.h"
 #include <kernel/fault.h>
-
+#include <kernel/debug.h>
 #include <kernel/utils.h>
 #include <kernel/x86/interrupts.h>
 #include <drivers/console.h>
@@ -63,8 +63,16 @@ static uint32_t first_frame()
     }
 }
 
+static void _stack_unwind_cb(const char* name, uint32_t addr, uint32_t sz, uint32_t ebp, uint32_t ip)
+{
+    con_printf("%08x %-30s at: %08x to %08x ebp: %08x\n", ip, name, addr, addr + sz, ebp);
+}
+
 static void page_fault(isr_state_t* regs)
 {
+
+  //  dbg_unwind_stack(dbg_kernel_image(), regs->ebp, _stack_unwind_cb);
+
     // The faulting address is stored in the CR2 register.
     uint32_t faulting_address;
     asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
