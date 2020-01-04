@@ -4,7 +4,6 @@
 #include "fault.h"
 
 #include <drivers/console.h>
-#include <drivers/memory.h>
 #include <drivers/keyboard/keyboard.h>
 #include <drivers/timer/timer.h>
 #include <drivers/ata/ata.h>

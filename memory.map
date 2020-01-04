@@ -25,3 +25,6 @@
 
 
 0x0000-0000		0x0010-0000		kernel memory (1mb mapped to same physical)
+
+
+https://preshing.com/20141119/how-to-build-a-gcc-cross-compiler/

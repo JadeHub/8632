@@ -13,5 +13,6 @@ void* malloc(size_t sz);
 void free(void* ptr);
 int atexit(void (*)(void) );
 char* getenv(const char* p);
+void exit(int exit_code);
 
 __LIBC_END_H
