@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stddef.h>
+#include <stdbool.h>
+
 typedef struct list_head
 {
     struct list_head* next, * prev;
@@ -8,7 +11,7 @@ typedef struct list_head
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 
 #define LIST_HEAD(name) \
-	struct list_head name = LIST_HEAD_INIT(name)
+	list_head_t name = LIST_HEAD_INIT(name)
 
 static inline void INIT_LIST_HEAD(list_head_t* list)
 {

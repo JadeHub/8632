@@ -10,6 +10,8 @@ kernel/sync/*.c \
 kernel/elf32/*.c \
 kernel/fs/*.c \
 kernel/ramfs/*.c \
+kernel/devfs/*.c \
+kernel/types/*.c \
 drivers/*.c \
 drivers/keyboard/*.c \
 drivers/ata/*.c \
@@ -26,6 +28,8 @@ kernel/sync/*.h \
 kernel/elf32/*.h \
 kernel/fs/*.h \
 kernel/ramfs/*.h \
+kernel/devfs/*.h \
+kernel/types/*.c \
 drivers/*.h \
 drivers/keyboard/*.h \
 drivers/ata/*.h \

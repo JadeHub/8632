@@ -1,8 +1,8 @@
 cd libc
-make $1
+make -j4 $1
 cd ..
 cd userspace
-make $1
+make -j4 $1
 cd ..
-make $1
+make -j4 $1
 

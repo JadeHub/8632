@@ -74,6 +74,11 @@ thread_t* sched_cur_thread()
 	return current_thread;
 }
 
+process_t* sched_cur_proc()
+{
+	return current_thread->process;
+}
+
 void sched_run()
 {
 	sched_lock();

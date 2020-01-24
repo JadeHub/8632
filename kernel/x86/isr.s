@@ -85,8 +85,41 @@ IRQ 15,	47
 
 [GLOBAL isr_common_stub:function]
 isr_common_stub:
+; isrXX has pushed err_code & int_num
+; now we build the remainder of an isr_state_t
 	pusha
+	mov ax, ds
+	push eax		; save ds
 
+	; set selectors to kernel code
+	mov ax, 0x10
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+
+	; pass pointer to the isr_state_t as param
+	push esp
+	call isr_handler
+
+	;add esp, 4
+	pop ebx
+	pop ebx			; restore ds
+	mov ds, bx
+	mov es, bx
+	mov fs, bx
+    mov gs, bx
+
+	popa
+	add esp, 8		; the two values pushed by isrXX (int_num, err_code)
+	sti
+	iret
+
+[extern irq_handler]
+
+[GLOBAL irq_common_stub:function]
+irq_common_stub:
+	pusha
 	mov ax, ds
 	push eax		; save ds
 
@@ -95,9 +128,10 @@ isr_common_stub:
 	mov es, ax
 	mov fs, ax
 	mov gs, ax
-
-	call isr_handler
-
+	
+	push esp
+	call irq_handler
+	pop ebx
 	pop ebx			; restore ds
 	mov ds, bx
 	mov es, bx
@@ -106,35 +140,6 @@ isr_common_stub:
 
 	popa
 
-	add esp, 8
-	sti
-	iret
-
-[extern irq_handler]
-
-[GLOBAL irq_common_stub:function]
-irq_common_stub:
-	pusha		;push all the registers
-
-	mov ax, ds	;push the current selector value
-	push eax
-
-	mov ax, 0x10	;change to gdt entry at 0x10
-	mov ds, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
-
-	call irq_handler
-
-	pop ebx		;restore the selectors
-	mov ds, bx
-	mov es, bx
-	mov fs, bx
-	mov gs, bx
-
-	popa	;pop all the registers
-
-	add esp, 8
+	add esp, 8		; the two values pushed by isrXX (int_num, err_code)
 	sti
 	iret

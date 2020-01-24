@@ -2,6 +2,9 @@
 
 #include <sys/cdefs.h>
 
+#include <stddef.h>
+#include <stdarg.h>
+
 __LIBC_BEGIN_H
 
 typedef struct _FILE {

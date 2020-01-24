@@ -11,6 +11,7 @@
 #include <kernel/memory/kheap.h>
 #include <kernel/dbg_monitor/dbg_monitor.h>
 #include <kernel/ramfs/ramfs.h>
+#include <kernel/devfs/devfs.h>
 #include <kernel/fs/fs.h>
 #include <kernel/fs/dir.h>
 
@@ -25,10 +26,47 @@
 #include "utils.h"
 #include "multiboot.h"
 #include "types/list.h"
-
+#include "types/hash_tbl.h"
+#include "types/kname.h"
 #include <kernel/sync/spin_lock.h>
 
 extern void switch_to_user_mode();
+
+void hash_test()
+{
+	typedef struct Bar
+	{
+		kname_t name;
+		hash_tbl_item_t hash_item;
+	}Bar_t;
+
+	hash_tbl_t* ht = hash_tbl_create(256);
+
+	Bar_t b1;
+	kname_create("B 1", &b1.name);
+	hash_tbl_add(ht, 1, &b1.hash_item);
+
+	Bar_t b2;
+	kname_create("B 511", &b2.name);
+	hash_tbl_add(ht, 511, &b2.hash_item);
+
+	Bar_t b3;
+	kname_create("B 2048", &b3.name);
+	hash_tbl_add(ht, 2048, &b3.hash_item);
+
+	hash_tbl_item_t* i = hash_tbl_find(ht, 511);
+
+	if (i)
+	{
+		
+		Bar_t* test = container_of(i, Bar_t, hash_item);
+		con_printf("found %s\n", test->name.name);
+	}
+
+	Bar_t* t2 = hash_tbl_lookup(ht, 2049, Bar_t, hash_item);
+	if (t2)
+		con_printf("Found %s\n", t2->name.name);
+}
 
 void list_test()
 {
@@ -90,7 +128,9 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
 	con_init();
 	list_test();
+	hash_test();
 	con_printf("Hello World %d %x\n", mb_data->mod_count, *((uint8_t*)mb_data->modules->start));
+	bochs_dbg();
 	mb_init(mb_data);
 	ram_disk_len = mb_copy_mod("/boot/ramdisk", ram_disk_buff, ram_disk_len);
 	if (!ram_disk_len)
@@ -115,6 +155,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	con_write("fs\n");
 	ramfs_init(ram_disk_buff, ram_disk_len);
 	con_write("initrd\n");
+	devfs_init();
 	kb_init();
 	syscall_init();
 	con_write("ata\n");

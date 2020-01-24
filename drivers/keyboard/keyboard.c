@@ -1,11 +1,14 @@
-//#if 0
 #include "keyboard.h"
 #include "kb_scancode_tables.h"
 
+#include <kernel/fault.h>
 #include <kernel/utils.h>
 #include <kernel/x86/interrupts.h>
+#include <kernel/types/kname.h>
+#include <kernel/types/cbuff.h>
 #include <drivers/console.h>
 #include <drivers/ioports.h>
+#include <drivers/device_driver.h>
 
 #include <stdbool.h>
 
@@ -21,6 +24,33 @@ typedef struct state
 } state_t;
 
 state_t kb_state;
+
+#define BUFF_SZ 128
+static uint8_t _buff[BUFF_SZ];
+
+//we only support a sinlge keyboard so the device and driver are one
+typedef struct kb_device
+{
+    dev_driver_t driver;
+    dev_device_t device;
+    state_t kb_state;
+    cbuff_t* buffer;
+}kb_device_t;
+
+static kb_device_t _kb;
+
+static size_t _read_keyboard(dev_device_t* d, uint8_t* buff, size_t off, size_t sz)
+{
+    ASSERT(off = 0);
+
+    size_t i = 0;
+    for (;i < sz; i++)
+    {
+        if (!cbuff_get(_kb.buffer, &buff[i]))
+            break;        
+    }
+    return i;
+}
 
 static bool is_state_modifier(uint8_t sc)
 {
@@ -104,9 +134,15 @@ static void kb_isr(isr_state_t* state)
         return; //todo: key release
     
     uint8_t ascii = translate(scan_code);
+    if (ascii)
+    {
+        if (cbuff_full(_kb.buffer))
+        {
 
-    if(ascii)
+        }
+        cbuff_put(_kb.buffer, ascii);
         con_putc(ascii);
+    }
     kb_state.wait = false;
 }
 
@@ -114,5 +150,14 @@ void kb_init()
 {
     idt_register_handler(IRQ1, &kb_isr);
     kb_scancode_tables_init();
+
+    kname_create("kb_driver", &_kb.driver.name);
+    kname_create("keyboard", &_kb.device.name);
+
+    _kb.driver.read = &_read_keyboard;
+    _kb.device.driver = &_kb.driver;
+    _kb.buffer = cbuff_create(_buff, BUFF_SZ);
+
+    dev_install_driver(&_kb.driver);
+    dev_register_device(&_kb.device);
 }
-//#endif

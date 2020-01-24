@@ -13,6 +13,11 @@ Returns the currently executing thread
 */
 thread_t* sched_cur_thread();
 
+/*
+Returns the currently executing process
+*/
+process_t* sched_cur_proc();
+
 void sched_run();
 void sched_pause();
 

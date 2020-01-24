@@ -5,7 +5,8 @@ CC = i686-elf-gcc
 C_SOURCES = $(wildcard \
 string/*.c \
 ctype/*.c \
-stdlib/*.c)
+stdlib/*.c \
+stdio/*.c)
 
 ASM_SOURCES = $(wildcard *.s)
 

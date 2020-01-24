@@ -29,6 +29,11 @@ static void syscall_exit(uint32_t code)
 	//for (;;);
 }
 
+static size_t _syscall_read(uint8_t* buff, size_t offset, size_t sz)
+{
+    return 0;
+}
+
 static void* syscalls[4] =
 {
 	&syscall_alloc,

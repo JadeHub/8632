@@ -89,9 +89,6 @@ static void idt_set_entry(uint8_t num, uint32_t base)
     idt_entries[num].seg_sel = 0x08; //kernel code selector
     idt_entries[num].flags = 0x8E | 0x60;
     idt_entries[num].unused = 0;
-
-	//if(num == ISR_SYSCALL)
-		//idt_entries[num].flags |= 0x60;
 }
 
 void idt_init()
@@ -167,7 +164,6 @@ void idt_init()
 	idt_set_entry(47, (uint32_t) irq15);
 
     idt_flush((uint32_t) &idt_ptr);
-	//enable_interrupts();
 }
 
 void enable_interrupts()
@@ -185,33 +181,33 @@ void idt_register_handler(uint8_t n, isr_callback_t handler)
     isr_handlers[n] = handler;
 }
 
-void isr_handler(isr_state_t regs)
+void isr_handler(isr_state_t* regs)
 {
-   // con_printf("isr %x err: %x\n", regs.int_no, regs.err_code);
-	if (isr_handlers[regs.int_no] != 0)
+// con_printf("isr %x err: %x\n", regs.int_no, regs.err_code);
+	if (isr_handlers[regs->int_no] != 0)
     {
-		isr_callback_t handler = isr_handlers[regs.int_no];
-		handler(&regs);
+		isr_callback_t handler = isr_handlers[regs->int_no];
+		handler(regs);
 	}
     else
     {
-		con_printf("unhandled isr: %x\n", regs.int_no);
+		con_printf("unhandled isr: %x\n", regs->int_no);
 	}
 }
 
-void irq_handler(isr_state_t regs)
+void irq_handler(isr_state_t* regs)
 {
-    if (regs.int_no >= 40) 
+    if (regs->int_no >= 40) 
 		outb(0xA0, 0x20);	// send reset signal to slave
 	outb(0x20, 0x20);		// send reset signal to master
 
-	if (isr_handlers[regs.int_no] != 0)
+	if (isr_handlers[regs->int_no] != 0)
 	{
-		isr_callback_t handler = isr_handlers[regs.int_no];
-		handler(&regs);
+		isr_callback_t handler = isr_handlers[regs->int_no];
+		handler(regs);
 	}
 	else
 	{
-		con_printf("unhandled irq: %x\n", regs.int_no);
+		con_printf("unhandled irq: %x\n", regs->int_no);
 	}
 }
