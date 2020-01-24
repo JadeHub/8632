@@ -130,7 +130,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	list_test();
 	hash_test();
 	con_printf("Hello World %d %x\n", mb_data->mod_count, *((uint8_t*)mb_data->modules->start));
-	bochs_dbg();
+	//bochs_dbg();
 	mb_init(mb_data);
 	ram_disk_len = mb_copy_mod("/boot/ramdisk", ram_disk_buff, ram_disk_len);
 	if (!ram_disk_len)

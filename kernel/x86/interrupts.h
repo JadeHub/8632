@@ -25,5 +25,12 @@ void idt_register_handler(uint8_t n, isr_callback_t handler);
 
 void idt_init();
 
-void enable_interrupts();
-void disable_interrupts();
+static inline void enable_interrupts()
+{
+	asm volatile ("sti");
+}
+
+static inline void disable_interrupts()
+{
+	asm volatile ("cli");
+}

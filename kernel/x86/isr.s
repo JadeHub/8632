@@ -21,15 +21,6 @@ idt_flush:
 		jmp isr_common_stub
 %endmacro
 
-%macro IRQ 2
-	[global irq%1:function]
-	irq%1:
-		cli
-		push byte 0
-		push byte %2
-		jmp irq_common_stub
-%endmacro
-
 ISR_NOERRCODE 0
 ISR_NOERRCODE 1
 ISR_NOERRCODE 2
@@ -64,22 +55,25 @@ ISR_ERRCODE 30
 ISR_NOERRCODE 31
 ISR_NOERRCODE 100
 
-IRQ 0,	32
-IRQ 1,	33
-IRQ 2,	34
-IRQ 3,	35
-IRQ 4,	36
-IRQ 5,	37
-IRQ 6,	38
-IRQ 7,	39
-IRQ 8,	40
-IRQ 9,	41
-IRQ 10,	42
-IRQ 11,	43
-IRQ 12,	44
-IRQ 13,	45
-IRQ 14,	46
-IRQ 15,	47
+
+; IRQs
+ISR_NOERRCODE 32
+ISR_NOERRCODE 33
+ISR_NOERRCODE 34
+ISR_NOERRCODE 35
+ISR_NOERRCODE 36
+ISR_NOERRCODE 37
+ISR_NOERRCODE 38
+ISR_NOERRCODE 39
+ISR_NOERRCODE 40
+ISR_NOERRCODE 41
+ISR_NOERRCODE 42
+ISR_NOERRCODE 43
+ISR_NOERRCODE 44
+ISR_NOERRCODE 45
+ISR_NOERRCODE 46
+ISR_NOERRCODE 47
+
 
 [extern isr_handler]
 
@@ -101,9 +95,8 @@ isr_common_stub:
 	; pass pointer to the isr_state_t as param
 	push esp
 	call isr_handler
+	add esp, 4
 
-	;add esp, 4
-	pop ebx
 	pop ebx			; restore ds
 	mov ds, bx
 	mov es, bx
@@ -112,34 +105,5 @@ isr_common_stub:
 
 	popa
 	add esp, 8		; the two values pushed by isrXX (int_num, err_code)
-	sti
-	iret
-
-[extern irq_handler]
-
-[GLOBAL irq_common_stub:function]
-irq_common_stub:
-	pusha
-	mov ax, ds
-	push eax		; save ds
-
-	mov ax, 0x10
-	mov ds, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
-	
-	push esp
-	call irq_handler
-	pop ebx
-	pop ebx			; restore ds
-	mov ds, bx
-	mov es, bx
-	mov fs, bx
-    mov gs, bx
-
-	popa
-
-	add esp, 8		; the two values pushed by isrXX (int_num, err_code)
-	sti
+	;sti
 	iret
