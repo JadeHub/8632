@@ -7,7 +7,7 @@ idt_flush:
 %macro ISR_NOERRCODE 1
 	[global isr%1:function]
 	isr%1:
-		cli
+	;	cli
 		push byte 0
 		push %1
 		jmp isr_common_stub
@@ -16,7 +16,7 @@ idt_flush:
 %macro ISR_ERRCODE 1
 	[global isr%1:function]
 	isr%1:
-		cli
+		;cli
 		push byte %1
 		jmp isr_common_stub
 %endmacro
@@ -54,7 +54,6 @@ ISR_NOERRCODE 29
 ISR_ERRCODE 30
 ISR_NOERRCODE 31
 ISR_NOERRCODE 100
-
 
 ; IRQs
 ISR_NOERRCODE 32
