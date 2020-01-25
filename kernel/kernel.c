@@ -29,6 +29,7 @@
 #include "types/hash_tbl.h"
 #include "types/kname.h"
 #include <kernel/sync/spin_lock.h>
+#include <kernel/io/io.h>
 
 extern void switch_to_user_mode();
 
@@ -43,15 +44,15 @@ void hash_test()
 	hash_tbl_t* ht = hash_tbl_create(256);
 
 	Bar_t b1;
-	kname_create("B 1", &b1.name);
+	kname_set("B 1", &b1.name);
 	hash_tbl_add(ht, 1, &b1.hash_item);
 
 	Bar_t b2;
-	kname_create("B 511", &b2.name);
+	kname_set("B 511", &b2.name);
 	hash_tbl_add(ht, 511, &b2.hash_item);
 
 	Bar_t b3;
-	kname_create("B 2048", &b3.name);
+	kname_set("B 2048", &b3.name);
 	hash_tbl_add(ht, 2048, &b3.hash_item);
 
 	hash_tbl_item_t* i = hash_tbl_find(ht, 511);
@@ -60,12 +61,12 @@ void hash_test()
 	{
 		
 		Bar_t* test = container_of(i, Bar_t, hash_item);
-		con_printf("found %s\n", test->name.name);
+		con_printf("found %s\n", test->name.str);
 	}
 
 	Bar_t* t2 = hash_tbl_lookup(ht, 2049, Bar_t, hash_item);
 	if (t2)
-		con_printf("Found %s\n", t2->name.name);
+		con_printf("Found %s\n", t2->name.str);
 }
 
 void list_test()
@@ -127,8 +128,8 @@ uint32_t ram_disk_len = 0x4000;
 void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
 	con_init();
-	list_test();
-	hash_test();
+	//list_test();
+	//hash_test();
 	con_printf("Hello World %d %x\n", mb_data->mod_count, *((uint8_t*)mb_data->modules->start));
 	//bochs_dbg();
 	mb_init(mb_data);
@@ -143,6 +144,9 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	idt_init();
 	con_write("idt\n");
 	fault_init();
+
+	io_init();
+
 	serial_init();
 	timer_init(1);
 	con_write("timer\n");
@@ -174,7 +178,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 		proc_new_elf_proc(exe_name, buff, buf_len);
 	}
 	
-	dbg_mon_init();
+//	dbg_mon_init();
 	switch_to_user_mode();
 	
 	for (;;);

@@ -68,9 +68,10 @@ void hash_tbl_delete_item(hash_tbl_t* ht, hash_tbl_item_t* item)
 	list_delete(&item->list);
 }
 
-void hash_tbl_delete(hash_tbl_t* ht, uint32_t key)
+hash_tbl_item_t* hash_tbl_delete(hash_tbl_t* ht, uint32_t key)
 {
 	hash_tbl_item_t* item = hash_tbl_find(ht, key);
-	if (item)
-		hash_tbl_delete_item(ht, item);
+	if (!item) return NULL;
+	hash_tbl_delete_item(ht, item);
+	return item;
 }

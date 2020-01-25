@@ -7,6 +7,7 @@
 #include <kernel/x86/interrupts.h>
 #include <kernel/utils.h>
 #include <kernel/fault.h>
+#include <kernel/io/io.h>
 #include <drivers/console.h>
 
 #include <string.h>
@@ -138,6 +139,8 @@ void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 	while (tmp->next)
 		tmp = tmp->next;
 	tmp->next = p;
+
+	io_proc_start(p);
 }
 
 void proc_new_proc(uint8_t* code, uint32_t len)

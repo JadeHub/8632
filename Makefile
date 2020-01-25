@@ -12,6 +12,7 @@ kernel/fs/*.c \
 kernel/ramfs/*.c \
 kernel/devfs/*.c \
 kernel/types/*.c \
+kernel/io/*.c \
 drivers/*.c \
 drivers/keyboard/*.c \
 drivers/ata/*.c \
@@ -29,7 +30,8 @@ kernel/elf32/*.h \
 kernel/fs/*.h \
 kernel/ramfs/*.h \
 kernel/devfs/*.h \
-kernel/types/*.c \
+kernel/types/*.h	 \
+kernel/io/*.h \
 drivers/*.h \
 drivers/keyboard/*.h \
 drivers/ata/*.h \

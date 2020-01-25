@@ -29,9 +29,9 @@ void devfs_init()
 
 void devfs_register_device(dev_device_t* device)
 {
-	con_printf("Dev reg %08x %s\n", device->driver, device->name.name);
+	con_printf("Dev reg %08x %s\n", device->driver, device->name.str);
 
-	fs_node_t* node = fs_create_node(device->name.name);
+	fs_node_t* node = fs_create_node(device->name.str);
 	node->data = device;
 	if(device->driver->read)
 		node->read = &_read_device;

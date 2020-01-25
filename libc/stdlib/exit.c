@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include "../syscall.h"
+#include "syscall.h"
 
 void exit(int exit_code)
 {

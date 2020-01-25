@@ -151,8 +151,8 @@ void kb_init()
     idt_register_handler(IRQ1, &kb_isr);
     kb_scancode_tables_init();
 
-    kname_create("kb_driver", &_kb.driver.name);
-    kname_create("keyboard", &_kb.device.name);
+    kname_set("kb_driver", &_kb.driver.name);
+    kname_set("keyboard", &_kb.device.name);
 
     _kb.driver.read = &_read_keyboard;
     _kb.device.driver = &_kb.driver;

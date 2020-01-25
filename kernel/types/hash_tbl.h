@@ -23,8 +23,7 @@ bool hash_tbl_empty(hash_tbl_t* ht);
 hash_tbl_item_t* hash_tbl_find(hash_tbl_t* ht, uint32_t key);
 bool hash_tbl_has(hash_tbl_t* ht, uint32_t key);
 void hash_tbl_delete_item(hash_tbl_t* ht, hash_tbl_item_t* item);
-void hash_tbl_delete(hash_tbl_t* ht, uint32_t key);
+hash_tbl_item_t* hash_tbl_delete(hash_tbl_t* ht, uint32_t key);
 
-#define hash_tbl_lookup(ht, key, type, member) ({			\
-	hash_tbl_item_t* __temp##key = hash_tbl_find(ht, key);	\
-	__temp##key ? container_of(__temp##key, type, member) : NULL; })
+#define hash_tbl_lookup(ht, key, type, member) ({		\
+	container_of(hash_tbl_find(ht, key), type, member); })

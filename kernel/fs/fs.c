@@ -3,6 +3,8 @@
 #include <kernel/fs/dir.h>
 #include <kernel/fault.h>
 #include <kernel/utils.h>
+#include <kernel/types/kname.h>
+#include <kernel/memory/kmalloc.h>
 
 #include <stddef.h>
 
@@ -111,8 +113,13 @@ static fs_node_t* _get_node(fs_node_t* n, const char* path, fs_node_t** parent)
 
 fs_node_t* fs_get_abs_path(const char* path, fs_node_t** parent)
 {
-	if (path[0] == '/')
-		path++;
-	return _get_node(_root, path, parent);
+	char tmp[512];
+	strcpy(tmp, path);
+	
+	fs_node_t* res = NULL;
+	if (tmp[0] == '/')
+		return _get_node(_root, tmp + 1, parent);
+	else
+		return _get_node(_root, tmp, parent);
 }
 
