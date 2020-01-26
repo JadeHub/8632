@@ -10,7 +10,10 @@ void print(const char* str)
 
 uint32_t open(const char* path, uint32_t flags)
 {
-	return (uint32_t)SYSCALL2(SYSCALL_OPEN, path, flags);
+	uint32_t x =  (uint32_t)SYSCALL2(SYSCALL_OPEN, path, flags);
+	x++;
+	x--;
+	return x;
 }
 
 size_t read(uint32_t fd, char* buff, size_t sz)

@@ -15,8 +15,8 @@ static inline const char* _get_tbl_name(const elf_section_t* tbl, uint32_t name)
 
 static void _add_fn_symbol(elf_image_t* image, elf_sym_t* symbol)
 {
-	elf_fn_symbol_t* fn = image->fn_sym_list;
 	elf_fn_symbol_t* add = (elf_fn_symbol_t*)kmalloc(sizeof(elf_fn_symbol_t));
+	memset(add, 0, sizeof(elf_fn_symbol_t));
 	add->name = (const char*)(image->symbol_strs.data + symbol->name);
 	add->address = symbol->value;
 	add->section_idx = symbol->shndx;
@@ -24,33 +24,46 @@ static void _add_fn_symbol(elf_image_t* image, elf_sym_t* symbol)
 	add->size = symbol->size;
 	add->next = add->prev = 0;
 	//con_printf("Adding %s at %08x\n", add->name, add->address);
-	do
+
+	if (!image->fn_sym_list)
 	{
-		if (!fn)
+		//first item
+		image->fn_sym_list = add;
+	}
+	else if (add->address < image->fn_sym_list->address)
+	{
+		//insert at start
+		add->next = image->fn_sym_list;
+		image->fn_sym_list->prev = add;
+		image->fn_sym_list = add;
+	}
+	else
+	{
+		//sorted insert
+		elf_fn_symbol_t* fn = image->fn_sym_list;
+
+		while (fn)
 		{
-			//first
-			image->fn_sym_list = add;
-			break;
+			if (add->address < fn->address)
+			{
+				//sorted insert
+				add->next = fn;
+				if (fn->prev)
+					fn->prev->next = add;
+				add->prev = fn->prev;
+				fn->prev = add;
+				break;
+			}
+			if (fn->next == 0)
+			{
+				//last
+				add->prev = fn;
+				fn->next = add;
+				break;
+			}
+			fn = fn->next;
 		}
-		if (fn->address > add->address)
-		{
-			//sorted insert
-			add->next = fn;
-			if (fn->prev)
-				fn->prev->next = add;
-			add->prev = fn->prev;
-			fn->prev = add;
-			break;
-		}
-		if (fn->next == 0)
-		{
-			//last
-			add->prev = fn;
-			fn->next = add;
-			break;
-		}
-		fn = fn->next;
-	} while (fn);
+	}
 }
 
 static bool _is_valid_header(const elf_hdr_t* hdr)
@@ -91,17 +104,22 @@ uint32_t elf_load_raw_image(page_directory_t* pages, const char* name, const uin
 		phdr->memsz = 0x8000;
 		_load_elf_data(pages, data, phdr);
 		con_printf("PHeader type %x offset %08x vaddr %08x mem sz %08x\n", phdr->type, phdr->offset, phdr->vaddr, phdr->memsz);
+		con_printf("Section header %x hdr %x\n", hdr->shoff, hdr);
 	}
+
+	//elf_shdr_t* section = (elf_shdr_t*)((data + hdr->shoff) + hdr->shstrndx * hdr->shentsize);
+	//con_printf("josh %s\n", data+section->offset+section->name);
+	elf_image_t* elf_img = elf_load_symbol_data(name, data,
+			data+hdr->shoff, hdr->shnum, hdr->shentsize, hdr->shstrndx);
 
 	return hdr->entry;
 _err_ret:
 	KLOG(LL_ERR, "ELF", "error loading Elf image %s\n", name);
-	//kfree(elf);
 	return 0;
 }
 
-elf_image_t* elf_load_symbol_data(const char* name, uint32_t base_address,
-		uint8_t* sections, uint32_t section_count, uint32_t section_size, uint32_t section_name_idx)
+elf_image_t* elf_load_symbol_data(const char* name, const uint8_t* base_address,
+		const uint8_t* sections, uint32_t section_count, uint32_t section_size, uint32_t section_name_idx)
 {
 	elf_image_t* elf = (elf_image_t*)kmalloc(sizeof(elf_image_t));
 	memset(elf, 0, sizeof(elf_image_t));
@@ -109,7 +127,7 @@ elf_image_t* elf_load_symbol_data(const char* name, uint32_t base_address,
 	//section name table section
 	elf_shdr_t* section = (elf_shdr_t*)(sections + section_name_idx * section_size);
 	elf->section_strs.data = (char*)kmalloc(section->size);
-	memcpy((uint8_t*)elf->section_strs.data, (const uint8_t*)base_address + section->offset, section->size);
+	memcpy((uint8_t*)elf->section_strs.data, base_address + section->offset, section->size);
 	elf->section_strs.sz = section->size;
 	elf->section_strs.name = _get_tbl_name(&elf->section_strs, section->name);
 	elf->section_strs.address = section->addr;
@@ -121,7 +139,7 @@ elf_image_t* elf_load_symbol_data(const char* name, uint32_t base_address,
 		if (section->type == 3 && streq(_get_tbl_name(&elf->section_strs, section->name), ".strtab"))
 		{
 			elf->symbol_strs.data = (char*)kmalloc(section->size);
-			memcpy((uint8_t*)elf->symbol_strs.data, (const uint8_t*)base_address + section->offset, section->size);
+			memcpy((uint8_t*)elf->symbol_strs.data, base_address + section->offset, section->size);
 			elf->symbol_strs.sz = section->size;
 			elf->symbol_strs.name = _get_tbl_name(&elf->section_strs, section->name);
 			elf->symbol_strs.address = section->addr;

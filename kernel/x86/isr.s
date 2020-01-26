@@ -21,6 +21,40 @@ idt_flush:
 		jmp isr_common_stub
 %endmacro
 
+[extern isr_handler]
+
+[GLOBAL isr_common_stub:function]
+isr_common_stub:
+; isrXX has pushed err_code & int_num
+; now we build the remainder of an isr_state_t
+	pusha
+	mov ax, ds
+	push eax		; save ds
+
+	; set selectors to kernel code
+	mov ax, 0x10
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+
+	; pass pointer to the isr_state_t as param
+	push esp
+	call isr_handler
+	add esp, 4
+
+	pop ebx			; restore ds
+	mov ds, bx
+	mov es, bx
+	mov fs, bx
+    mov gs, bx
+
+	popa
+	add esp, 8		; the two values pushed by isrXX (int_num, err_code)
+	;sti
+	iret
+
+
 ISR_NOERRCODE 0
 ISR_NOERRCODE 1
 ISR_NOERRCODE 2
@@ -72,37 +106,3 @@ ISR_NOERRCODE 44
 ISR_NOERRCODE 45
 ISR_NOERRCODE 46
 ISR_NOERRCODE 47
-
-
-[extern isr_handler]
-
-[GLOBAL isr_common_stub:function]
-isr_common_stub:
-; isrXX has pushed err_code & int_num
-; now we build the remainder of an isr_state_t
-	pusha
-	mov ax, ds
-	push eax		; save ds
-
-	; set selectors to kernel code
-	mov ax, 0x10
-	mov ds, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
-
-	; pass pointer to the isr_state_t as param
-	push esp
-	call isr_handler
-	add esp, 4
-
-	pop ebx			; restore ds
-	mov ds, bx
-	mov es, bx
-	mov fs, bx
-    mov gs, bx
-
-	popa
-	add esp, 8		; the two values pushed by isrXX (int_num, err_code)
-	;sti
-	iret

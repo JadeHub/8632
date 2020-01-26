@@ -42,6 +42,7 @@ ASM_SOURCES = $(wildcard kernel/x86/*.s \
 kernel/memory/*.s \
 kernel/tasks/*.s \
 kernel/sync/*.s \
+kernel/x86/*.s \
 drivers/*.s)
 
 KERNEL_OBJ = ${C_SOURCES:.c=.o}

@@ -64,7 +64,7 @@ void hash_test()
 		con_printf("found %s\n", test->name.str);
 	}
 
-	Bar_t* t2 = hash_tbl_lookup(ht, 2049, Bar_t, hash_item);
+	Bar_t* t2 = hash_tbl_lookup(ht, 2048, Bar_t, hash_item);
 	if (t2)
 		con_printf("Found %s\n", t2->name.str);
 }

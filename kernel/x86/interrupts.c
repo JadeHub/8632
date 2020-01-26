@@ -139,11 +139,12 @@ void isr_handler(isr_state_t* regs)
 // con_printf("isr %x err: %x\n", regs.int_no, regs.err_code);
 	if (isr_handlers[regs->int_no] != 0)
     {
+		//con_printf("ISR regs %x EBP %x ESP %x EIP %x\n", regs, regs->ebp, regs->esp, regs->eip);
 		isr_callback_t handler = isr_handlers[regs->int_no];
 		handler(regs);
 	}
     else
     {
-		con_printf("unhandled isr: %x\n", regs->int_no);
+		//con_printf("unhandled isr: %x\n", regs->int_no);
 	}
 }
