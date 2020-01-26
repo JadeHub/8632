@@ -26,14 +26,10 @@ static elf_fn_symbol_t* _find_fn_containing(const elf_image_t* image, uint32_t a
 
 	elf_fn_symbol_t* fn = image->fn_sym_list;
 
-	while (true)
+	while (fn)
 	{
 		if (addr < fn->address)
-		{
 			return fn->prev;
-		}
-		//if (addr >= fn->address && (addr < fn->address + fn->size || fn->size == 0)) //asm fns have no length
-			//return fn;
 		if (!fn->next)
 			return fn;
 		fn = fn->next;
@@ -45,6 +41,43 @@ static elf_fn_symbol_t* _find_fn_containing(const elf_image_t* image, uint32_t a
 elf_fn_symbol_t* dbg_find_function(const elf_image_t* image, uint32_t address)
 {
 	return _find_fn_containing(image, address);
+}
+
+void dbg_unwind_stack2(const elf_image_t* image, uint32_t eip, uint32_t ebp, dbg_stack_callback_t cb)
+{
+	while (eip && ebp)
+	{
+
+		elf_fn_symbol_t* fn;
+		fn = _find_fn_containing(image, eip);
+		if (fn)
+		{
+			(*cb)(fn->name, fn->address, fn->size, ebp, eip);
+
+			if (strcmp(fn->name, "isr_handler") == 0)
+			{
+				//extra frame for the isr_common_stub which doesn't have a base pointer
+				fn = _find_fn_containing(image, *(uint32_t*)(ebp + 4));
+				if (fn)
+					(*cb)(fn->name, fn->address, fn->size, ebp, eip);
+
+				//switch to user mode
+				isr_state_t* istate = (isr_state_t*)(ebp + 12);
+				con_printf("isr_state at %x ebp %x eip %x\n", istate, istate->ebp, istate->eip);
+				ebp = istate->ebp;
+				eip = istate->eip;
+				image = sched_cur_proc()->elf_img;
+				continue;
+			}
+		}
+		else
+		{
+			(*cb)("Unknown function", eip, 0, ebp, eip);
+		}
+
+		eip = *(uint32_t*)(ebp + 4);
+		ebp = *(uint32_t*)(ebp);
+	}
 }
 
 uint32_t dbg_unwind_stack(const elf_image_t* image, uint32_t ebp, dbg_stack_callback_t cb)
@@ -104,10 +137,13 @@ static void _stack_unwind_cb(const char* name, uint32_t addr, uint32_t sz, uint3
 
 extern uint32_t regs_ebp();
 
+extern uint32_t regs_eip();
+
 void dbg_dump_stack()
 {
 	uint32_t ebp = regs_ebp();
+	uint32_t eip = regs_eip();
 
-	dbg_unwind_stack(dbg_kernel_image(), ebp, &_stack_unwind_cb);
+	dbg_unwind_stack2(dbg_kernel_image(), eip, ebp, &_stack_unwind_cb);
 	bochs_dbg();
 }
