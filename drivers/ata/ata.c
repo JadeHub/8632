@@ -3,6 +3,7 @@
 #include <drivers/console.h>
 #include <kernel/fault.h>
 #include <kernel/memory/kmalloc.h>
+#include <stdio.h>
 
 //Channels
 #define ATA_PRIMARY			0x00
@@ -110,17 +111,17 @@ void ata_detect()
 	outb(base_port + ATA_REG_LBA1, 0);
 	outb(base_port + ATA_REG_LBA2, 0);
 	outb(base_port + ATA_REG_COMMAND, ATA_CMD_IDENTIFY);
-	con_write("Sent IDENTIFY\n");
+	printf("Sent IDENTIFY\n");
 	uint8_t status = inb(base_port + ATA_REG_STATUS);
 
 	if (status)
 	{
 		if (!ide_poll(base_port))
 		{
-			con_write("Disk Error\n");
+			printf("Disk Error\n");
 			return;
 		}
-	//	con_printf("Disk online\n");
+	//	printf("Disk online\n");
 		for (int i = 0; i<256; i++)
 		{
 			*(uint16_t *)(ide_buf + i * 2) = inw(base_port + ATA_REG_DATA);
@@ -134,7 +135,7 @@ void ata_detect()
 		}
 		str[39] = '\0';
 
-		con_printf("Disk is %s\n", str);
+		printf("Disk is %s\n", str);
 	}
 }
 
@@ -181,6 +182,6 @@ void ata_init()
 	ata_detect();
 	ata_read(buffer, 0, 2);
 
-	//con_printf("hdd read: %x %x\n", buffer[1022], buffer[1023]);
+	//printf("hdd read: 0x%x 0x%x\n", buffer[1022], buffer[1023]);
 
 }

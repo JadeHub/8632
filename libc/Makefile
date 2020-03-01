@@ -3,6 +3,7 @@ AR = i686-elf-ar
 CC = i686-elf-gcc
 
 C_SOURCES = $(wildcard \
+*.c \
 string/*.c \
 ctype/*.c \
 stdlib/*.c \
@@ -35,7 +36,7 @@ libc.a: $(LIBC_OBJS) ${ASM_OBJ}
 	$(CC) ${CFLAGS} -c $< -o $@ 
 
 %.libk.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(CC) $(CFLAGS) -c $< -o $@ -D _LIBK
 
 %.o: %.s
 	nasm $< -f elf32 -o $@

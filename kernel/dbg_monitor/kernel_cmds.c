@@ -13,9 +13,9 @@ void kernel_cmd(const char* params)
 		//dump kernel function symbols
 		const elf_fn_symbol_t* fn = dbg_find_function(dbg_kernel_image(), addr);
 		if (fn)
-			dbg_mon_output_line("%-30s at: %08x to %08x", fn->name, fn->address, fn->address + fn->size);
+			dbg_mon_output_line("%-30s at: 0x%08x to 0x%08x", fn->name, fn->address, fn->address + fn->size);
 		else
-			dbg_mon_output_line("No function found at %08x", addr);
+			dbg_mon_output_line("No function found at 0x%08x", addr);
 	}
 	else if (streq(params, "fns"))
 	{
@@ -23,7 +23,7 @@ void kernel_cmd(const char* params)
 		const elf_fn_symbol_t* fn = dbg_kernel_image()->fn_sym_list;
 		while (fn)
 		{
-			dbg_mon_output_line("%-30s at: %08x to %08x", fn->name, fn->address, fn->address + fn->size);
+			dbg_mon_output_line("%-30s at: 0x%08x to 0x%08x", fn->name, fn->address, fn->address + fn->size);
 			fn = fn->next;
 		}
 	}

@@ -1,14 +1,9 @@
-#include <stdio.h>
+#include <sys/printf_helper.h>
 
 #include <ctype.h>
-#include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-
-#include <sys/printf_helper.h>
-#include <sys/syscall.h>
-
-typedef void (*flush_fn_t)(const char* buff, int* buff_pos, size_t buff_sz);
+#include <string.h>
 
 static uint32_t _atoi(const char** str)
 {
@@ -81,7 +76,7 @@ static int _int_out(flush_fn_t flush, char* buff, int* buff_pos, size_t buff_sz,
 	return _emit_str(flush, buff, buff_pos, buff_sz, str, len, width, pad, r_justify);
 }
 
-static int _printf_helper(char* buff, size_t buff_sz, flush_fn_t flush, const char* format, va_list args)
+int printf_helper(char* buff, size_t buff_sz, flush_fn_t flush, const char* format, va_list args)
 {
 	int buff_pos = 0;
 
@@ -169,26 +164,5 @@ static int _printf_helper(char* buff, size_t buff_sz, flush_fn_t flush, const ch
 	}
 	if (buff_pos)
 		flush(buff, &buff_pos, buff_sz);
-	return count;
-}
-
-static void _print_flush(const char* buff, int* buff_pos, size_t buff_sz)
-{
-	sys_print_str(buff, *buff_pos);
-	*buff_pos = 0;
-}
-
-int vprintf(const char* format, va_list args)
-{
-	char buff[256];
-	return _printf_helper(buff, 256, &_print_flush, format, args);
-}
-
-int printf(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-	int count = vprintf(format, args);
-	va_end(args);
 	return count;
 }

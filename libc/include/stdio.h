@@ -23,10 +23,15 @@ int fseek(FILE*, long, int);
 long ftell(FILE*);
 size_t fwrite(const void*, size_t, size_t, FILE*);
 void setbuf(FILE*, char*);
+
 int vfprintf(FILE*, const char*, va_list);
 
-int printf(const char*, ...);
+/*int snprintf(char*, size_t sz, const char*, ...);
+int sprintf(char*, const char*, ...);
+int vsnprintf(char* buff, size_t sz, const char* format, va_list args);
+int vsprintf(char* buff, const char* format, va_list args);*/
 
-int testj();
+int vprintf(const char*, va_list);
+int printf(const char*, ...);
 
 __LIBC_END_H

@@ -6,6 +6,7 @@
 #include <drivers/console.h>
 
 #include <stddef.h>
+#include <stdio.h>
 
 //asm routines
 extern uint32_t regs_ebp();
@@ -65,7 +66,7 @@ void dbg_unwind_stack2(const elf_image_t* image, uint32_t eip, uint32_t ebp, dbg
 
 				//switch to user mode
 				isr_state_t* istate = (isr_state_t*)(ebp + 12);
-				con_printf("isr_state at %x ebp %x eip %x\n", istate, istate->ebp, istate->eip);
+				printf("isr_state at 0x%x ebp 0x%x eip 0x%x\n", istate, istate->ebp, istate->eip);
 				ebp = istate->ebp;
 				eip = istate->eip;
 				image = sched_cur_proc()->elf_img;
@@ -84,7 +85,7 @@ void dbg_unwind_stack2(const elf_image_t* image, uint32_t eip, uint32_t ebp, dbg
 
 uint32_t dbg_unwind_stack(const elf_image_t* image, uint32_t ebp, dbg_stack_callback_t cb)
 {
-	con_printf("Unwinding %08x %x\n", ebp, image);
+	printf("Unwinding 0x%08x 0x%x\n", ebp, image);
 	
 	uint32_t rtn_addr;
 	elf_fn_symbol_t* fn;
@@ -99,12 +100,12 @@ uint32_t dbg_unwind_stack(const elf_image_t* image, uint32_t ebp, dbg_stack_call
 		if (fn)
 		{
 			(*cb)(fn->name, fn->address, fn->size, ebp, rtn_addr);
-			//con_printf("Stack %s addr: %08x ebp: %08x\n", fn->name, rtn_addr, ebp);
+			//printf("Stack %s addr: 0x%08x ebp: %08x\n", fn->name, rtn_addr, ebp);
 
 			if (strcmp(fn->name, "isr_common_stub") == 0)
 			{
 				isr_state_t* istate = (isr_state_t*)(ebp + 12);
-				con_printf("isr_state at %x ebp %x\n", istate, istate->ebp);
+				printf("isr_state at 0x%x ebp 0x%x\n", istate, istate->ebp);
 				ebp = istate->ebp;
 				image = sched_cur_proc()->elf_img;
 
@@ -115,7 +116,7 @@ uint32_t dbg_unwind_stack(const elf_image_t* image, uint32_t ebp, dbg_stack_call
 				}
 				else
 				{
-					con_printf("didnt find %x\n", istate->eip);
+					printf("didnt find 0x%x\n", istate->eip);
 				}*/
 				continue;
 			}
@@ -134,7 +135,7 @@ uint32_t dbg_unwind_stack(const elf_image_t* image, uint32_t ebp, dbg_stack_call
 
 static void _stack_unwind_cb(const char* name, uint32_t addr, uint32_t sz, uint32_t ebp, uint32_t ip)
 {
-	con_printf("%08x %-20s at: %08x to %08x ebp: %08x\n", ip, name, addr, addr + sz, ebp);
+	printf("0x%08x %-20s at: 0x%08x to 0x%08x ebp: 0x%08x\n", ip, name, addr, addr + sz, ebp);
 }
 
 void dbg_dump_stack()

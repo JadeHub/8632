@@ -1,8 +1,7 @@
 #include <stdlib.h>
-#include "syscall.h"
+#include <sys/syscall.h>
 
 void exit(int exit_code)
 {
-	SYSCALL1(SYSCALL_EXIT, exit_code);
-	//perform_syscall(3, exit_code, 0, 0, 0, 0);
+	sys_exit(exit_code);
 }

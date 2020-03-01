@@ -6,6 +6,8 @@
 
 #include <drivers/console.h>
 
+#include <stdio.h>
+
 static fs_node_t* _root;
 
 static size_t _write_device(struct fs_node* f, uint8_t* buff, size_t off, size_t sz)
@@ -29,7 +31,7 @@ void devfs_init()
 
 void devfs_register_device(dev_device_t* device)
 {
-	con_printf("Dev reg %08x %s\n", device->driver, device->name.str);
+	printf("Dev reg 0x%08x %s\n", device->driver, device->name.str);
 
 	fs_node_t* node = fs_create_node(device->name.str);
 	node->data = device;

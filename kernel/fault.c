@@ -5,23 +5,25 @@
 #include <drivers/console.h>
 #include <drivers/serial/serial_io.h>
 
+#include <stdio.h>
+
 void panic_impl(const char*, const char*, uint32_t);
 
 static void bad_opcode_fault_handler(isr_state_t* state)
 {
-    con_printf("Bad op code at: %x\n", state->eip);
+    printf("Bad op code at: 0x%x\n", state->eip);
     KPANIC("Bad Op code");
 }
 
 static void gp_fault_handler(isr_state_t* state)
 {
-    con_printf("GP Fault: %x at: %x\n", state->err_code, state->eip);
+    printf("GP Fault: 0x%x at: 0x%x\n", state->err_code, state->eip);
     KPANIC("GP Fault");
 }
 
 void panic_impl(const char* msg, const char* file, uint32_t line)
 {
-    con_printf("%s at %s:%d\n", msg, file, line);
+    printf("%s at %s:%d\n", msg, file, line);
     dbg_dump_stack();
     for(;;)
         ;

@@ -11,6 +11,7 @@
 #include <drivers/console.h>
 
 #include <string.h>
+#include <stdio.h>
 
 extern void start_kernel_mode_thread(uint32_t entry);
 extern void start_user_mode_thread(uint32_t entry);
@@ -60,7 +61,7 @@ void idle_task()
 	for (;;)
 	{
 		//disable_interrupts();
-		//con_write("Going idle\n");
+		//printf("Going idle\n");
 		//enable_interrupts();
 		testa();
 
@@ -107,7 +108,7 @@ void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 	p->id = next_pid++;
 	sprintf(p->name, "user proc %s", name);
 	p->next = 0;
-	con_printf("New proc %s\n", name);
+	printf("New proc %s\n", name);
 
 	p->pages = clone_directory(kernel_directory);
 	switch_page_directory(p->pages);
@@ -144,10 +145,10 @@ void proc_new_proc(uint8_t* code, uint32_t len)
 
 	process_t* p = (process_t*)kmalloc(sizeof(process_t));
 	p->id = next_pid++;
-	sprintf(p->name, "user proc %x", p->id);
+	sprintf(p->name, "user proc 0x0x%x", p->id);
 	p->next = 0;
 
-	con_printf("New proc %x\n", *code);
+	printf("New proc 0x0x%x\n", *code);
 
 	p->pages = clone_directory(kernel_directory);
 

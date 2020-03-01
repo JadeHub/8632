@@ -7,29 +7,28 @@
 
 #include <kernel/io/io.h>
 
+#include <stdio.h>
+
 static uint32_t syscall_alloc(heap_t* h, uint32_t size)
 {
 	uint32_t ret = (uint32_t)alloc(size, 0, h);
-	con_printf("Allocated %x bytes at %x\n", size, ret);
 	bochs_dbg();
 	return ret;
 }
 
 static void syscall_print(const char* str)
 {
-	con_printf("%s\n", str);
 }
 
-static void _syscall_print_str(const char* str, uint32_t len)
+static void _syscall_print_str(const char* buff, uint32_t sz)
 {
-    for (uint32_t i = 0; i < len; i++)
-        con_putc(str[i]);
+    con_write_buff(buff, sz);
 }
 
 static void syscall_exit(uint32_t code)
 {
-	con_printf("Exit ebx=%x\n", code);
-	//for (;;);
+	printf("Exit ebx=0x%x\n", code);
+	for (;;);
 }
 
 static uint32_t _syscall_open(const char* path, uint32_t flags)
@@ -60,7 +59,7 @@ static void* syscalls[7] =
 
 void syscall_handler(isr_state_t* regs)
 {
-   //con_printf("syscall %x %x\n", regs->eax, regs->esp);
+   //printf("syscall 0x%x 0x%x\n", regs->eax, regs->esp);
    void *location = syscalls[regs->eax-1];
 
    // We don't know how many parameters the function wants, so we just

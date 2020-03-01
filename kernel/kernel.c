@@ -31,6 +31,8 @@
 #include <kernel/sync/spin_lock.h>
 #include <kernel/io/io.h>
 
+#include <stdio.h>
+
 extern void switch_to_user_mode();
 
 void hash_test()
@@ -61,12 +63,12 @@ void hash_test()
 	{
 		
 		Bar_t* test = container_of(i, Bar_t, hash_item);
-		con_printf("found %s\n", test->name.str);
+		printf("found %s\n", test->name.str);
 	}
 
 	Bar_t* t2 = hash_tbl_lookup(ht, 2048, Bar_t, hash_item);
 	if (t2)
-		con_printf("Found %s\n", t2->name.str);
+		printf("Found %s\n", t2->name.str);
 }
 
 void list_test()
@@ -82,14 +84,14 @@ void list_test()
 	list_head_t my_list;
 	INIT_LIST_HEAD(&my_list);
 
-	con_printf("Empty = %d\n", list_empty(&my_list));
+	printf("Empty = %d\n", list_empty(&my_list));
 
 	Foo_t f1;
 	f1.bar = 1;
 	list_add(&f1.list, &my_list);
 
 
-	con_printf("Empty = %d\n", list_empty(&my_list));
+	printf("Empty = %d\n", list_empty(&my_list));
 
 	Foo_t f2;
 	f2.bar = 2;
@@ -103,7 +105,7 @@ void list_test()
 	list_for_each_rev(item, &my_list)
 	{
 		Foo_t* foo = list_entry(item, Foo_t, list);
-	//	con_printf("Foo %d\n", foo->bar);
+	//	printf("Foo %d\n", foo->bar);
 		if(foo->bar == 3)
 		{
 			list_delete(&foo->list);
@@ -114,7 +116,7 @@ void list_test()
 	Foo_t* f;
 	list_for_each_entry(f, &my_list, list)
 	{
-		con_printf("Foo %d\n", f->bar);
+		printf("Foo %d\n", f->bar);
 	}
 }
 
@@ -130,39 +132,39 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	con_init();
 	//list_test();
 	//hash_test();
-	con_printf("Hello World %d %x\n", mb_data->mod_count, *((uint8_t*)mb_data->modules->start));
+	printf("Hello World %d 0x%x\n", mb_data->mod_count, *((uint8_t*)mb_data->modules->start));
 	//bochs_dbg();
 	mb_init(mb_data);
 	ram_disk_len = mb_copy_mod("/boot/ramdisk", ram_disk_buff, ram_disk_len);
 	if (!ram_disk_len)
 		KPANIC("Module /boot/ramdisk not found\n");
-	con_printf("Ram Disk %08x bytes\n", ram_disk_len);
+	printf("Ram Disk 0x%08x bytes\n", ram_disk_len);
 	elf_image_t* k_image = mb_get_kernel_elf();
 	dbg_init(k_image);
 	gdt_init();
-	con_write("gdt\n");
+	printf("gdt\n");
 	idt_init();
-	con_write("idt\n");
+	printf("idt\n");
 	fault_init();
 
 	io_init();
 
 	serial_init();
 	timer_init(1);
-	con_write("timer\n");
+	printf("timer\n");
 	page_directory_t* kpages = paging_init();
-	con_write("paging\n");
+	printf("paging\n");
 	proc_init(kpages, esp);
 	sched_init(proc_kernel_proc());
-	con_write("sched\n");
+	printf("sched\n");
 	fs_init();
-	con_write("fs\n");
+	printf("fs\n");
 	ramfs_init(ram_disk_buff, ram_disk_len);
-	con_write("initrd\n");
+	printf("initrd\n");
 	devfs_init();
 	kb_init();
 	syscall_init();
-	con_write("ata\n");
+	printf("ata\n");
 	ata_init();
 
 	uint8_t atabuff [512];
@@ -174,7 +176,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	{
 		strcpy(exe_name, "user_space");
 		fs_read(f, buff, 0, buf_len);
-		con_printf("Loading elf %x %d %s/%s\n", buff[0], buf_len, parent->name, exe_name);
+		printf("Loading elf 0x%x %d %s/%s\n", buff[0], buf_len, parent->name, exe_name);
 		proc_new_elf_proc(exe_name, buff, buf_len);
 	}
 	

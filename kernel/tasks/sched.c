@@ -25,11 +25,9 @@ static thread_t* _get_next_thread()
 static void _switch_task()
 {
 	sched_lock();
-//	con_printf("Locked sched\n");
 	if (!_switching_flag)
 	{
 		sched_unlock();
-//		con_printf("unlocked sched\n");
 		return;
 	}
 
@@ -54,7 +52,6 @@ static void _switch_task()
 		ebp_ptr = &dummy;
 	}
 	proc_switch_to_thread(current_thread, esp_ptr, ebp_ptr);
-//	con_printf("Unlocked sched\n");
 	sched_unlock();	
 }
 

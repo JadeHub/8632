@@ -36,7 +36,7 @@ void mb_init(const multiboot_data_t* data)
 	for(int i=0; i<data->mod_count;i++)
 	{
 		module_data_t* mod = &data->modules[i];
-		KLOG(LL_INFO, "BOOT", "Loaded multiboot module %s %08x %08x %x\n",
+		KLOG(LL_INFO, "BOOT", "Loaded multiboot module %s 0x%08x 0x%08x 0x%x\n",
 				data->modules->name, data->modules->start, data->modules->end, data->modules->end - data->modules->start);
 	}
 }
@@ -57,7 +57,7 @@ module_data_t* mb_find_module(const char* name)
 		module_data_t* mod = &data->modules[i];
 		if(strcmp(mod->name, name) == 0)
 		{
-			con_printf("Module %s at %08x\n", mod->name, mod->start);
+			//printf("Module %s at %08x\n", mod->name, mod->start);
 			return mod;
 		}
 	}

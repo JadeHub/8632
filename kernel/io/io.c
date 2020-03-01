@@ -65,7 +65,7 @@ uint32_t open(const char* path, uint32_t flags)
 	//Find the node
 	fs_node_t* parent;
 	fs_node_t* node = fs_get_abs_path(path, &parent);
-	//con_printf("Open %s node %x\n", path, node);
+	//printf("Open %s node 0x%x\n", path, node);
 	if (!node)
 		return INVALID_FD;
 	
@@ -73,11 +73,11 @@ uint32_t open(const char* path, uint32_t flags)
 	uint32_t fd = _find_fd(proc, node);
 	if (io_is_valid_fd(fd))
 	{
-		//con_printf("Already open %x\n", fd);
+		//printf("Already open 0x%x\n", fd);
 		return fd;
 	}
 	fd = _free_fd(proc);
-//	con_printf("Open Free %x\n", fd);
+//	printf("Open Free 0x%x\n", fd);
 	if (io_is_valid_fd(fd))
 	{
 		proc->fds[fd] = (proc_file_desc_t*)kmalloc(sizeof(proc_file_desc_t));
@@ -97,7 +97,7 @@ void close(uint32_t fd)
 
 size_t read(uint32_t fd, uint8_t* buff, size_t sz)
 {
-//	con_printf("reading %x\n", fd);
+//	printf("reading 0x%x\n", fd);
 	proc_io_data_t* proc = _cur_proc_data();
 	ASSERT(proc->fds[fd]->node);
 	size_t read = fs_read(proc->fds[fd]->node, buff, proc->fds[fd]->offset, sz);

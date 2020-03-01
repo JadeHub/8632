@@ -32,7 +32,7 @@ static uint8_t line_status(uint16_t port)
 static void handle_line_status(uint16_t port)
 {
 	uint8_t status = line_status(port);
-	KLOG(LL_INFO, "Serial", "Port %x status %x", port, status);
+	KLOG(LL_INFO, "Serial", "Port 0x%x status 0x%x", port, status);
 	
 	bochs_dbg();
 }
@@ -51,7 +51,7 @@ static void handle_interrupt(uint16_t port)
 		break;
 	case (0x02):
 		//ready to write
-		//con_printf("Serial ready to write\n");
+		//printf("Serial ready to write\n");
 		break;
 	case (0x04):
 		//data available to read
@@ -60,7 +60,7 @@ static void handle_interrupt(uint16_t port)
 			uint8_t data = inb(port);
 			if (com1_handler)
 				com1_handler(SERIAL_PORT_COM1, data);
-			//con_printf("test %c %x\n", data, data);
+			//printf("test %c 0x%x\n", data, data);
 		}
 		break;
 	case (0x06):

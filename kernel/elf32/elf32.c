@@ -6,6 +6,7 @@
 #include <kernel/memory/paging.h>
 
 #include <stddef.h>
+#include <stdio.h>
 
 static inline const char* _get_tbl_name(const elf_section_t* tbl, uint32_t name)
 {
@@ -23,7 +24,7 @@ static void _add_fn_symbol(elf_image_t* image, elf_sym_t* symbol)
 	add->type = symbol->info;
 	add->size = symbol->size;
 	add->next = add->prev = 0;
-	//con_printf("Adding %s at %08x\n", add->name, add->address);
+	//printf("Adding %s at 0x%08x\n", add->name, add->address);
 
 	if (!image->fn_sym_list)
 	{
@@ -92,7 +93,7 @@ uint32_t elf_load_raw_image(page_directory_t* pages, const char* name, const uin
 	if (!_is_valid_header(hdr) || hdr->type != ELF_TYPE_EXE || hdr->machine != ELF_MACH_I386)
 	{
 		KLOG(LL_ERR, "ELF", "failed to load Elf image %s\n", name);
-		con_printf("invalid %d %d %d %d\n", hdr->ident[0], hdr->ident[1], hdr->ident[2], hdr->ident[3]);
+		printf("invalid %d %d %d %d\n", hdr->ident[0], hdr->ident[1], hdr->ident[2], hdr->ident[3]);
 		return 0;
 	}
 
@@ -103,12 +104,12 @@ uint32_t elf_load_raw_image(page_directory_t* pages, const char* name, const uin
 
 		phdr->memsz = 0x8000;
 		_load_elf_data(pages, data, phdr);
-		con_printf("PHeader type %x offset %08x vaddr %08x mem sz %08x\n", phdr->type, phdr->offset, phdr->vaddr, phdr->memsz);
-		con_printf("Section header %x hdr %x\n", hdr->shoff, hdr);
+		printf("PHeader type 0x%x offset 0x%08x vaddr %08x mem sz %08x\n", phdr->type, phdr->offset, phdr->vaddr, phdr->memsz);
+		printf("Section header 0x%x hdr 0x%x\n", hdr->shoff, hdr);
 	}
 
 	//elf_shdr_t* section = (elf_shdr_t*)((data + hdr->shoff) + hdr->shstrndx * hdr->shentsize);
-	//con_printf("josh %s\n", data+section->offset+section->name);
+	//printf("josh %s\n", data+section->offset+section->name);
 	elf_image_t* elf_img = elf_load_symbol_data(name, data,
 			data+hdr->shoff, hdr->shnum, hdr->shentsize, hdr->shstrndx);
 
@@ -149,7 +150,7 @@ elf_image_t* elf_load_symbol_data(const char* name, const uint8_t* base_address,
 	if (!elf->symbol_strs.data)
 	{
 		KLOG(LL_ERR, "ELF", "failed to find .strtab section in %s\n", name);
-		con_printf("aaa\n");
+		printf("aaa\n");
 		goto _err_ret;
 	}
 

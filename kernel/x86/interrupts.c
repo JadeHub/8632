@@ -136,15 +136,9 @@ void isr_handler(isr_state_t* regs)
 			outb(0xA0, 0x20);	// send reset signal to slave
 		outb(0x20, 0x20);		// send reset signal to master
 	}
-// con_printf("isr %x err: %x\n", regs.int_no, regs.err_code);
 	if (isr_handlers[regs->int_no] != 0)
     {
-		//con_printf("ISR regs %x EBP %x ESP %x EIP %x\n", regs, regs->ebp, regs->esp, regs->eip);
 		isr_callback_t handler = isr_handlers[regs->int_no];
 		handler(regs);
-	}
-    else
-    {
-		//con_printf("unhandled isr: %x\n", regs->int_no);
 	}
 }

@@ -51,33 +51,8 @@ void con_putc(char c)
     dsp_set_cursor(cursor_x, cursor_y);
 }
 
-void con_write(const char *str)
+void con_write_buff(const char* buff, size_t sz)
 {
-    const char *c = str;
-    while(*c)
-    {
-        con_putc(*c);
-        c++;
-    }
-}
-
-void con_write_hex(uint32_t n)
-{
-	int i;
-	for (i = 28; i >= 0; i -= 4) 
-	{
-		int digit = (n >> i) & 0xF;
-		if (digit < 10)
-			con_putc('0' + digit);
-		else
-			con_putc('a' + digit - 10);		
-	}
-}
-
-void con_printf(const char* format, ...)
-{
-	va_list args;
-	va_start(args, format);
-	printf_helper(&con_putc, format, args);
-	va_end(args);	
+    for (size_t i = 0; i < sz; i++)
+        con_putc(buff[i]);
 }

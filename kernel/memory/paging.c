@@ -6,6 +6,7 @@
 #include <kernel/utils.h>
 #include <kernel/x86/interrupts.h>
 #include <drivers/console.h>
+#include <stdio.h>
 
 extern void enable_paging();
 
@@ -65,7 +66,7 @@ static uint32_t first_frame()
 
 static void _stack_unwind_cb(const char* name, uint32_t addr, uint32_t sz, uint32_t ebp, uint32_t ip)
 {
-    con_printf("%08x %-30s at: %08x to %08x ebp: %08x\n", ip, name, addr, addr + sz, ebp);
+    printf("0x%08x %-30s at: 0x%08x to 0x%08x ebp: 0x%08x\n", ip, name, addr, addr + sz, ebp);
 }
 
 static void page_fault(isr_state_t* regs)
@@ -84,15 +85,17 @@ static void page_fault(isr_state_t* regs)
     int reserved = regs->err_code & 0x8;     // Overwritten CPU-reserved bits of page entry?
     int id = regs->err_code & 0x10;          // Caused by an instruction fetch?
 
+  /*
     // Output an error message.
-    con_write("Page fault! ( ");
-    if (present) {con_write("present ");}
-    if (rw) {con_write("read-only ");}
-    if (us) {con_write("user-mode ");}
-    if (reserved) {con_write("reserved ");}
-    con_write(") at 0x");
-    con_write_hex(faulting_address);
-    con_printf(" - EIP: %x\n", regs->eip);
+    printf("Page fault! ( ");
+    if (present) {printf("present ");}
+    if (rw) {printf("read-only ");}
+    if (us) {printf("user-mode ");}
+    if (reserved) {printf("reserved ");}
+    printf(") at 0x");
+    printf_hex(faulting_address);
+    printf(" - EIP: 0x%x\n", regs->eip);
+    */
     KPANIC("Page fault");
 }
 
@@ -247,7 +250,7 @@ page_directory_t* paging_init()
     kheap = create_heap(kernel_directory, KHEAP_START, KHEAP_START+KHEAP_INITIAL_SIZE, 0xCFFFF000, 0, 0);
    // current_directory = clone_directory(kernel_directory);
     switch_page_directory(kernel_directory);
-	con_write("Virtual Memory mode\n");
+	printf("Virtual Memory mode\n");
 
 	//test((void*)0xE0000000, 0x2000, kernel_directory);
 	

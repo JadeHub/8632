@@ -1,6 +1,7 @@
 #include <kernel/utils.h>
 
 #include <ctype.h>
+#include <stdio.h>
 
 static void _emit_str(void (*emit)(char), const char* str, uint32_t len, uint32_t width, uint8_t pad, bool r_justify)
 {
