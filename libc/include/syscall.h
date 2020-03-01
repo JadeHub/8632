@@ -10,6 +10,7 @@ extern uint32_t perform_syscall(uint32_t id, uint32_t p1, uint32_t p2, uint32_t 
 #define SYSCALL_OPEN 4
 #define SYSCALL_CLOSE 5
 #define SYSCALL_READ 6
+#define SYSCALL_PRINT_STR 7
 
 #define SYSCALL1(code, param) perform_syscall(code, (uint32_t)param, 0, 0, 0, 0)
 #define SYSCALL2(code, param1, param2) perform_syscall(code, (uint32_t)param1, (uint32_t)param2, 0, 0, 0)

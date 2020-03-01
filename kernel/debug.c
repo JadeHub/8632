@@ -7,6 +7,10 @@
 
 #include <stddef.h>
 
+//asm routines
+extern uint32_t regs_ebp();
+extern uint32_t regs_eip();
+
 static const elf_image_t* _k_image = NULL;
 
 void dbg_init(const elf_image_t* kernel_image)
@@ -25,7 +29,6 @@ static elf_fn_symbol_t* _find_fn_containing(const elf_image_t* image, uint32_t a
 		return NULL;
 
 	elf_fn_symbol_t* fn = image->fn_sym_list;
-
 	while (fn)
 	{
 		if (addr < fn->address)
@@ -33,8 +36,7 @@ static elf_fn_symbol_t* _find_fn_containing(const elf_image_t* image, uint32_t a
 		if (!fn->next)
 			return fn;
 		fn = fn->next;
-	}
-	
+	}	
 	return fn;
 }
 
@@ -135,15 +137,10 @@ static void _stack_unwind_cb(const char* name, uint32_t addr, uint32_t sz, uint3
 	con_printf("%08x %-20s at: %08x to %08x ebp: %08x\n", ip, name, addr, addr + sz, ebp);
 }
 
-extern uint32_t regs_ebp();
-
-extern uint32_t regs_eip();
-
 void dbg_dump_stack()
 {
 	uint32_t ebp = regs_ebp();
 	uint32_t eip = regs_eip();
 
 	dbg_unwind_stack2(dbg_kernel_image(), eip, ebp, &_stack_unwind_cb);
-	bochs_dbg();
 }

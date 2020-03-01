@@ -1,4 +1,5 @@
 #include "fault.h"
+#include "debug.h"
 #include "utils.h"
 #include <kernel/x86/interrupts.h>
 #include <drivers/console.h>
@@ -21,6 +22,7 @@ static void gp_fault_handler(isr_state_t* state)
 void panic_impl(const char* msg, const char* file, uint32_t line)
 {
     con_printf("%s at %s:%d\n", msg, file, line);
+    dbg_dump_stack();
     for(;;)
         ;
 }

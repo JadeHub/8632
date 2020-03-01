@@ -118,8 +118,8 @@ void list_test()
 	}
 }
 
-uint8_t buff[10000];
-uint32_t buf_len = 10000;
+uint8_t buff[20000];
+uint32_t buf_len = 20000;
 char exe_name[128];
 
 uint8_t ram_disk_buff[0x4000];

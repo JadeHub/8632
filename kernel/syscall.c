@@ -20,9 +20,10 @@ static void syscall_print(const char* str)
 	con_printf("%s\n", str);
 }
 
-static void syscall_print_hex(const char* str, uint32_t v)
+static void _syscall_print_str(const char* str, uint32_t len)
 {
-	con_printf("Value (%08x) %s = %x\n", str, str, v);
+    for (uint32_t i = 0; i < len; i++)
+        con_putc(str[i]);
 }
 
 static void syscall_exit(uint32_t code)
@@ -54,7 +55,7 @@ static void* syscalls[7] =
     &_syscall_open,
     &_syscall_close,
     &_syscall_read,
-	&syscall_print_hex
+	&_syscall_print_str
 };
 
 void syscall_handler(isr_state_t* regs)

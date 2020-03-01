@@ -1,5 +1,5 @@
 #include <stdlib.h>
-
+#include <stdio.h>
 #include <string.h>
 #include <syscall.h>
 
@@ -10,10 +10,7 @@ void print(const char* str)
 
 uint32_t open(const char* path, uint32_t flags)
 {
-	uint32_t x =  (uint32_t)SYSCALL2(SYSCALL_OPEN, path, flags);
-	x++;
-	x--;
-	return x;
+	return (uint32_t)SYSCALL2(SYSCALL_OPEN, path, flags);
 }
 
 size_t read(uint32_t fd, char* buff, size_t sz)
@@ -39,8 +36,8 @@ void test_io()
 	{
 		print("Opened file");
 
-		size_t l = 20;
-		char buff[20];
+		size_t l = 80;
+		char buff[80];
 		memset(buff, 0, l);
 		read(fd, buff, l-1);
 		print(buff);
@@ -50,9 +47,10 @@ void test_io()
 
 void entry()
 {
-	char* msg = "Hello from user land3";
+	char* msg = "Hello from user land %d";
 
-	print(msg);
+	printf("printf %d %s\n", 2, "testing");
+	int x = testj();
 	//asm volatile("mov $4, %%eax; mov %0, %%ebx; int $0x64;" :: "b"(msg));
 
 	test_io();

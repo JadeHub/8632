@@ -5,4 +5,4 @@ cd userspace
 make -j4 $1
 cd ..
 make -j4 $1
-
+./user.sh
