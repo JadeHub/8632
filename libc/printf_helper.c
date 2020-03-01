@@ -15,18 +15,17 @@ static uint32_t _atoi(const char** str)
 	return i;
 }
 
-static inline int _emit(const char c, flush_fn_t flush, char* buff, int* pos, size_t buff_sz)
+static inline int _emit(const char c, char* buff, size_t* pos, size_t buff_sz)
 {
-	buff[*pos] = c;
-	(*pos)++;
-	if (*pos == buff_sz)
+	if ((*pos) < buff_sz)
 	{
-		flush(buff, pos, buff_sz);
+		buff[*pos] = c;
+		(*pos)++;
 	}
 	return 1;
 }
 
-static int _emit_str(flush_fn_t flush, char* buff, int* buff_pos, size_t buff_sz,
+static int _emit_str(char* buff, size_t* buff_pos, size_t buff_sz,
 	const char* str, uint32_t len, uint32_t width, uint8_t pad, bool r_justify)
 {
 	width = width ? width : len;
@@ -35,24 +34,24 @@ static int _emit_str(flush_fn_t flush, char* buff, int* buff_pos, size_t buff_sz
 	if (r_justify)
 	{
 		while (len++ < width)
-			count += _emit(pad, flush, buff, buff_pos, buff_sz);
+			count += _emit(pad, buff, buff_pos, buff_sz);
 	}
 	const char* c = str;
 	while (*c && (c - str) < width)
 	{
-		count += _emit(*c, flush, buff, buff_pos, buff_sz);
+		count += _emit(*c, buff, buff_pos, buff_sz);
 		c++;
 	}
 	//postpad
 	if (!r_justify)
 	{
 		while (len++ < width)
-			count += _emit(pad, flush, buff, buff_pos, buff_sz);
+			count += _emit(pad, buff, buff_pos, buff_sz);
 	}
 	return count;
 }
 
-static int _int_out(flush_fn_t flush, char* buff, int* buff_pos, size_t buff_sz,
+static int _int_out(char* buff, size_t* buff_pos, size_t buff_sz,
 	uint32_t v, int base, const char* digits, uint32_t width, uint8_t pad, bool r_justify)
 {
 	char str[64];
@@ -73,12 +72,12 @@ static int _int_out(flush_fn_t flush, char* buff, int* buff_pos, size_t buff_sz,
 		v = v / base;
 
 	} while (v);
-	return _emit_str(flush, buff, buff_pos, buff_sz, str, len, width, pad, r_justify);
+	return _emit_str(buff, buff_pos, buff_sz, str, len, width, pad, r_justify);
 }
 
-int printf_helper(char* buff, size_t buff_sz, flush_fn_t flush, const char* format, va_list args)
+int printf_helper(char* buff, size_t buff_sz, const char* format, va_list args)
 {
-	int buff_pos = 0;
+	size_t buff_pos = 0;
 
 	const char* digits = "0123456789ABCDEF";
 	uint8_t r_justify;
@@ -95,7 +94,7 @@ int printf_helper(char* buff, size_t buff_sz, flush_fn_t flush, const char* form
 	{
 		if (*format != '%')
 		{
-			count += _emit(*format, flush, buff, &buff_pos, buff_sz);
+			count += _emit(*format, buff, &buff_pos, buff_sz);
 			format++;
 			continue;
 		}
@@ -126,43 +125,41 @@ int printf_helper(char* buff, size_t buff_sz, flush_fn_t flush, const char* form
 		{
 		case 'c':
 			chv = va_arg(args, int);
-			count += _emit(chv, flush, buff, &buff_pos, buff_sz);
+			count += _emit(chv, buff, &buff_pos, buff_sz);
 			format++;
 			break;
 		case 'd':
 			intv = va_arg(args, int32_t);
 			if (intv < 0)
 			{
-				count += _emit('-', flush, buff, &buff_pos, buff_sz);
+				count += _emit('-', buff, &buff_pos, buff_sz);
 				intv *= -1;
 			}
-			count += _int_out(flush, buff, &buff_pos, buff_sz, intv, 10, digits, width, pad, r_justify);
+			count += _int_out(buff, &buff_pos, buff_sz, intv, 10, digits, width, pad, r_justify);
 			format++;
 			break;
 		case 'u':
-			count += _int_out(flush, buff, &buff_pos, buff_sz, va_arg(args, uint32_t), 10, digits, width, pad, r_justify);
+			count += _int_out(buff, &buff_pos, buff_sz, va_arg(args, uint32_t), 10, digits, width, pad, r_justify);
 			format++;
 			break;
 		case 'x':
-			count += _int_out(flush, buff, &buff_pos, buff_sz, va_arg(args, uint32_t), 16, digits, width, pad, r_justify);
+			count += _int_out(buff, &buff_pos, buff_sz, va_arg(args, uint32_t), 16, digits, width, pad, r_justify);
 			format++;
 			break;
 		case 's':
 			strv = va_arg(args, char*);
-			count += _emit_str(flush, buff, &buff_pos, buff_sz, strv, strlen(strv), width, pad, r_justify);
+			count += _emit_str(buff, &buff_pos, buff_sz, strv, strlen(strv), width, pad, r_justify);
 			format++;
 			break;
 		case '%':
-			count += _emit('%', flush, buff, &buff_pos, buff_sz);
+			count += _emit('%', buff, &buff_pos, buff_sz);
 			format++;
 			break;
 		default:
-			count += _emit(*format, flush, buff, &buff_pos, buff_sz);
+			count += _emit(*format, buff, &buff_pos, buff_sz);
 			format++;
 			break;
 		}
 	}
-	if (buff_pos)
-		flush(buff, &buff_pos, buff_sz);
-	return count;
+	return buff_pos;
 }

@@ -5,6 +5,8 @@
 #include <kernel/utils.h>
 #include <kernel/fs/fs.h>
 
+#include <stdio.h>
+
 #define SERIAL_BUFF_LEN 256
 
 char cmd_buff[SERIAL_BUFF_LEN];
@@ -108,6 +110,7 @@ static void reset_cmd_buff()
 
 static void serial_handler(uint16_t port, uint8_t data)
 {
+	printf("Serial!\n");
 	serial_write(port, data);
 
 	if (data == CR)

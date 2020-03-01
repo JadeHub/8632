@@ -26,10 +26,10 @@ void setbuf(FILE*, char*);
 
 int vfprintf(FILE*, const char*, va_list);
 
-/*int snprintf(char*, size_t sz, const char*, ...);
+int snprintf(char*, size_t sz, const char*, ...);
 int sprintf(char*, const char*, ...);
 int vsnprintf(char* buff, size_t sz, const char* format, va_list args);
-int vsprintf(char* buff, const char* format, va_list args);*/
+int vsprintf(char* buff, const char* format, va_list args);
 
 int vprintf(const char*, va_list);
 int printf(const char*, ...);

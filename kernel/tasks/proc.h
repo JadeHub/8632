@@ -54,13 +54,9 @@ typedef struct thread
 
 void proc_init(page_directory_t*, uint32_t);
 
-void proc_new_proc(uint8_t* code, uint32_t len);
-
 void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len);
 
 void proc_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_out);
-
-void dump_thread_stack(thread_t* t);
 
 process_t* proc_proc_list();
 process_t* proc_kernel_proc();

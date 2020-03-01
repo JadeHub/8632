@@ -36,34 +36,14 @@ void proc_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_ou
 		ebp_out);
 }
 
-void test5()
-{
-	asm("HLT");
-}
-
-void test1a()
-{
-	int t = 5;
-	test5();
-}
-
-void testa()
-{
-	for (int i = 0;i < 100000; i++)
-	{
-		;
-	}
-	test1a();
-}
-
 void idle_task()
 {
 	for (;;)
 	{
 		//disable_interrupts();
-		//printf("Going idle\n");
+		printf("Going idle\n");
 		//enable_interrupts();
-		testa();
+		asm("HLT");
 
 	}
 }
@@ -108,7 +88,7 @@ void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 	p->id = next_pid++;
 	sprintf(p->name, "user proc %s", name);
 	p->next = 0;
-	printf("New proc %s\n", name);
+	printf("New proc %s\n", p->name);
 
 	p->pages = clone_directory(kernel_directory);
 	switch_page_directory(p->pages);
@@ -139,46 +119,6 @@ void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 	io_proc_start(p);
 }
 
-void proc_new_proc(uint8_t* code, uint32_t len)
-{
-	//disable_interrupts();
-
-	process_t* p = (process_t*)kmalloc(sizeof(process_t));
-	p->id = next_pid++;
-	sprintf(p->name, "user proc 0x0x%x", p->id);
-	p->next = 0;
-
-	printf("New proc 0x0x%x\n", *code);
-
-	p->pages = clone_directory(kernel_directory);
-
-	switch_page_directory(p->pages);
-	//code at 0x00500000
-	uint32_t start = 0x00500000;
-	uint32_t end = start + 0x8000;
-	alloc_pages(p->pages, start, end);
-	uint32_t entry = start;
-	memcpy((uint8_t*)start, code, len);
-
-	*((uint8_t*)start+0x400) = (uint8_t)p->id;
-	
-	//heap at 0x00700000
-	start = 0x00700000;
-	end = start + 0x100000;
-	alloc_pages(p->pages, start, end);
-	p->heap = create_heap(p->pages, start, end, end, 0, 0);
-
-	switch_page_directory(kernel_directory);
-
-	p->main_thread = _create_thread(entry, 0);
-	p->main_thread->process = p;
-	
-	process_t* tmp = kernel_proc;
-	while (tmp->next)
-		tmp = tmp->next;
-	tmp->next = p;
-}
-
 void proc_init(page_directory_t* kernel_pages, uint32_t initial_esp)
 {
 	set_kernel_stack(initial_esp);
@@ -202,8 +142,3 @@ process_t* proc_proc_list()
 	return kernel_proc;
 }
 
-
-void dump_thread_stack(thread_t* t)
-{
-
-}

@@ -180,7 +180,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 		proc_new_elf_proc(exe_name, buff, buf_len);
 	}
 	
-//	dbg_mon_init();
+	dbg_mon_init();
 	switch_to_user_mode();
 	
 	for (;;);

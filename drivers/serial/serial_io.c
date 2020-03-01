@@ -5,6 +5,8 @@
 #include <kernel/utils.h>
 #include <kernel/fault.h>
 
+#include <stdio.h>
+
 #define INTERRUPT_EN_REG 1
 #define INTERRUPT_ID_REG 2
 #define FIFO_CTRL_REG 2

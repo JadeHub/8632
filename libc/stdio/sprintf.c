@@ -2,7 +2,9 @@
 
 #include <stdint.h>
 
-/*int snprintf(char* buff, size_t sz, const char* format, ...)
+#include <sys/printf_helper.h>
+
+int snprintf(char* buff, size_t sz, const char* format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -22,10 +24,10 @@ int sprintf(char* buff, const char* format, ...)
 
 int vsnprintf(char* buff, size_t sz, const char* format, va_list args)
 {
-	return 0;
+	return printf_helper(buff, sz, format, args);
 }
 
 int vsprintf(char* buff, const char* format, va_list args)
 {
 	return vsnprintf(buff, SIZE_MAX, format, args);
-}*/
+}

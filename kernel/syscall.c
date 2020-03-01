@@ -28,7 +28,7 @@ static void _syscall_print_str(const char* buff, uint32_t sz)
 static void syscall_exit(uint32_t code)
 {
 	printf("Exit ebx=0x%x\n", code);
-	for (;;);
+//	for (;;);
 }
 
 static uint32_t _syscall_open(const char* path, uint32_t flags)
