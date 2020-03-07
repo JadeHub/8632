@@ -10,6 +10,7 @@
 #include <kernel/io/io.h>
 #include <drivers/console.h>
 
+#include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -41,7 +42,7 @@ void idle_task()
 	for (;;)
 	{
 		//disable_interrupts();
-		printf("Going idle\n");
+		//printf("Going idle\n");
 		//enable_interrupts();
 		asm("HLT");
 
@@ -62,7 +63,7 @@ void user_thread_entry(uint32_t entry)
 	start_user_mode_thread(entry);
 }
 
-static thread_t* _create_thread(uint32_t entry, uint8_t kernel_mode)
+static thread_t* _create_thread(uint32_t entry, bool kernel_mode)
 {
 	thread_t* t = (thread_t*)kmalloc(sizeof(thread_t));
 
@@ -107,7 +108,7 @@ void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 
 	switch_page_directory(kernel_directory);
 
-	p->main_thread = _create_thread(p->entry, 0);
+	p->main_thread = _create_thread(p->entry, false);
 	p->main_thread->process = p;
 
 	process_t* tmp = kernel_proc;
@@ -128,7 +129,7 @@ void proc_init(page_directory_t* kernel_pages, uint32_t initial_esp)
 	kernel_proc->pages = kernel_pages;
 	kernel_proc->heap = kheap;
 	kernel_proc->next = 0;
-	kernel_proc->main_thread = _create_thread((uint32_t)&idle_task, 1);
+	kernel_proc->main_thread = _create_thread((uint32_t)&idle_task, true);
 	kernel_proc->main_thread->process = kernel_proc;
 }
 

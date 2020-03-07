@@ -23,3 +23,5 @@ void sched_pause();
 
 void sched_lock();
 void sched_unlock();
+
+void sched_ontick(uint64_t ms_since_boot);

@@ -31,9 +31,7 @@ void entry()
 	printf("printf %d %s\n", 2, "testing");
 
 	test_io();
-	//msg[5] = 'j';
-
-	//asm volatile("mov $3, %%eax; mov $0, %%ebx; int $0x64;"::);
+	
 	sys_exit(5);
 
 	for(;;);

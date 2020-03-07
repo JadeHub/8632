@@ -17,7 +17,8 @@ drivers/*.c \
 drivers/keyboard/*.c \
 drivers/ata/*.c \
 drivers/timer/*.c \
-drivers/serial/*.c)
+drivers/serial/*.c \
+drivers/cmos/*.c)
 
 HEADERS = $(wildcard \
 kernel/*.h \
@@ -36,7 +37,8 @@ drivers/*.h \
 drivers/keyboard/*.h \
 drivers/ata/*.h \
 drivers/timer/*.h \
-drivers/serial/*.h)
+drivers/serial/*.h \
+drivers/cmos/*.h)
 
 ASM_SOURCES = $(wildcard kernel/x86/*.s \
 kernel/memory/*.s \

@@ -52,12 +52,12 @@ static int _emit_str(char* buff, size_t* buff_pos, size_t buff_sz,
 }
 
 static int _int_out(char* buff, size_t* buff_pos, size_t buff_sz,
-	uint32_t v, int base, const char* digits, uint32_t width, uint8_t pad, bool r_justify)
+	uint64_t v, int base, const char* digits, uint32_t width, uint8_t pad, bool r_justify)
 {
 	char str[64];
 	char* p = str;
 
-	uint32_t counter = v;
+	uint64_t counter = v;
 	do
 	{
 		p++;
@@ -79,15 +79,18 @@ int printf_helper(char* buff, size_t buff_sz, const char* format, va_list args)
 {
 	size_t buff_pos = 0;
 
-	const char* digits = "0123456789ABCDEF";
+	static const char* digits = "0123456789ABCDEF";
 	uint8_t r_justify;
 	uint8_t pad;
 	uint32_t width;
 
 	int32_t intv;
+	int64_t longlongv;
 	uint8_t chv;
 	uint8_t* strv;
 	int count = 0;
+	bool _long = false;
+	bool _long_long = false;
 
 	//%[flags][width]type
 	while (*format != '\0')
@@ -121,6 +124,17 @@ int printf_helper(char* buff, size_t buff_sz, const char* format, va_list args)
 			width = _atoi(&format);
 		}
 
+		if (*format == 'l')
+		{
+			_long = true;
+			format++;
+		}
+		if (*format == 'l')
+		{
+			_long_long = true;
+			format++;
+		}
+
 		switch (*format)
 		{
 		case 'c':
@@ -129,21 +143,40 @@ int printf_helper(char* buff, size_t buff_sz, const char* format, va_list args)
 			format++;
 			break;
 		case 'd':
-			intv = va_arg(args, int32_t);
-			if (intv < 0)
+			if (_long_long)
 			{
-				count += _emit('-', buff, &buff_pos, buff_sz);
-				intv *= -1;
+				longlongv = va_arg(args, int64_t);
+				if (longlongv < 0)
+				{
+					count += _emit('-', buff, &buff_pos, buff_sz);
+					longlongv *= -1;
+				}
+				count += _int_out(buff, &buff_pos, buff_sz, longlongv, 10, digits, width, pad, r_justify);
 			}
-			count += _int_out(buff, &buff_pos, buff_sz, intv, 10, digits, width, pad, r_justify);
+			else
+			{
+				intv = va_arg(args, int32_t);
+				if (intv < 0)
+				{
+					count += _emit('-', buff, &buff_pos, buff_sz);
+					intv *= -1;
+				}
+				count += _int_out(buff, &buff_pos, buff_sz, intv, 10, digits, width, pad, r_justify);
+			}
 			format++;
 			break;
 		case 'u':
-			count += _int_out(buff, &buff_pos, buff_sz, va_arg(args, uint32_t), 10, digits, width, pad, r_justify);
+			if (_long_long)
+				count += _int_out(buff, &buff_pos, buff_sz, va_arg(args, uint64_t), 10, digits, width, pad, r_justify);
+			else
+				count += _int_out(buff, &buff_pos, buff_sz, va_arg(args, uint32_t), 10, digits, width, pad, r_justify);
 			format++;
 			break;
 		case 'x':
-			count += _int_out(buff, &buff_pos, buff_sz, va_arg(args, uint32_t), 16, digits, width, pad, r_justify);
+			if (_long_long)
+				count += _int_out(buff, &buff_pos, buff_sz, va_arg(args, uint64_t), 16, digits, width, pad, r_justify);
+			else
+				count += _int_out(buff, &buff_pos, buff_sz, va_arg(args, uint32_t), 16, digits, width, pad, r_justify);
 			format++;
 			break;
 		case 's':

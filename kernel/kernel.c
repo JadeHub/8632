@@ -30,95 +30,12 @@
 #include "types/kname.h"
 #include <kernel/sync/spin_lock.h>
 #include <kernel/io/io.h>
+#include <kernel/time.h>
+#include <kernel/ktimer.h>
 
 #include <stdio.h>
 
 extern void switch_to_user_mode();
-
-void hash_test()
-{
-	typedef struct Bar
-	{
-		kname_t name;
-		hash_tbl_item_t hash_item;
-	}Bar_t;
-
-	hash_tbl_t* ht = hash_tbl_create(256);
-
-	Bar_t b1;
-	kname_set("B 1", &b1.name);
-	hash_tbl_add(ht, 1, &b1.hash_item);
-
-	Bar_t b2;
-	kname_set("B 511", &b2.name);
-	hash_tbl_add(ht, 511, &b2.hash_item);
-
-	Bar_t b3;
-	kname_set("B 2048", &b3.name);
-	hash_tbl_add(ht, 2048, &b3.hash_item);
-
-	hash_tbl_item_t* i = hash_tbl_find(ht, 511);
-
-	if (i)
-	{
-		
-		Bar_t* test = container_of(i, Bar_t, hash_item);
-		printf("found %s\n", test->name.str);
-	}
-
-	Bar_t* t2 = hash_tbl_lookup(ht, 2048, Bar_t, hash_item);
-	if (t2)
-		printf("Found %s\n", t2->name.str);
-}
-
-void list_test()
-{
-	typedef struct Foo
-	{
-		int bar;
-		list_head_t list;
-	}Foo_t;
-
-	//Declare a list
-	
-	list_head_t my_list;
-	INIT_LIST_HEAD(&my_list);
-
-	printf("Empty = %d\n", list_empty(&my_list));
-
-	Foo_t f1;
-	f1.bar = 1;
-	list_add(&f1.list, &my_list);
-
-
-	printf("Empty = %d\n", list_empty(&my_list));
-
-	Foo_t f2;
-	f2.bar = 2;
-	list_add(&f2.list, &my_list);
-
-	Foo_t f3;
-	f3.bar = 3;
-	list_add(&f3.list, &my_list);
-
-	list_head_t* item;
-	list_for_each_rev(item, &my_list)
-	{
-		Foo_t* foo = list_entry(item, Foo_t, list);
-	//	printf("Foo %d\n", foo->bar);
-		if(foo->bar == 3)
-		{
-			list_delete(&foo->list);
-			break;
-		}
-	}
-
-	Foo_t* f;
-	list_for_each_entry(f, &my_list, list)
-	{
-		printf("Foo %d\n", f->bar);
-	}
-}
 
 uint8_t buff[20000];
 uint32_t buf_len = 20000;
@@ -127,13 +44,11 @@ char exe_name[128];
 uint8_t ram_disk_buff[0x4000];
 uint32_t ram_disk_len = 0x4000;
 
+
 void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
 	con_init();
-	//list_test();
-	//hash_test();
 	printf("Hello World %d 0x%x\n", mb_data->mod_count, *((uint8_t*)mb_data->modules->start));
-	//bochs_dbg();
 	mb_init(mb_data);
 	ram_disk_len = mb_copy_mod("/boot/ramdisk", ram_disk_buff, ram_disk_len);
 	if (!ram_disk_len)
@@ -150,7 +65,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	io_init();
 
 	serial_init();
-	timer_init(1);
+	timer_init(100, &ktimer_cb);
 	printf("timer\n");
 	page_directory_t* kpages = paging_init();
 	printf("paging\n");
@@ -166,6 +81,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	syscall_init();
 	printf("ata\n");
 	ata_init();
+	time_init();
 
 	uint8_t atabuff [512];
 	ata_read(atabuff, 0, 1);
@@ -174,14 +90,16 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	fs_node_t* f = fs_get_abs_path("/initrd/bin/user_space", &parent);
 	if(f)
 	{
+		ASSERT(f->len <= buf_len);
 		strcpy(exe_name, "user_space");
 		fs_read(f, buff, 0, buf_len);
 		printf("Loading elf 0x%x %d %s/%s\n", buff[0], buf_len, parent->name, exe_name);
 		proc_new_elf_proc(exe_name, buff, buf_len);
 	}
-	
+
 	dbg_mon_init();
 	switch_to_user_mode();
+
 	
 	for (;;);
 }

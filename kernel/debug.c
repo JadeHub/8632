@@ -108,22 +108,11 @@ uint32_t dbg_unwind_stack(const elf_image_t* image, uint32_t ebp, dbg_stack_call
 				printf("isr_state at 0x%x ebp 0x%x\n", istate, istate->ebp);
 				ebp = istate->ebp;
 				image = sched_cur_proc()->elf_img;
-
-			/*	fn = _find_fn_containing(image, istate->eip);
-				if (fn)
-				{
-					(*cb)(fn->name, fn->address, fn->size, ebp, rtn_addr);
-				}
-				else
-				{
-					printf("didnt find 0x%x\n", istate->eip);
-				}*/
 				continue;
 			}
 		}
 		else
 		{
-			
 			(*cb)("Unknown function", rtn_addr, 0, ebp, rtn_addr);
 		}
 		ebp = *(uint32_t*)(ebp);

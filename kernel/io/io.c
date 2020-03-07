@@ -52,7 +52,7 @@ Find a file decriptor for fnode belonging to proc
 */
 static uint32_t _find_fd(proc_io_data_t* proc, fs_node_t* fnode)
 {
-	dbg_dump_stack();
+	//dbg_dump_stack();
 	for (int i = 0; i < MAX_FD_CNT; i++)
 		if (proc->fds[i] && proc->fds[i]->node == fnode)
 			return i;

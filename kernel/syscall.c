@@ -16,7 +16,7 @@ static uint32_t syscall_alloc(heap_t* h, uint32_t size)
 	return ret;
 }
 
-static void syscall_print(const char* str)
+static void _syscall_sleep_ms(uint32_t ms)
 {
 }
 
@@ -49,7 +49,7 @@ static size_t _syscall_read(uint32_t fd, uint8_t* buff, size_t sz)
 static void* syscalls[7] =
 {
 	&syscall_alloc,
-	&syscall_print,
+	&_syscall_sleep_ms,
 	&syscall_exit,
     &_syscall_open,
     &_syscall_close,

@@ -57,13 +57,18 @@ static void _switch_task()
 
 static void _on_timer()
 {
-	_switch_task();
+	//_switch_task();
 }
 
 void sched_init(process_t* kproc)
 {
-	timer_add_callback(&_on_timer);
+	//timer_add_callback(&_on_timer);
 	kernel_proc = kproc;
+}
+
+void sched_ontick(uint64_t ms_since_boot)
+{
+	_switch_task();
 }
 
 thread_t* sched_cur_thread()
