@@ -22,7 +22,7 @@ extern heap_t* kheap;
 
 #define KERNEL_STACK_SIZE 2048
 
-static process_t* kernel_proc = 0; //The kernal execution context
+static process_t* _kproc = 0; //The kernal execution context
 static uint32_t next_pid = 0;
 static uint32_t next_tid = 0;
 
@@ -30,7 +30,7 @@ void proc_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_ou
 {
 	current_directory = thread->process->pages;
 	set_kernel_stack(thread->k_stack + KERNEL_STACK_SIZE);
-
+	thread->state = TS_RUNNING;
 	perform_task_switch(esp_out,
 		thread->esp,
 		current_directory->physicalAddr,
@@ -66,6 +66,7 @@ void user_thread_entry(uint32_t entry)
 static thread_t* _create_thread(uint32_t entry, bool kernel_mode)
 {
 	thread_t* t = (thread_t*)kmalloc(sizeof(thread_t));
+	memset(t, 0, sizeof(thread_t));
 
 	t->process = 0;
 	t->id = next_tid++;
@@ -79,7 +80,24 @@ static thread_t* _create_thread(uint32_t entry, bool kernel_mode)
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 28) = 0;// t->k_stack; //ebp
 
 	t->esp = t->k_stack + KERNEL_STACK_SIZE - 28;
+
+	t->state = TS_READY_TO_RUN;
 	return t;
+}
+
+void _init_proc(process_t* p)
+{
+	//setup io data for this proc
+	io_proc_start(p);
+	
+	//Add proc to list
+	process_t* tmp = _kproc;
+	while (tmp->next)
+		tmp = tmp->next;
+	tmp->next = p;
+
+	//schedule the main thread
+	sched_task(p->main_thread);
 }
 
 void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
@@ -111,35 +129,29 @@ void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 	p->main_thread = _create_thread(p->entry, false);
 	p->main_thread->process = p;
 
-	process_t* tmp = kernel_proc;
-	while (tmp->next)
-		tmp = tmp->next;
-	tmp->next = p;
-
-	//setup io data for this proc
-	io_proc_start(p);
+	_init_proc(p);	
 }
 
 void proc_init(page_directory_t* kernel_pages, uint32_t initial_esp)
 {
 	set_kernel_stack(initial_esp);
-	kernel_proc = (process_t*)kmalloc(sizeof(process_t));
-	kernel_proc->id = next_pid++;
-	strcpy(kernel_proc->name, "kidle");
-	kernel_proc->pages = kernel_pages;
-	kernel_proc->heap = kheap;
-	kernel_proc->next = 0;
-	kernel_proc->main_thread = _create_thread((uint32_t)&idle_task, true);
-	kernel_proc->main_thread->process = kernel_proc;
+	_kproc = (process_t*)kmalloc(sizeof(process_t));
+	_kproc->id = next_pid++;
+	strcpy(_kproc->name, "kidle");
+	_kproc->pages = kernel_pages;
+	_kproc->heap = kheap;
+	_kproc->next = 0;
+	_kproc->main_thread = _create_thread((uint32_t)&idle_task, true);
+	_kproc->main_thread->process = _kproc;
 }
 
 process_t* proc_kernel_proc()
 {
-	return kernel_proc;
+	return _kproc;
 }
 
 process_t* proc_proc_list()
 {
-	return kernel_proc;
+	return _kproc;
 }
 

@@ -2,6 +2,7 @@
 #include <ctype.h>
 
 #define SYSCALL_MALLOC 1
+#define SYSCALL_SLEEP 2
 #define SYSCALL_EXIT 3
 #define SYSCALL_OPEN 4
 #define SYSCALL_CLOSE 5
@@ -57,4 +58,9 @@ size_t sys_read(uint32_t fd, uint8_t* buff, size_t sz)
 void sys_close(uint32_t fd)
 {
 	SYSCALL1(SYSCALL_CLOSE, fd);
+}
+
+void sys_sleep_ms(uint32_t ms)
+{
+	SYSCALL1(SYSCALL_SLEEP, ms);
 }

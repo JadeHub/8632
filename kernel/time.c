@@ -5,6 +5,13 @@
 
 #include <stdio.h>
 
+uint64_t _ms_since_boot = 0;
+
+uint64_t time_ms()
+{
+	return _ms_since_boot;
+}
+
 uint64_t time_ticks()
 {
 	uint64_t ticks;
@@ -20,6 +27,7 @@ void time_init()
 
 void time_on_tick(uint64_t ms)
 {
+	_ms_since_boot = ms;
 	if (ms % 1000 == 0)
 	{
 		wall_clock_t c = cmos_read_clock();

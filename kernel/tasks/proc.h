@@ -17,6 +17,7 @@ typedef struct process
 	heap_t* heap;
 	uint32_t entry;
 	elf_image_t* elf_img;
+
 	struct thread* main_thread;
 	struct process* next;
 }process_t;
@@ -49,7 +50,8 @@ typedef struct thread
 	uint32_t ebp;
 	uint32_t k_stack;
 	ThreadState state;
-	//struct thread* next;
+	uint64_t wake_time;
+	struct thread* next;
 }thread_t;
 
 void proc_init(page_directory_t*, uint32_t);

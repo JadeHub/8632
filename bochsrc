@@ -10,6 +10,6 @@ ata0-master: type=disk, path="hdd.img", mode=flat
 com1: enabled=1, mode=term, dev=/dev/tty7
 
 #clock: sync=[none|slowdown|realtime|both], time0=[timeValue|local|utc]
-clock: sync=realtime
+clock: sync=slowdown
 
  

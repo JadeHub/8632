@@ -8,6 +8,7 @@
 
 #include <drivers/console.h>
 
+#include <stdio.h>
 #include <string.h>
 
 #define MAX_FD_CNT	64
@@ -65,19 +66,19 @@ uint32_t open(const char* path, uint32_t flags)
 	//Find the node
 	fs_node_t* parent;
 	fs_node_t* node = fs_get_abs_path(path, &parent);
-	//printf("Open %s node 0x%x\n", path, node);
+	printf("Open %s node 0x%x\n", path, node);
 	if (!node)
 		return INVALID_FD;
-	
+	printf("Open2 %s proc 0x%x\n", path, proc);
 	//already open?
 	uint32_t fd = _find_fd(proc, node);
 	if (io_is_valid_fd(fd))
 	{
-		//printf("Already open 0x%x\n", fd);
+		printf("Already open 0x%x\n", fd);
 		return fd;
 	}
 	fd = _free_fd(proc);
-//	printf("Open Free 0x%x\n", fd);
+	printf("Open Free 0x%x\n", fd);
 	if (io_is_valid_fd(fd))
 	{
 		proc->fds[fd] = (proc_file_desc_t*)kmalloc(sizeof(proc_file_desc_t));

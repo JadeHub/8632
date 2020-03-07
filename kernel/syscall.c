@@ -4,7 +4,7 @@
 #include <kernel/x86/interrupts.h>
 #include <kernel/memory/kheap.h>
 #include <drivers/console.h>
-
+#include <kernel/time.h>
 #include <kernel/io/io.h>
 
 #include <stdio.h>
@@ -18,6 +18,7 @@ static uint32_t syscall_alloc(heap_t* h, uint32_t size)
 
 static void _syscall_sleep_ms(uint32_t ms)
 {
+    sched_sleep_until(time_ms() + ms);
 }
 
 static void _syscall_print_str(const char* buff, uint32_t sz)
@@ -28,6 +29,7 @@ static void _syscall_print_str(const char* buff, uint32_t sz)
 static void syscall_exit(uint32_t code)
 {
 	printf("Exit ebx=0x%x\n", code);
+    sched_exit(code);
 //	for (;;);
 }
 

@@ -4,6 +4,7 @@
 #include <kernel/fault.h>
 #include <drivers/console.h>
 
+#include <stdio.h>
 #include <stddef.h>
 
 static elf_image_t* _kernel_elf = NULL;
@@ -67,12 +68,18 @@ module_data_t* mb_find_module(const char* name)
 uint32_t mb_copy_mod(const char* name, uint8_t* buff, uint32_t buff_len)
 {
 	module_data_t* mod = mb_find_module(name);
-	if(!mod)
+	if (!mod)
+	{
+		printf("Module %s not found\n", name);
 		return 0;
+	}
 
 	uint32_t len = mod->end - mod->start;
-	if((len) > buff_len)
+	if (len > buff_len)
+	{
+		printf("Module length too long %u > %u\n", len, buff_len);
 		return 0;
+	}
 	memcpy(buff, (void*)mod->start, len);
 	return len;
 }

@@ -6,7 +6,6 @@
 void test_io()
 {
 	uint32_t fd = sys_open("/initrd/temp/f1.txt", 0);
-
 	if (fd == 0xffffffff)
 	{
 		printf("Failed to open file");
@@ -24,6 +23,15 @@ void test_io()
 	}
 }
 
+void test_sleep()
+{
+	printf("Sleeping\n");
+
+	sys_sleep_ms(5000);
+
+	printf("Sleep finished\n");
+}
+
 void entry()
 {
 	char* msg = "Hello from user land %d";
@@ -31,6 +39,8 @@ void entry()
 	printf("printf %d %s\n", 2, "testing");
 
 	test_io();
+
+	test_sleep();
 	
 	sys_exit(5);
 

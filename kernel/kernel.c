@@ -37,12 +37,12 @@
 
 extern void switch_to_user_mode();
 
-uint8_t buff[20000];
-uint32_t buf_len = 20000;
+uint8_t buff[40000];
+uint32_t buf_len = 40000;
 char exe_name[128];
 
-uint8_t ram_disk_buff[0x4000];
-uint32_t ram_disk_len = 0x4000;
+uint8_t ram_disk_buff[0x8000];
+uint32_t ram_disk_len = 0x8000;
 
 
 void kmain(multiboot_data_t* mb_data, uint32_t esp)

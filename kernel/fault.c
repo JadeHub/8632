@@ -21,9 +21,14 @@ static void gp_fault_handler(isr_state_t* state)
     KPANIC("GP Fault");
 }
 
+static int _j = 0;
+
 void panic_impl(const char* msg, const char* file, uint32_t line)
 {
+    if (_j)
+        return;
     printf("%s at %s:%d\n", msg, file, line);
+    _j = 1;
     dbg_dump_stack();
     for(;;)
         ;

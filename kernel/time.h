@@ -15,5 +15,5 @@ typedef struct
 void time_init();
 uint64_t time_ticks();
 void time_print_clock(wall_clock_t* wc);
-
+uint64_t time_ms();
 void time_on_tick(uint64_t ms);
