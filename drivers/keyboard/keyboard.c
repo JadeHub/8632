@@ -3,13 +3,16 @@
 
 #include <kernel/fault.h>
 #include <kernel/utils.h>
+#include <kernel/debug.h>
 #include <kernel/x86/interrupts.h>
 #include <kernel/types/kname.h>
 #include <kernel/types/cbuff.h>
+#include <kernel/tasks/sched.h>
 #include <drivers/console.h>
 #include <drivers/ioports.h>
 #include <drivers/device_driver.h>
 
+#include <stdio.h>
 #include <stdbool.h>
 
 //State
@@ -35,13 +38,26 @@ typedef struct kb_device
     dev_device_t device;
     state_t kb_state;
     cbuff_t* buffer;
+
+    thread_t* waiters;
 }kb_device_t;
 
 static kb_device_t _kb;
 
 static size_t _read_keyboard(dev_device_t* d, uint8_t* buff, size_t off, size_t sz)
 {
-    ASSERT(off = 0);
+    ASSERT(off == 0);
+
+    //dbg_dump_stack();
+    while (cbuff_empty(_kb.buffer))
+    {
+       // printf("Waiting for kb\n");
+        sched_cur_thread()->next = _kb.waiters;
+        _kb.waiters = sched_cur_thread();
+        sched_block();
+    }
+
+  //  printf("KB awake\n");
 
     size_t i = 0;
     for (;i < sz; i++)
@@ -141,13 +157,22 @@ static void kb_isr(isr_state_t* state)
 
         }
         cbuff_put(_kb.buffer, ascii);
-        con_putc(ascii);
+    //    con_putc(ascii);
+
+        thread_t* t = _kb.waiters;
+        while (t)
+        {
+            sched_unblock(t);
+            t = t->next;
+        }
+        _kb.waiters = NULL;
     }
     kb_state.wait = false;
 }
 
 void kb_init()
 {
+    memset(&_kb, 0, sizeof(kb_device_t));
     idt_register_handler(IRQ1, &kb_isr);
     kb_scancode_tables_init();
 

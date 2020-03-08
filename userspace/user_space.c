@@ -32,18 +32,40 @@ void test_sleep()
 	printf("Sleep finished\n");
 }
 
+void test_kb()
+{
+	uint32_t fd = sys_open("/dev/keyboard", 0);
+	if (fd == 0xffffffff)
+	{
+		printf("Failed to open keyboard");
+	}
+	else
+	{
+		char buff;
+		
+		do
+		{
+			sys_read(fd, &buff, 1);
+
+			printf("%c", buff);
+		} while (buff != 'q');
+	}
+}
+
 void entry()
 {
 	char* msg = "Hello from user land %d";
 
 	printf("printf %d %s\n", 2, "testing");
 
-	test_io();
+	//test_io();
 
-	for(int j=0;j<5;j++)
-		test_sleep();
+	//for(int j=0;j<5;j++)
+		//test_sleep();
 	
-	sys_exit(5);
+	test_kb();
+
+	sys_exit(4);
 
 	printf("exit returned\n");
 	for(;;);

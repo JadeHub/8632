@@ -51,7 +51,6 @@ void dbg_unwind_stack2(const elf_image_t* image, uint32_t eip, uint32_t ebp, dbg
 {
 	while (eip && ebp)
 	{
-
 		elf_fn_symbol_t* fn;
 		fn = _find_fn_containing(image, eip);
 		if (fn)

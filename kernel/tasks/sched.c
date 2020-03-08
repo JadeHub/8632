@@ -95,21 +95,13 @@ static void _switch_task(uint64_t ms)
 	if (prev->state == TS_RUNNING)
 		prev->state = TS_READY_TO_RUN;
 	sched_task(prev);
-	
-	printf("Switching %s to %s\n", _nameof(prev), _nameof(_cur_task));
-	//dbg_dump_stack();
-	//dbg_break();
 
-	//printf("now %lld start %lld diff %lld\n", ms, _prev_switch_time, (ms - _prev_switch_time));
 	//Calc the time used by the previous task
 	prev->cpu_time += (ms - _prev_switch_time);
 	_prev_switch_time = ms;
 
 	proc_switch_to_thread(_cur_task, &prev->esp, &prev->ebp);
 	sched_unlock();	
-
-	dbg_dump_stack();
-	dbg_break();
 }
 
 void sched_init(process_t* kproc)
@@ -132,8 +124,7 @@ static bool _wake_sleepers(uint64_t ms_since_boot)
 		{
 			woken = true;
 			t->wake_time = 0;
-			t->state = TS_READY_TO_RUN;
-			sched_task(t);
+			sched_unblock(t);
 		}
 		else
 		{
@@ -156,7 +147,8 @@ void sched_ontick(uint64_t ms_since_boot)
 		return;
 	}
 	
-	if (_wake_sleepers(ms_since_boot) || (ms_since_boot - _prev_switch_time) >= 50)
+	bool woken = _wake_sleepers(ms_since_boot);
+	if (woken || (ms_since_boot - _prev_switch_time) >= 50)
 		_switch_task(ms_since_boot);
 
 	sched_unlock();
@@ -210,7 +202,13 @@ void sched_pause()
 	sched_unlock();
 }
 
-static void _block_cur_task()
+void sched_unblock(thread_t* t)
+{
+	t->state = TS_READY_TO_RUN;
+	sched_task(t);
+}
+
+void sched_block()
 {
 	sched_lock();
 	_cur_task->state = TS_BLOCKED;
@@ -224,7 +222,7 @@ void sched_sleep_until(uint64_t ms)
 	_cur_task->wake_time = ms;
 	_cur_task->next = _sleep_list;
 	_sleep_list = _cur_task;
-	_block_cur_task();
+	sched_block();
 	sched_unlock();
 }
 
@@ -250,6 +248,6 @@ void sched_exit(uint32_t code)
 	sched_lock();
 	_cur_task->next = _terminated_list;
 	_terminated_list = _cur_task;
-	_block_cur_task();
+	sched_block();
 	sched_unlock();
 }

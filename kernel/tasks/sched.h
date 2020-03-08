@@ -28,6 +28,9 @@ void sched_ontick(uint64_t ms_since_boot);
 
 void sched_sleep_until(uint64_t ms);
 
+void sched_block();
+void sched_unblock(thread_t*);
+
 /*
 Add thread to the ready to run list
 */
