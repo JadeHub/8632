@@ -9,6 +9,7 @@
 #include <drivers/ata/ata.h>
 #include <kernel/memory/paging.h>
 #include <kernel/memory/kheap.h>
+#include <kernel/memory/kmalloc.h>
 #include <kernel/dbg_monitor/dbg_monitor.h>
 #include <kernel/ramfs/ramfs.h>
 #include <kernel/devfs/devfs.h>
@@ -37,13 +38,8 @@
 
 extern void switch_to_user_mode();
 
-uint8_t buff[40000];
-uint32_t buf_len = 40000;
-char exe_name[128];
-
 uint8_t ram_disk_buff[0x8000];
 uint32_t ram_disk_len = 0x8000;
-
 
 void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
@@ -65,7 +61,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	io_init();
 
 	serial_init();
-	timer_init(100, &ktimer_cb);
+	timer_init(1000, &ktimer_cb);
 	printf("timer\n");
 	page_directory_t* kpages = paging_init();
 	printf("paging\n");
@@ -83,23 +79,20 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	ata_init();
 	time_init();
 
-	uint8_t atabuff [512];
-	ata_read(atabuff, 0, 1);
-
 	fs_node_t* parent;
 	fs_node_t* f = fs_get_abs_path("/initrd/bin/user_space", &parent);
 	if(f)
 	{
-		ASSERT(f->len <= buf_len);
-		strcpy(exe_name, "user_space");
-		fs_read(f, buff, 0, buf_len);
-		printf("Loading elf 0x%x %d %s/%s\n", buff[0], buf_len, parent->name, exe_name);
-		proc_new_elf_proc(exe_name, buff, buf_len);
+		uint8_t* exe_buff = (uint8_t*)kmalloc(f->len);
+		ASSERT(exe_buff);
+	//	strcpy(exe_name, "user_space");
+		fs_read(f, exe_buff, 0, f->len);
+		//printf("Loading elf 0x%x %d %s/%s\n", buff[0], f->len, parent->name, exe_name);
+		proc_new_elf_proc("user_space2", exe_buff, f->len);
 	}
 
 	dbg_mon_init();
 	switch_to_user_mode();
 
-	
 	for (;;);
 }

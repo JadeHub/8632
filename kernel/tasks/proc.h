@@ -51,6 +51,10 @@ typedef struct thread
 	uint32_t k_stack;
 	ThreadState state;
 	uint64_t wake_time;
+
+	//Total time spent executing
+	uint64_t cpu_time;
+
 	struct thread* next;
 }thread_t;
 

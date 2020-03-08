@@ -27,7 +27,7 @@ void test_sleep()
 {
 	printf("Sleeping\n");
 
-	sys_sleep_ms(5000);
+	sys_sleep_ms(1000);
 
 	printf("Sleep finished\n");
 }
@@ -40,9 +40,11 @@ void entry()
 
 	test_io();
 
-	test_sleep();
+	for(int j=0;j<5;j++)
+		test_sleep();
 	
 	sys_exit(5);
 
+	printf("exit returned\n");
 	for(;;);
 }

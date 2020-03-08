@@ -15,3 +15,5 @@ uint32_t dbg_unwind_stack(const elf_image_t* image, uint32_t ebp, dbg_stack_call
 elf_fn_symbol_t* dbg_find_function(const elf_image_t* image, uint32_t address);
 
 void dbg_dump_stack();
+
+void dbg_break();

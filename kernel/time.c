@@ -30,8 +30,8 @@ void time_on_tick(uint64_t ms)
 	_ms_since_boot = ms;
 	if (ms % 1000 == 0)
 	{
-		wall_clock_t c = cmos_read_clock();
-		time_print_clock(&c);
+	//	wall_clock_t c = cmos_read_clock();
+	//	time_print_clock(&c);
 	}
 }
 

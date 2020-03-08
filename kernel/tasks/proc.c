@@ -8,6 +8,7 @@
 #include <kernel/utils.h>
 #include <kernel/fault.h>
 #include <kernel/io/io.h>
+#include <kernel/debug.h>
 #include <drivers/console.h>
 
 #include <stdbool.h>
@@ -45,7 +46,6 @@ void idle_task()
 		//printf("Going idle\n");
 		//enable_interrupts();
 		asm("HLT");
-
 	}
 }
 

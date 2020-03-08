@@ -85,17 +85,15 @@ static void page_fault(isr_state_t* regs)
     int reserved = regs->err_code & 0x8;     // Overwritten CPU-reserved bits of page entry?
     int id = regs->err_code & 0x10;          // Caused by an instruction fetch?
 
-  /*
+  
     // Output an error message.
     printf("Page fault! ( ");
     if (present) {printf("present ");}
     if (rw) {printf("read-only ");}
     if (us) {printf("user-mode ");}
     if (reserved) {printf("reserved ");}
-    printf(") at 0x");
-    printf_hex(faulting_address);
-    printf(" - EIP: 0x%x\n", regs->eip);
-    */
+    printf(") at 0x%08x - EIP: 0x%08x\n", faulting_address, regs->eip);
+    
     KPANIC("Page fault");
 }
 

@@ -4,6 +4,7 @@
 #include <kernel/tasks/sched.h>
 #include <kernel/x86/interrupts.h>
 #include <drivers/console.h>
+#include <kernel/utils.h>
 
 #include <stddef.h>
 #include <stdio.h>
@@ -66,7 +67,7 @@ void dbg_unwind_stack2(const elf_image_t* image, uint32_t eip, uint32_t ebp, dbg
 
 				//switch to user mode
 				isr_state_t* istate = (isr_state_t*)(ebp + 12);
-				printf("isr_state at 0x%x ebp 0x%x eip 0x%x\n", istate, istate->ebp, istate->eip);
+				printf("isr_state at 0x%08x ebp 0x%08x eip 0x%08x\n", istate, istate->ebp, istate->eip);
 				ebp = istate->ebp;
 				eip = istate->eip;
 				image = sched_cur_proc()->elf_img;
@@ -77,7 +78,6 @@ void dbg_unwind_stack2(const elf_image_t* image, uint32_t eip, uint32_t ebp, dbg
 		{
 			(*cb)("Unknown function", eip, 0, ebp, eip);
 		}
-
 		eip = *(uint32_t*)(ebp + 4);
 		ebp = *(uint32_t*)(ebp);
 	}
@@ -133,4 +133,9 @@ void dbg_dump_stack()
 	uint32_t eip = regs_eip();
 
 	dbg_unwind_stack2(dbg_kernel_image(), eip, ebp, &_stack_unwind_cb);
+}
+
+void dbg_break()
+{
+	bochs_dbg();
 }
