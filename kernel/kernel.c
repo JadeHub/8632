@@ -65,7 +65,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	printf("timer\n");
 	page_directory_t* kpages = paging_init();
 	printf("paging\n");
-	proc_init(kpages, esp);
+	proc_init(kpages, esp, k_image);
 	sched_init(proc_kernel_proc());
 	printf("sched\n");
 	fs_init();

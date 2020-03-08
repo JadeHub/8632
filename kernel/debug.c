@@ -67,7 +67,7 @@ void dbg_unwind_stack2(const elf_image_t* image, uint32_t eip, uint32_t ebp, dbg
 
 				//switch to user mode
 				isr_state_t* istate = (isr_state_t*)(ebp + 12);
-				printf("isr_state at 0x%08x ebp 0x%08x eip 0x%08x\n", istate, istate->ebp, istate->eip);
+				printf("*** Interrupt 0x%02x ***\n", istate->int_no);
 				ebp = istate->ebp;
 				eip = istate->eip;
 				image = sched_cur_proc()->elf_img;

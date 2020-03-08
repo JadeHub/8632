@@ -40,7 +40,8 @@ start_user_mode_thread:
     or eax, 0x200 ; enable interrupts
     push eax
     push long 0x1B	;CS 0x1B = user code (gdt index 3)
-    push ebx      ; Address    
+    push ebx      ; Address 
+    mov ebp, 0x00
     iret
 
 [GLOBAL start_kernel_mode_thread:function]
@@ -63,6 +64,7 @@ start_kernel_mode_thread:
     push eax
     push long 0x08	;CS code (gdt index 1)
     push ebx      ; Address
+    mov ebp, 0x00
     iret
 
 [GLOBAL perform_task_switch:function]

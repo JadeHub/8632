@@ -58,7 +58,7 @@ typedef struct thread
 	struct thread* next;
 }thread_t;
 
-void proc_init(page_directory_t*, uint32_t);
+void proc_init(page_directory_t*, uint32_t, elf_image_t*);
 
 void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len);
 

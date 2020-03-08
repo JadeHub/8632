@@ -132,10 +132,11 @@ void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 	_init_proc(p);	
 }
 
-void proc_init(page_directory_t* kernel_pages, uint32_t initial_esp)
+void proc_init(page_directory_t* kernel_pages, uint32_t initial_esp, elf_image_t* k_elf_image)
 {
 	set_kernel_stack(initial_esp);
 	_kproc = (process_t*)kmalloc(sizeof(process_t));
+	memset(_kproc, 0, sizeof(process_t));
 	_kproc->id = next_pid++;
 	strcpy(_kproc->name, "kidle");
 	_kproc->pages = kernel_pages;
@@ -143,6 +144,7 @@ void proc_init(page_directory_t* kernel_pages, uint32_t initial_esp)
 	_kproc->next = 0;
 	_kproc->main_thread = _create_thread((uint32_t)&idle_task, true);
 	_kproc->main_thread->process = _kproc;
+	_kproc->elf_img = k_elf_image;
 }
 
 process_t* proc_kernel_proc()

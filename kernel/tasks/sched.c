@@ -108,8 +108,8 @@ static void _switch_task(uint64_t ms)
 	proc_switch_to_thread(_cur_task, &prev->esp, &prev->ebp);
 	sched_unlock();	
 
-	//dbg_dump_stack();
-	//dbg_break();
+	dbg_dump_stack();
+	dbg_break();
 }
 
 void sched_init(process_t* kproc)
@@ -192,6 +192,7 @@ thread_t* sched_cur_thread()
 
 process_t* sched_cur_proc()
 {
+	ASSERT(_cur_task && _cur_task->process);
 	return _cur_task->process;
 }
 
