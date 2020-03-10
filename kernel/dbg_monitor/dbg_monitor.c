@@ -1,6 +1,5 @@
 #include "dbg_monitor.h"
 
-#include <drivers/console.h>
 #include <drivers/serial/serial_io.h>
 #include <kernel/utils.h>
 #include <kernel/fs/fs.h>

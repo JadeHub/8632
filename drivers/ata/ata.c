@@ -1,6 +1,5 @@
 #include "ata.h"
 #include <drivers/ioports.h>
-#include <drivers/console.h>
 #include <kernel/fault.h>
 #include <kernel/memory/kmalloc.h>
 #include <stdio.h>

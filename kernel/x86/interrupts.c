@@ -1,7 +1,6 @@
 #include "interrupts.h"
 #include <kernel/utils.h>
 #include <drivers/ioports.h>
-#include <drivers/console.h>
 
 #include "isr.h"
 

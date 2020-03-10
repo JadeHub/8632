@@ -1,8 +1,6 @@
 #include "gdt.h"
 #include <kernel/utils.h>
 
-#include<drivers/console.h>
-
 #include <stdint.h>
 
 struct gdt_entry_struct

@@ -6,8 +6,6 @@
 #include <kernel/memory/kmalloc.h>
 #include <kernel/debug.h>
 
-#include <drivers/console.h>
-
 #include <stdio.h>
 #include <string.h>
 
@@ -66,10 +64,8 @@ uint32_t open(const char* path, uint32_t flags)
 	//Find the node
 	fs_node_t* parent;
 	fs_node_t* node = fs_get_abs_path(path, &parent);
-	printf("Open %s node 0x%x\n", path, node);
 	if (!node)
 		return INVALID_FD;
-	printf("Open2 %s proc 0x%x\n", path, proc);
 	//already open?
 	uint32_t fd = _find_fd(proc, node);
 	if (io_is_valid_fd(fd))

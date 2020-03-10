@@ -9,7 +9,6 @@
 #include <kernel/fault.h>
 #include <kernel/io/io.h>
 #include <kernel/debug.h>
-#include <drivers/console.h>
 
 #include <stdbool.h>
 #include <string.h>

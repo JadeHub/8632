@@ -8,7 +8,6 @@
 #include <kernel/types/kname.h>
 #include <kernel/types/cbuff.h>
 #include <kernel/tasks/sched.h>
-#include <drivers/console.h>
 #include <drivers/ioports.h>
 #include <drivers/device_driver.h>
 
@@ -48,16 +47,12 @@ static size_t _read_keyboard(dev_device_t* d, uint8_t* buff, size_t off, size_t 
 {
     ASSERT(off == 0);
 
-    //dbg_dump_stack();
     while (cbuff_empty(_kb.buffer))
     {
-       // printf("Waiting for kb\n");
         sched_cur_thread()->next = _kb.waiters;
         _kb.waiters = sched_cur_thread();
         sched_block();
     }
-
-  //  printf("KB awake\n");
 
     size_t i = 0;
     for (;i < sz; i++)
@@ -160,12 +155,12 @@ static void kb_isr(isr_state_t* state)
     //    con_putc(ascii);
 
         thread_t* t = _kb.waiters;
+        _kb.waiters = NULL;
         while (t)
         {
             sched_unblock(t);
             t = t->next;
         }
-        _kb.waiters = NULL;
     }
     kb_state.wait = false;
 }

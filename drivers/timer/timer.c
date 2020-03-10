@@ -6,8 +6,6 @@
 #define PIT_CMD_PORT 0x43
 #define PIT_CH0_PORT 0x40
 
-//extern void on_timer(isr_state_t*);
-
 static timer_callback_t _cb = NULL;
 static uint64_t _ms_since_boot = 0;
 static uint64_t _ms_per_tick;

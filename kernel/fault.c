@@ -2,7 +2,6 @@
 #include "debug.h"
 #include "utils.h"
 #include <kernel/x86/interrupts.h>
-#include <drivers/console.h>
 #include <drivers/serial/serial_io.h>
 
 #include <stdio.h>

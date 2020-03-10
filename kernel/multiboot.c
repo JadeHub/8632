@@ -2,7 +2,6 @@
 
 #include <kernel/utils.h>
 #include <kernel/fault.h>
-#include <drivers/console.h>
 
 #include <stdio.h>
 #include <stddef.h>

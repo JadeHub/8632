@@ -5,7 +5,6 @@
 #include <kernel/debug.h>
 #include <kernel/utils.h>
 #include <kernel/x86/interrupts.h>
-#include <drivers/console.h>
 #include <stdio.h>
 
 extern void enable_paging();
@@ -193,13 +192,13 @@ page_directory_t *clone_directory(page_directory_t *src)
             dir->tables[i] = src->tables[i];
             dir->tablesPhysical[i] = src->tablesPhysical[i];
         }
-        else
+      /*  else
         {
             // Copy the table.
             uint32_t phys;
             dir->tables[i] = clone_table(src->tables[i], &phys);
             dir->tablesPhysical[i] = phys | 0x07;
-        }
+        }*/
     }
     return dir;
 }

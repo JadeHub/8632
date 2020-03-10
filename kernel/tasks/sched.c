@@ -6,7 +6,6 @@
 #include <kernel/debug.h>
 #include <kernel/time.h>
 #include <drivers/timer/timer.h>
-#include <drivers/console.h>
 #include "proc.h"
 
 #include <stdio.h>
@@ -204,8 +203,11 @@ void sched_pause()
 
 void sched_unblock(thread_t* t)
 {
+	sched_lock();
 	t->state = TS_READY_TO_RUN;
 	sched_task(t);
+	_switch_task(time_ms());
+	sched_unlock();
 }
 
 void sched_block()

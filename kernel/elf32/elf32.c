@@ -2,7 +2,6 @@
 #include <kernel/memory/kmalloc.h>
 #include <kernel/fault.h>
 #include <kernel/utils.h>
-#include <drivers/console.h>
 #include <kernel/memory/paging.h>
 
 #include <stddef.h>

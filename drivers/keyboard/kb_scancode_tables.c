@@ -1,4 +1,3 @@
-//#if 0
 #include "kb_scancode_tables.h"
 #include <kernel/utils.h>
 
@@ -153,4 +152,3 @@ void kb_scancode_tables_init()
 
     kb_sc_ascii_2byte[0x35] = NEW_LINE;
 }
-//#endif

@@ -4,8 +4,6 @@
 #include <kernel/fs/dir.h>
 #include <kernel/fault.h>
 
-#include <drivers/console.h>
-
 #include <stdio.h>
 
 static fs_node_t* _root;
@@ -31,7 +29,7 @@ void devfs_init()
 
 void devfs_register_device(dev_device_t* device)
 {
-	printf("Dev reg 0x%08x %s\n", device->driver, device->name.str);
+	//printf("Dev reg 0x%08x %s\n", device->driver, device->name.str);
 
 	fs_node_t* node = fs_create_node(device->name.str);
 	node->data = device;

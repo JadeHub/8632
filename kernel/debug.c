@@ -3,7 +3,6 @@
 #include <kernel/utils.h>
 #include <kernel/tasks/sched.h>
 #include <kernel/x86/interrupts.h>
-#include <drivers/console.h>
 #include <kernel/utils.h>
 
 #include <stddef.h>

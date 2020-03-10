@@ -1,7 +1,6 @@
 #include "serial_io.h"
 #include <drivers/ioports.h>
 #include <kernel/x86/interrupts.h>
-#include <drivers/console.h>
 #include <kernel/utils.h>
 #include <kernel/fault.h>
 
