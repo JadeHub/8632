@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include <sys/syscall.h>
 
 void test_io()
@@ -34,21 +35,59 @@ void test_sleep()
 
 void test_kb()
 {
-	uint32_t fd = sys_open("/dev/keyboard", 0);
+	uint32_t fd = sys_open("/dev/console", 0);
 	if (fd == 0xffffffff)
 	{
-		printf("Failed to open keyboard");
+		printf("Failed to open consol");
 	}
 	else
 	{
-		char buff;
-		
+		char buff[128];
+
 		do
 		{
-			sys_read(fd, &buff, 1);
+			printf("Reading 1\n");
+			sys_read(fd, buff, 127);
+			printf("Read %s len %d\n", buff, strlen(buff));
+		} while (buff[0] != 'q');
+	}
+}
 
-			printf("%c", buff);
-		} while (buff != 'q');
+#include <sys/keyboard.h>
+
+static const char* _key_state(bool b)
+{
+	static const char* p = "pressed";
+	static const char* r = "released";
+	return b ? p : r;
+}
+
+static const char _bool_state(bool s)
+{
+	return s ? 'Y' : 'N';
+}
+
+void read_kbd()
+{
+	uint32_t fd = sys_open("/dev/keyboard", 0);
+	if (fd == 0xffffffff)
+	{
+		printf("Failed to open keyboard\n");
+		return;
+	}
+	printf("Reading... Ctrl+c to stop\n");
+	kb_event_t kbe;
+	for (;;)
+	{
+		sys_read(fd, (uint8_t*)&kbe, sizeof(kb_event_t));
+		printf("0x%02x %-10s %-8s C[%c%c] A[%c%c] S[%c%c]\n", kbe.code, kb_key_name(kbe.code),
+			_key_state(kbe.pressed),
+			_bool_state(kbe.state.lctrl), _bool_state(kbe.state.rctrl),
+			_bool_state(kbe.state.lalt), _bool_state(kbe.state.ralt),
+			_bool_state(kbe.state.lshift), _bool_state(kbe.state.rshift)			
+			);
+		if (kbe.code == 'c' && kb_is_ctrl(&kbe.state))
+			break;
 	}
 }
 
@@ -56,14 +95,15 @@ void entry()
 {
 	char* msg = "Hello from user land %d";
 
-	printf("printf %d %s\n", 2, "testing");
+	printf("printf %d %s\n", 57, "testing");
 
 	//test_io();
 
 	//for(int j=0;j<5;j++)
 		//test_sleep();
 	
-	test_kb();
+	//test_kb();
+	read_kbd();
 
 	sys_exit(4);
 

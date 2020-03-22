@@ -1,10 +1,6 @@
 #include "kb_scancode_tables.h"
+#include <sys/key_codes.h>
 #include <kernel/utils.h>
-
-#define ESC 27
-#define BACKSPACE 8
-#define TAB 9
-#define NEW_LINE 10
 
 uint8_t kb_sc_ascii_lower[256];
 uint8_t kb_sc_ascii_upper[256];
@@ -16,7 +12,7 @@ void kb_scancode_tables_init()
     memset(&kb_sc_ascii_upper, 0, 256);    
     memset(&kb_sc_ascii_2byte, 0, 256);
 
-    kb_sc_ascii_lower[0x01] = ESC;
+    kb_sc_ascii_lower[0x01] = KEY_ESC;
     kb_sc_ascii_lower[0x02] = '1';    
     kb_sc_ascii_lower[0x03] = '2';    
     kb_sc_ascii_lower[0x04] = '3';    
@@ -29,8 +25,8 @@ void kb_scancode_tables_init()
     kb_sc_ascii_lower[0x0B] = '0';
     kb_sc_ascii_lower[0x0C] = '-';
     kb_sc_ascii_lower[0x0D] = '=';
-    kb_sc_ascii_lower[0x0E] = BACKSPACE;
-    kb_sc_ascii_lower[0x0F] = TAB;
+    kb_sc_ascii_lower[0x0E] = KEY_BACKSPACE;
+    kb_sc_ascii_lower[0x0F] = KEY_TAB;
     kb_sc_ascii_lower[0x10] = 'q';
     kb_sc_ascii_lower[0x11] = 'w';
     kb_sc_ascii_lower[0x12] = 'e';
@@ -43,7 +39,8 @@ void kb_scancode_tables_init()
     kb_sc_ascii_lower[0x19] = 'p';
     kb_sc_ascii_lower[0x1A] = '[';
     kb_sc_ascii_lower[0x1B] = ']';
-    kb_sc_ascii_lower[0x1C] = NEW_LINE;
+    kb_sc_ascii_lower[0x1C] = KEY_NEW_LINE;
+    kb_sc_ascii_lower[0x1D] = KEY_LCTRL;
     kb_sc_ascii_lower[0x1E] = 'a';
     kb_sc_ascii_lower[0x1F] = 's';
     kb_sc_ascii_lower[0x20] = 'd';
@@ -56,6 +53,7 @@ void kb_scancode_tables_init()
     kb_sc_ascii_lower[0x27] = ';';
     kb_sc_ascii_lower[0x28] = '\'';
     kb_sc_ascii_lower[0x29] = '`';
+    kb_sc_ascii_lower[0x2A] = KEY_LSHIFT;
     kb_sc_ascii_lower[0x2B] = '\\';
     kb_sc_ascii_lower[0x2C] = 'z';
     kb_sc_ascii_lower[0x2D] = 'x';
@@ -67,7 +65,9 @@ void kb_scancode_tables_init()
     kb_sc_ascii_lower[0x33] = ',';
     kb_sc_ascii_lower[0x34] = '.';
     kb_sc_ascii_lower[0x35] = '/';
+    kb_sc_ascii_lower[0x36] = KEY_RSHIFT;
     kb_sc_ascii_lower[0x37] = '*';
+    kb_sc_ascii_lower[0x38] = KEY_LALT;
     kb_sc_ascii_lower[0x39] = ' ';
     kb_sc_ascii_lower[0x47] = '7';
     kb_sc_ascii_lower[0x48] = '8';
@@ -81,9 +81,22 @@ void kb_scancode_tables_init()
     kb_sc_ascii_lower[0x50] = '2';
     kb_sc_ascii_lower[0x51] = '3';
     kb_sc_ascii_lower[0x52] = '0';
-    kb_sc_ascii_lower[0x53] = '.';   
+    kb_sc_ascii_lower[0x53] = '.';
+    kb_sc_ascii_lower[0x58] = KEY_CAPS_LOCK;
+    kb_sc_ascii_lower[0x3B] = KEY_F1;
+    kb_sc_ascii_lower[0x3C] = KEY_F2;
+    kb_sc_ascii_lower[0x3D] = KEY_F3;
+    kb_sc_ascii_lower[0x3E] = KEY_F4;
+    kb_sc_ascii_lower[0x3F] = KEY_F5;
+    kb_sc_ascii_lower[0x40] = KEY_F6;
+    kb_sc_ascii_lower[0x41] = KEY_F7;
+    kb_sc_ascii_lower[0x42] = KEY_F8;
+    kb_sc_ascii_lower[0x43] = KEY_F9;
+    kb_sc_ascii_lower[0x44] = KEY_F10;
+    kb_sc_ascii_lower[0x57] = KEY_F11;
+    kb_sc_ascii_lower[0x58] = KEY_F12;
 
-    kb_sc_ascii_upper[0x01] = ESC;
+    kb_sc_ascii_upper[0x01] = KEY_ESC;
     kb_sc_ascii_upper[0x02] = '!';    
     kb_sc_ascii_upper[0x03] = '@';    
     kb_sc_ascii_upper[0x04] = '#';    
@@ -96,8 +109,8 @@ void kb_scancode_tables_init()
     kb_sc_ascii_upper[0x0B] = ')';
     kb_sc_ascii_upper[0x0C] = '_';
     kb_sc_ascii_upper[0x0D] = '+';
-    kb_sc_ascii_upper[0x0E] = BACKSPACE;
-    kb_sc_ascii_upper[0x0F] = TAB;
+    kb_sc_ascii_upper[0x0E] = KEY_BACKSPACE;
+    kb_sc_ascii_upper[0x0F] = KEY_TAB;
     kb_sc_ascii_upper[0x10] = 'Q';
     kb_sc_ascii_upper[0x11] = 'W';
     kb_sc_ascii_upper[0x12] = 'E';
@@ -110,7 +123,8 @@ void kb_scancode_tables_init()
     kb_sc_ascii_upper[0x19] = 'P';
     kb_sc_ascii_upper[0x1A] = '{';
     kb_sc_ascii_upper[0x1B] = '}';
-    kb_sc_ascii_upper[0x1C] = NEW_LINE;
+    kb_sc_ascii_upper[0x1C] = KEY_NEW_LINE;
+    kb_sc_ascii_upper[0x1D] = KEY_LCTRL;
     kb_sc_ascii_upper[0x1E] = 'A';
     kb_sc_ascii_upper[0x1F] = 'S';
     kb_sc_ascii_upper[0x20] = 'D';
@@ -123,6 +137,7 @@ void kb_scancode_tables_init()
     kb_sc_ascii_upper[0x27] = ':';
     kb_sc_ascii_upper[0x28] = '\"';
     kb_sc_ascii_upper[0x29] = '~';
+    kb_sc_ascii_upper[0x2A] = KEY_LSHIFT;
     kb_sc_ascii_upper[0x2B] = '|';
     kb_sc_ascii_upper[0x2C] = 'Z';
     kb_sc_ascii_upper[0x2D] = 'X';
@@ -134,7 +149,9 @@ void kb_scancode_tables_init()
     kb_sc_ascii_upper[0x33] = '<';
     kb_sc_ascii_upper[0x34] = '>';
     kb_sc_ascii_upper[0x35] = '?';
+    kb_sc_ascii_upper[0x36] = KEY_RSHIFT;
     kb_sc_ascii_upper[0x37] = '*';
+    kb_sc_ascii_upper[0x38] = KEY_LALT;
     kb_sc_ascii_upper[0x39] = ' ';
     kb_sc_ascii_upper[0x47] = '7';
     kb_sc_ascii_upper[0x48] = '8';
@@ -149,6 +166,34 @@ void kb_scancode_tables_init()
     kb_sc_ascii_upper[0x51] = '3';
     kb_sc_ascii_upper[0x52] = '0';
     kb_sc_ascii_upper[0x53] = '.';
+    kb_sc_ascii_upper[0x58] = KEY_CAPS_LOCK;
+    kb_sc_ascii_upper[0x3B] = KEY_F1;
+    kb_sc_ascii_upper[0x3C] = KEY_F2;
+    kb_sc_ascii_upper[0x3D] = KEY_F3;
+    kb_sc_ascii_upper[0x3E] = KEY_F4;
+    kb_sc_ascii_upper[0x3F] = KEY_F5;
+    kb_sc_ascii_upper[0x40] = KEY_F6;
+    kb_sc_ascii_upper[0x41] = KEY_F7;
+    kb_sc_ascii_upper[0x42] = KEY_F8;
+    kb_sc_ascii_upper[0x43] = KEY_F9;
+    kb_sc_ascii_upper[0x44] = KEY_F10;
+    kb_sc_ascii_upper[0x57] = KEY_F11;
+    kb_sc_ascii_upper[0x58] = KEY_F12;
 
-    kb_sc_ascii_2byte[0x35] = NEW_LINE;
+    kb_sc_ascii_2byte[0x1C] = KEY_NEW_LINE;
+    kb_sc_ascii_2byte[0x2E] = KEY_VOL_DOWN;
+    kb_sc_ascii_2byte[0x30] = KEY_VOL_UP;
+    kb_sc_ascii_2byte[0x2E] = KEY_VOL_MUTE;
+    kb_sc_ascii_2byte[0x53] = KEY_DEL;
+    kb_sc_ascii_2byte[0x4B] = KEY_LEFT;
+    kb_sc_ascii_2byte[0x4D] = KEY_RIGHT;
+    kb_sc_ascii_2byte[0x48] = KEY_UP;
+    kb_sc_ascii_2byte[0x50] = KEY_DOWN;
+    kb_sc_ascii_2byte[0x47] = KEY_HOME;
+    kb_sc_ascii_2byte[0x4F] = KEY_END;
+    kb_sc_ascii_2byte[0x52] = KEY_INSERT;
+    kb_sc_ascii_2byte[0x51] = KEY_PG_DOWN;
+    kb_sc_ascii_2byte[0x49] = KEY_PG_UP;
+    kb_sc_ascii_2byte[0x1D] = KEY_RCTRL;
+    kb_sc_ascii_2byte[0x38] = KEY_RALT;
 }

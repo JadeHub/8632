@@ -3,7 +3,7 @@
 #boot: a
 ata0-slave: type=cdrom, path=kernel.iso, status=inserted
 boot:cdrom
-memory: guest=1024, host=128
+memory: guest=1024, host=512
 #log: bochsout.txt
 magic_break: enabled=1
 ata0-master: type=disk, path="hdd.img", mode=flat

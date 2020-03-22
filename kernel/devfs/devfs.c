@@ -8,17 +8,31 @@
 
 static fs_node_t* _root;
 
-static size_t _write_device(struct fs_node* f, uint8_t* buff, size_t off, size_t sz)
+static size_t _write_device(fs_node_t* f, uint8_t* buff, size_t off, size_t sz)
 {
 	dev_device_t* device = (dev_device_t*)f->data;
 	return device->driver->write(device, buff, off, sz);
 }
 
-static size_t _read_device(struct fs_node* f, uint8_t* buff, size_t off, size_t sz)
+static size_t _read_device(fs_node_t* f, uint8_t* buff, size_t off, size_t sz)
 {
 	ASSERT(f && buff && sz);
 	dev_device_t* device = (dev_device_t*)f->data;
 	return device->driver->read(device, buff, off, sz);
+}
+
+static void _open_device(fs_node_t* f, uint32_t flags)
+{
+	ASSERT(f);
+	dev_device_t* device = (dev_device_t*)f->data;
+	return device->driver->open(device, flags);
+}
+
+static void _close_device(fs_node_t* f)
+{
+	ASSERT(f);
+	dev_device_t* device = (dev_device_t*)f->data;
+	return device->driver->close(device);
 }
 
 void devfs_init()
@@ -37,6 +51,10 @@ void devfs_register_device(dev_device_t* device)
 		node->read = &_read_device;
 	if (device->driver->write)
 		node->write = &_write_device;
+	if (device->driver->open)
+		node->open = &_open_device;
+	if (device->driver->close)
+		node->close = &_close_device;
 
 	if (!fs_add_child_node(_root, node))
 	{

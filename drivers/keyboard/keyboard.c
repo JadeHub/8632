@@ -1,6 +1,5 @@
 #include "keyboard.h"
 #include "kb_scancode_tables.h"
-
 #include <kernel/fault.h>
 #include <kernel/utils.h>
 #include <kernel/debug.h>
@@ -14,29 +13,47 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-//State
-typedef struct state 
-{
-    bool wait : 1;
-    bool lshift : 1;
-    bool rshift : 1;
-    bool lalt : 1;
-    bool ralt : 1;
-    bool caps : 1;
-} state_t;
-
-state_t kb_state;
-
 #define BUFF_SZ 128
-static uint8_t _buff[BUFF_SZ];
+
+static kb_event_t _events[BUFF_SZ];
+static uint8_t _events_head = 0;
+static uint8_t _events_tail = 0;
+static bool _events_full = false;
+
+static bool _events_empty()
+{
+    return !_events_full && _events_head == _events_tail;
+}
+
+static void _put_event(kb_event_t* e)
+{
+    _events[_events_head] = *e;
+    if (_events_full)
+        _events_tail = (_events_tail + 1) % BUFF_SZ;
+    _events_head = (_events_head + 1) % BUFF_SZ;
+    _events_full = _events_head == _events_tail;
+}
+
+static bool _get_event(kb_event_t* e)
+{
+    kb_event_t* result = NULL;
+
+    if (_events_empty())
+        return false;
+    
+    *e = _events[_events_tail];
+    _events_full = false;
+    _events_tail = (_events_tail + 1) % BUFF_SZ;
+    return true;
+}
 
 //we only support a sinlge keyboard so the device and driver are one
 typedef struct kb_device
 {
     dev_driver_t driver;
-    dev_device_t device;
-    state_t kb_state;
-    cbuff_t* buffer;
+    dev_device_t device;    
+    kb_state_t state;
+    bool wait_2nd;  //Are we waiting for a second byte from the keyboard
 
     thread_t* waiters;
 }kb_device_t;
@@ -45,25 +62,25 @@ static kb_device_t _kb;
 
 static size_t _read_keyboard(dev_device_t* d, uint8_t* buff, size_t off, size_t sz)
 {
-    ASSERT(off == 0);
-
-    while (cbuff_empty(_kb.buffer))
-    {
-        sched_cur_thread()->next = _kb.waiters;
-        _kb.waiters = sched_cur_thread();
-        sched_block();
-    }
+    ASSERT(sz % sizeof(kb_event_t) == 0);
 
     size_t i = 0;
-    for (;i < sz; i++)
+    for (;i < sz; i += sizeof(kb_event_t))
     {
-        if (!cbuff_get(_kb.buffer, &buff[i]))
-            break;        
+        while (_events_empty())
+        {
+            sched_cur_thread()->next = _kb.waiters;
+            _kb.waiters = sched_cur_thread();
+            sched_block();
+        }
+
+        if (!_get_event((kb_event_t*)buff + i))
+            break;
     }
     return i;
 }
 
-static bool is_state_modifier(uint8_t sc)
+static bool _is_state_modifier(uint8_t sc)
 {
     return sc == 0xE0 ||
         sc == 0x2A ||
@@ -75,52 +92,65 @@ static bool is_state_modifier(uint8_t sc)
         sc == 0x38 ||
         sc == 0xB8 ||
         sc == 0x3A ||
-        sc == 0xBA; 
+        sc == 0xBA ||
+        sc == 0x1D ||
+        sc == 0x9D;
 }
 
-static bool update_state(uint8_t sc)
+static bool _update_state(uint8_t sc)
 {
     if(sc == 0xE0)
-        kb_state.wait = true;
+        _kb.wait_2nd = true;
 
-    if(!kb_state.wait && sc == 0x2A)
-        kb_state.lshift = true;
-    if(!kb_state.wait && sc == 0xAA)
-        kb_state.lshift = false; 
+    if(!_kb.wait_2nd && sc == 0x2A)
+        _kb.state.lshift = true;
+    if(!_kb.wait_2nd && sc == 0xAA)
+        _kb.state.lshift = false; 
     
-    if(!kb_state.wait && sc == 0x36)
-        kb_state.rshift = true;
-    if(!kb_state.wait && sc == 0xB6)
-        kb_state.rshift = false;
+    if(!_kb.wait_2nd && sc == 0x36)
+        _kb.state.rshift = true;
+    if(!_kb.wait_2nd && sc == 0xB6)
+        _kb.state.rshift = false;
 
-    if(!kb_state.wait && sc == 0x38)
-        kb_state.lalt = true;
-    if(!kb_state.wait && sc == 0xB8)
-        kb_state.lalt = false; 
+    if(!_kb.wait_2nd && sc == 0x38)
+        _kb.state.lalt = true;
+    if(!_kb.wait_2nd && sc == 0xB8)
+        _kb.state.lalt = false; 
     
-    if(kb_state.wait && sc == 0x38)
-        kb_state.ralt = true;
-    if(kb_state.wait && sc == 0xB8)
-        kb_state.ralt = false;
+    if(_kb.wait_2nd && sc == 0x38)
+        _kb.state.ralt = true;
+    if(_kb.wait_2nd && sc == 0xB8)
+        _kb.state.ralt = false;
 
-    if(!kb_state.wait && sc == 0x3A)
-        kb_state.caps = true;
-    if(!kb_state.wait && sc == 0xBA)
-        kb_state.caps = false;
+    if(!_kb.wait_2nd && sc == 0x3A)
+        _kb.state.caps = true;
+    if(!_kb.wait_2nd && sc == 0xBA)
+        _kb.state.caps = false;
+
+    if (!_kb.wait_2nd && sc == 0x1D)
+        _kb.state.lctrl = true;
+    if (!_kb.wait_2nd && sc == 0x9D)
+        _kb.state.lctrl = false;
+
+    if (_kb.wait_2nd && sc == 0x1D)
+        _kb.state.rctrl = true;
+    if (_kb.wait_2nd && sc == 0x9D)
+        _kb.state.rctrl = false;
     
-    return is_state_modifier(sc);
+    //return false;
+    return _is_state_modifier(sc);
 }
 
-static uint8_t translate(uint8_t sc)
+static uint8_t _translate(uint8_t sc)
 {
-    if(kb_state.wait)
+    if(_kb.wait_2nd)
         return kb_sc_ascii_2byte[sc];
-    if(kb_state.lshift || kb_state.rshift || kb_state.caps)
+    if(_kb.state.lshift || _kb.state.rshift || _kb.state.caps)
         return kb_sc_ascii_upper[sc];
     return kb_sc_ascii_lower[sc];    
 }
 
-static bool is_special_code(uint8_t sc)
+static bool _is_special_code(uint8_t sc)
 {
     return sc == 0x00 ||
         //sc == 0xAA ||
@@ -135,24 +165,31 @@ static bool is_special_code(uint8_t sc)
 static void kb_isr(isr_state_t* state)
 {
     uint8_t scan_code = inb(0x60);
-    if(is_special_code(scan_code))
+
+    printf("K 0x%x\n", scan_code);
+    if (_is_special_code(scan_code))
         return; //todo: 0x00 or 0xFF are error
+
+    if (scan_code == 0xE0)
+    {
+        _kb.wait_2nd = true;
+        return;
+    }
         
-    if(update_state(scan_code))
+    if (_update_state(scan_code))
         return;
  
-    if(scan_code & 0x80)
-        return; //todo: key release
-    
-    uint8_t ascii = translate(scan_code);
+    bool pressed = !(scan_code & 0x80);
+    scan_code &= 0x7F; //upper bit indicates key release
+
+    uint8_t ascii = _translate(scan_code);
     if (ascii)
     {
-        if (cbuff_full(_kb.buffer))
-        {
-
-        }
-        cbuff_put(_kb.buffer, ascii);
-    //    con_putc(ascii);
+        kb_event_t e;
+        e.code = ascii;
+        e.state = _kb.state;
+        e.pressed = pressed;
+        _put_event(&e);
 
         thread_t* t = _kb.waiters;
         _kb.waiters = NULL;
@@ -162,7 +199,7 @@ static void kb_isr(isr_state_t* state)
             t = t->next;
         }
     }
-    kb_state.wait = false;
+    _kb.wait_2nd = false;
 }
 
 void kb_init()
@@ -176,7 +213,6 @@ void kb_init()
 
     _kb.driver.read = &_read_keyboard;
     _kb.device.driver = &_kb.driver;
-    _kb.buffer = cbuff_create(_buff, BUFF_SZ);
 
     dev_install_driver(&_kb.driver);
     dev_register_device(&_kb.device);

@@ -1,4 +1,4 @@
-CFLAGS=-m32 -std=gnu99 -I ./include -Werror -ffreestanding
+CFLAGS=-m32 -std=gnu99 -I ./include -I ../ -Werror -ffreestanding
 AR = i686-elf-ar
 CC = i686-elf-gcc
 
@@ -7,7 +7,8 @@ C_SOURCES = $(wildcard \
 string/*.c \
 ctype/*.c \
 stdlib/*.c \
-stdio/*.c)
+stdio/*.c \
+sys/*.c)
 
 ASM_SOURCES = $(wildcard *.s)
 

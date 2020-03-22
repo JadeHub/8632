@@ -74,7 +74,7 @@ uint32_t open(const char* path, uint32_t flags)
 		return fd;
 	}
 	fd = _free_fd(proc);
-	printf("Open Free 0x%x\n", fd);
+	//printf("Open Free %s 0x%x\n", path, fd);
 	if (io_is_valid_fd(fd))
 	{
 		proc->fds[fd] = (proc_file_desc_t*)kmalloc(sizeof(proc_file_desc_t));
@@ -82,6 +82,7 @@ uint32_t open(const char* path, uint32_t flags)
 		proc->fds[fd]->node = node;
 		proc->fds[fd]->flags = flags;
 		proc->fds[fd]->offset = 0;
+		fs_open(node, flags);
 	}
 	return fd;
 }
@@ -94,7 +95,7 @@ void close(uint32_t fd)
 
 size_t read(uint32_t fd, uint8_t* buff, size_t sz)
 {
-//	printf("reading 0x%x\n", fd);
+//	printf("io read 0x%x\n", fd);
 	proc_io_data_t* proc = _cur_proc_data();
 	ASSERT(proc->fds[fd]->node);
 	size_t read = fs_read(proc->fds[fd]->node, buff, proc->fds[fd]->offset, sz);

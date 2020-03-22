@@ -38,8 +38,8 @@
 
 extern void switch_to_user_mode();
 
-uint8_t ram_disk_buff[0x8000];
-uint32_t ram_disk_len = 0x8000;
+uint8_t ram_disk_buff[0x10000];
+uint32_t ram_disk_len = 0x10000;
 
 void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
@@ -74,6 +74,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	printf("initrd\n");
 	devfs_init();
 	kb_init();
+	con_dev_init();
 	syscall_init();
 	printf("ata\n");
 	ata_init();
