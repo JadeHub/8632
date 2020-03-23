@@ -3,10 +3,11 @@
 
 #include "fault.h"
 
-#include <drivers/console.h>
+#include <drivers/console/console.h>
 #include <drivers/keyboard/keyboard.h>
 #include <drivers/timer/timer.h>
 #include <drivers/ata/ata.h>
+#include <drivers/display.h>
 #include <kernel/memory/paging.h>
 #include <kernel/memory/kheap.h>
 #include <kernel/memory/kmalloc.h>
@@ -92,7 +93,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 		proc_new_elf_proc("user_space2", exe_buff, f->len);
 	}
 
-	con_enable_cursor();
+	dsp_enable_cursor();
 
 	dbg_mon_init();
 	switch_to_user_mode();

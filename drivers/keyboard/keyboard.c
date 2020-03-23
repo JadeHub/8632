@@ -166,7 +166,7 @@ static void kb_isr(isr_state_t* state)
 {
     uint8_t scan_code = inb(0x60);
 
-    printf("K 0x%x\n", scan_code);
+  //  printf("K 0x%x\n", scan_code);
     if (_is_special_code(scan_code))
         return; //todo: 0x00 or 0xFF are error
 

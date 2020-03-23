@@ -15,6 +15,7 @@ kernel/types/*.c \
 kernel/io/*.c \
 drivers/*.c \
 drivers/keyboard/*.c \
+drivers/console/*.c \
 drivers/ata/*.c \
 drivers/timer/*.c \
 drivers/serial/*.c \
@@ -35,6 +36,7 @@ kernel/types/*.h	 \
 kernel/io/*.h \
 drivers/*.h \
 drivers/keyboard/*.h \
+drivers/console/*.h \
 drivers/ata/*.h \
 drivers/timer/*.h \
 drivers/serial/*.h \

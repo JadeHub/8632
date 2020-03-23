@@ -1,6 +1,8 @@
 #include "display.h"
 #include "ioports.h"
 
+#include <string.h>
+
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
 
@@ -22,22 +24,19 @@ void dsp_print_char(uint8_t c, uint8_t col, uint8_t row)
 	video_memory[get_char_offset(col, row)] = c | text_attr;
 }
 
-void dsp_print_string(char* s, uint8_t col, uint8_t row)
+void dsp_remove_scroll(uint8_t col, uint8_t row)
 {
-	while(*s)
-	{
-		dsp_print_char(*s, col, row);
-		s++;
-		col++;
-		if(col == SCREEN_WIDTH)
-		{
-			col = 0;
-			row++;
-			if(row == SCREEN_HEIGHT)
-				row = 0;
-		}
-	}
+	for (uint8_t copy = col; copy < SCREEN_WIDTH - 1; copy++)
+		video_memory[get_char_offset(copy, row)] = video_memory[get_char_offset(copy+1, row)];
+	video_memory[get_char_offset(SCREEN_WIDTH - 1, row)] = ' ' | text_attr;
+}
 
+void dsp_scroll_char(uint8_t c, uint8_t col, uint8_t row)
+{
+	for (uint8_t copy = SCREEN_WIDTH - 1; copy > col; copy--)
+		video_memory[get_char_offset(copy, row)] = video_memory[get_char_offset(copy-1, row)];
+
+	video_memory[get_char_offset(col, row)] = c | text_attr;
 }
 
 void dsp_clear_screen()
@@ -75,7 +74,7 @@ void dsp_set_cursor(uint8_t col, uint8_t row)
 void dsp_enable_cursor()
 {
 	outb(COMMAND_PORT, 0x0A);
-	outb(DATA_PORT, (inb(DATA_PORT) & 0xC0) | 0);
+	outb(DATA_PORT, (inb(DATA_PORT) & 0xC0) | 12);
  
 	outb(COMMAND_PORT, 0x0B);
 	outb(DATA_PORT, (inb(DATA_PORT) & 0xE0) | 15);

@@ -3,7 +3,7 @@
 #include <kernel/utils.h>
 #include <kernel/x86/interrupts.h>
 #include <kernel/memory/kheap.h>
-#include <drivers/console.h>
+#include <drivers/console/console.h>
 #include <kernel/time.h>
 #include <kernel/io/io.h>
 

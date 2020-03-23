@@ -181,19 +181,17 @@ void kb_scancode_tables_init()
     kb_sc_ascii_upper[0x58] = KEY_F12;
 
     kb_sc_ascii_2byte[0x1C] = KEY_NEW_LINE;
-    kb_sc_ascii_2byte[0x2E] = KEY_VOL_DOWN;
-    kb_sc_ascii_2byte[0x30] = KEY_VOL_UP;
-    kb_sc_ascii_2byte[0x2E] = KEY_VOL_MUTE;
-    kb_sc_ascii_2byte[0x53] = KEY_DEL;
+    kb_sc_ascii_2byte[0x1D] = KEY_RCTRL;
+    kb_sc_ascii_2byte[0x35] = '/';
+    kb_sc_ascii_2byte[0x38] = KEY_RALT;
+    kb_sc_ascii_2byte[0x47] = KEY_HOME;
+    kb_sc_ascii_2byte[0x48] = KEY_UP;
+    kb_sc_ascii_2byte[0x49] = KEY_PG_UP;
     kb_sc_ascii_2byte[0x4B] = KEY_LEFT;
     kb_sc_ascii_2byte[0x4D] = KEY_RIGHT;
-    kb_sc_ascii_2byte[0x48] = KEY_UP;
-    kb_sc_ascii_2byte[0x50] = KEY_DOWN;
-    kb_sc_ascii_2byte[0x47] = KEY_HOME;
     kb_sc_ascii_2byte[0x4F] = KEY_END;
-    kb_sc_ascii_2byte[0x52] = KEY_INSERT;
+    kb_sc_ascii_2byte[0x50] = KEY_DOWN;
     kb_sc_ascii_2byte[0x51] = KEY_PG_DOWN;
-    kb_sc_ascii_2byte[0x49] = KEY_PG_UP;
-    kb_sc_ascii_2byte[0x1D] = KEY_RCTRL;
-    kb_sc_ascii_2byte[0x38] = KEY_RALT;
+    kb_sc_ascii_2byte[0x52] = KEY_INSERT;
+    kb_sc_ascii_2byte[0x53] = KEY_DEL;
 }

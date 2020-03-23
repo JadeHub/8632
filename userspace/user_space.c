@@ -33,7 +33,7 @@ void test_sleep()
 	printf("Sleep finished\n");
 }
 
-void test_kb()
+void test_con()
 {
 	uint32_t fd = sys_open("/dev/console", 0);
 	if (fd == 0xffffffff)
@@ -46,7 +46,7 @@ void test_kb()
 
 		do
 		{
-			printf("Reading 1\n");
+			printf("Prompt> ");
 			sys_read(fd, buff, 127);
 			printf("Read %s len %d\n", buff, strlen(buff));
 		} while (buff[0] != 'q');
@@ -102,8 +102,8 @@ void entry()
 	//for(int j=0;j<5;j++)
 		//test_sleep();
 	
-	//test_kb();
-	read_kbd();
+	test_con();
+	//read_kbd();
 
 	sys_exit(4);
 
