@@ -2,6 +2,7 @@
 #include <sys/key_codes.h>
 
 #include <kernel/fault.h>
+#include <kernel/debug.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -26,6 +27,7 @@ static void _remove(line_buff_t* lb)
 	for (size_t i = lb->cur_pos; i <= lb->len; i++)
 		lb->result[i] = lb->result[i + 1];
 	lb->len--;
+	dbg_dump_stack();
 }
 
 void lb_init(line_buff_t* lb)

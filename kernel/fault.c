@@ -41,7 +41,10 @@ void klog_impl(const char* file, uint32_t line, KLOG_LEVEL level, const char* mo
     vsprintf(buff, format, args);
     va_end(args);
 
-    serial_printf(SERIAL_PORT_COM1, "[%s][%s] %s\n\r", module, level == LL_ERR ? "ERR" : "INFO", buff);
+   // serial_printf(SERIAL_PORT_COM1, "[%s][%s] %s\n\r", module, level == LL_ERR ? "ERR" : "INFO", buff);
+  //  printf("LOG [%s][%s] %s\n\r", module, level == LL_ERR ? "ERR" : "INFO", buff);
+    if (level == LL_ERR)
+        bochs_dbg();
 }
 
 void fault_init()

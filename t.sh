@@ -1,3 +1,3 @@
 rm *.lock
-make && sudo bochs -q -rc debug.rc 
+make -j && sudo bochs -q -rc debug.rc 
 

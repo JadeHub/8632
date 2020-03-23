@@ -105,17 +105,13 @@ void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 	memset(p, 0, sizeof(process_t));
 	p->id = next_pid++;
 	sprintf(p->name, "user proc %s", name);
-	p->next = 0;
 	printf("New proc %s\n", p->name);
 
 	p->pages = clone_directory(kernel_directory);
 	switch_page_directory(p->pages);
 
-	p->entry = elf_load_raw_image(p->pages, name, data, len);
-	ASSERT(p->entry);
-	elf_hdr_t* hdr = (elf_hdr_t*)data;
-	p->elf_img = elf_load_symbol_data(name, data,
-		data + hdr->shoff, hdr->shnum, hdr->shentsize, hdr->shstrndx);
+	bool loaded = elf_load_raw_image(p, name, data, len);
+	ASSERT(loaded);
 
 	//heap at 0x00700000
 	uint32_t start = 0x00700000;

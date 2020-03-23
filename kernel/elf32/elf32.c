@@ -3,6 +3,7 @@
 #include <kernel/fault.h>
 #include <kernel/utils.h>
 #include <kernel/memory/paging.h>
+#include <kernel/tasks/proc.h>
 
 #include <stddef.h>
 #include <stdio.h>
@@ -84,10 +85,11 @@ static void _load_elf_data(page_directory_t* pages, const uint8_t* src, elf_phdr
 	
 }
 
-uint32_t elf_load_raw_image(page_directory_t* pages, const char* name, const uint8_t* data, uint32_t sz)
+bool elf_load_raw_image(process_t* p, const char* name, const uint8_t* data, uint32_t sz)
 {
 	ASSERT(sz >= sizeof(elf_hdr_t));
 	elf_hdr_t* hdr = (elf_hdr_t*)data;
+	page_directory_t* pages = p->pages;
 
 	if (!_is_valid_header(hdr) || hdr->type != ELF_TYPE_EXE || hdr->machine != ELF_MACH_I386)
 	{
@@ -109,13 +111,17 @@ uint32_t elf_load_raw_image(page_directory_t* pages, const char* name, const uin
 
 	//elf_shdr_t* section = (elf_shdr_t*)((data + hdr->shoff) + hdr->shstrndx * hdr->shentsize);
 	//printf("josh %s\n", data+section->offset+section->name);
-	elf_image_t* elf_img = elf_load_symbol_data(name, data,
-			data+hdr->shoff, hdr->shnum, hdr->shentsize, hdr->shstrndx);
+	elf_load_symbol_data(name, data, data + hdr->shoff, hdr->shnum, hdr->shentsize, hdr->shstrndx);
 
-	return hdr->entry;
+	//elf_hdr_t* hdr2 = (elf_hdr_t*)data;
+	p->elf_img = elf_load_symbol_data(name, data, data + hdr->shoff, hdr->shnum, hdr->shentsize, hdr->shstrndx);
+
+
+	p->entry = hdr->entry;
+	return true;
 _err_ret:
 	KLOG(LL_ERR, "ELF", "error loading Elf image %s\n", name);
-	return 0;
+	return false;
 }
 
 elf_image_t* elf_load_symbol_data(const char* name, const uint8_t* base_address,
@@ -148,8 +154,7 @@ elf_image_t* elf_load_symbol_data(const char* name, const uint8_t* base_address,
 	}
 	if (!elf->symbol_strs.data)
 	{
-		KLOG(LL_ERR, "ELF", "failed to find .strtab section in %s\n", name);
-		printf("aaa\n");
+		printf("ELF ERROR failed to find .strtab section in %s\n", name);
 		goto _err_ret;
 	}
 
@@ -176,6 +181,11 @@ elf_image_t* elf_load_symbol_data(const char* name, const uint8_t* base_address,
 				_add_fn_symbol(elf, symbol);
 			}
 		}
+	}
+	else
+	{
+		printf("ELF ERROR failed to fid symbols\n");
+		goto _err_ret;
 	}
 
 	return elf;

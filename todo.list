@@ -1,12 +1,10 @@
 use mem map passed by grub to manage initial kmallocs rather than the placement_address
 
-processes and threads
-	waiting
-		io
-		time
-file system
-time
-ipc
+loading applications
+	- libc support (stdio, main() etc)
 
-strict warnings
-libc
+shell
+
+code layout for multiple usermode apps
+
+memory

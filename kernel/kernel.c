@@ -51,12 +51,13 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	if (!ram_disk_len)
 		KPANIC("Module /boot/ramdisk not found\n");
 	printf("Ram Disk 0x%08x bytes\n", ram_disk_len);
+	
 	elf_image_t* k_image = mb_get_kernel_elf();
 	dbg_init(k_image);
 	gdt_init();
 	printf("gdt\n");
 	idt_init();
-	printf("idt\n");
+	printf("idt\n");	
 	fault_init();
 
 	io_init();
@@ -75,12 +76,15 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	printf("initrd\n");
 	devfs_init();
 	kb_init();
+	bochs_dbg();
 	con_dev_init();
+	bochs_dbg();
 	syscall_init();
 	printf("ata\n");
+	bochs_dbg();
 	ata_init();
 	time_init();
-
+	
 	fs_node_t* parent;
 	fs_node_t* f = fs_get_abs_path("/initrd/bin/user_space", &parent);
 	if(f)
@@ -92,7 +96,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 		//printf("Loading elf 0x%x %d %s/%s\n", buff[0], f->len, parent->name, exe_name);
 		proc_new_elf_proc("user_space2", exe_buff, f->len);
 	}
-
+	
 	dsp_enable_cursor();
 
 	dbg_mon_init();
