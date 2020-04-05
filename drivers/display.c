@@ -24,21 +24,6 @@ void dsp_print_char(uint8_t c, uint8_t col, uint8_t row)
 	video_memory[get_char_offset(col, row)] = c | text_attr;
 }
 
-void dsp_remove_scroll(uint8_t col, uint8_t row)
-{
-	for (uint8_t copy = col; copy < SCREEN_WIDTH - 1; copy++)
-		video_memory[get_char_offset(copy, row)] = video_memory[get_char_offset(copy+1, row)];
-	video_memory[get_char_offset(SCREEN_WIDTH - 1, row)] = ' ' | text_attr;
-}
-
-void dsp_scroll_char(uint8_t c, uint8_t col, uint8_t row)
-{
-	for (uint8_t copy = SCREEN_WIDTH - 1; copy > col; copy--)
-		video_memory[get_char_offset(copy, row)] = video_memory[get_char_offset(copy-1, row)];
-
-	video_memory[get_char_offset(col, row)] = c | text_attr;
-}
-
 void dsp_clear_screen()
 {
 	for (uint8_t col=0; col<SCREEN_WIDTH; col++)

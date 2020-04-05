@@ -1,9 +1,9 @@
 #pragma once
 
+#include "history.h"
+
 #include <stdint.h>
 #include <stddef.h>
-
-struct fs_node;
 
 typedef struct line_buff
 {
@@ -11,11 +11,11 @@ typedef struct line_buff
 
 	size_t len;
 	size_t cur_pos;
+	size_t history_pos;
 }line_buff_t;
 
 void lb_init(line_buff_t*);
 
-enum lb_result_t {REPLACE, IGNORE, APPEND, BREAK};
+typedef enum {REPLACE, IGNORE, APPEND, BREAK} lb_result_t;
 
-uint8_t lb_add_code(line_buff_t*, uint8_t, struct fs_node*);
-void lb_set(line_buff_t*, const char*);
+lb_result_t lb_add_code(line_buff_t*, uint8_t, con_history_t*);

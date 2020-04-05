@@ -64,7 +64,7 @@ static bool _process_cmd(char* cmd)
 	{
 		cd_cmd(p.count, p.params, &_shell_state);
 	}
-	else
+	else if (strlen(cmd) > 0)
 	{
 		printf("Command \'%s\' not found.\n", p.params[0]);
 	}

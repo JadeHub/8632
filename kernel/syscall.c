@@ -65,6 +65,11 @@ static struct DIR* _syscall_open_dir(const char* path)
     return io_opendir(path);
 }
 
+static void _syscall_clear_console()
+{
+
+}
+
 static void* syscalls[10] =
 {
 	&syscall_alloc,
