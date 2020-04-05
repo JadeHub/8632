@@ -8,7 +8,7 @@
 
 static fs_node_t* _root;
 
-static size_t _write_device(fs_node_t* f, uint8_t* buff, size_t off, size_t sz)
+static size_t _write_device(fs_node_t* f, const uint8_t* buff, size_t off, size_t sz)
 {
 	dev_device_t* device = (dev_device_t*)f->data;
 	return device->driver->write(device, buff, off, sz);
@@ -21,7 +21,7 @@ static size_t _read_device(fs_node_t* f, uint8_t* buff, size_t off, size_t sz)
 	return device->driver->read(device, buff, off, sz);
 }
 
-static void _open_device(fs_node_t* f, uint32_t flags)
+static int32_t _open_device(fs_node_t* f, uint32_t flags)
 {
 	ASSERT(f);
 	dev_device_t* device = (dev_device_t*)f->data;
@@ -45,20 +45,29 @@ void devfs_register_device(dev_device_t* device)
 {
 	//printf("Dev reg 0x%08x %s\n", device->driver, device->name.str);
 
-	fs_node_t* node = fs_create_node(device->name.str);
-	node->data = device;
+	device->fs_node = fs_create_node(device->name.str);
+	device->fs_node->data = device;
 	if(device->driver->read)
-		node->read = &_read_device;
+		device->fs_node->read = &_read_device;
 	if (device->driver->write)
-		node->write = &_write_device;
+		device->fs_node->write = &_write_device;
 	if (device->driver->open)
-		node->open = &_open_device;
+		device->fs_node->open = &_open_device;
 	if (device->driver->close)
-		node->close = &_close_device;
+		device->fs_node->close = &_close_device;
 
-	if (!fs_add_child_node(_root, node))
+	fs_node_t* parent = _root;
+	if (device->driver->device_subdir.str)
 	{
-		fs_destroy_node(node);
+		//device wants a subdir, create if required
+		parent = fs_find_child(_root, device->driver->device_subdir.str);
+		if (!parent)
+			parent = fs_add_child_node(_root, fs_create_dir_node(device->driver->device_subdir.str, 0));
+	}
+
+	if (!fs_add_child_node(parent, device->fs_node))
+	{
+		fs_destroy_node(device->fs_node);
 		return;
 	}
 }

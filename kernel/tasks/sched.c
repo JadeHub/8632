@@ -6,6 +6,7 @@
 #include <kernel/debug.h>
 #include <kernel/time.h>
 #include <drivers/timer/timer.h>
+#include <kernel/io/io.h>
 #include "proc.h"
 
 #include <stdio.h>
@@ -250,6 +251,7 @@ void sched_exit(uint32_t code)
 	sched_lock();
 	_cur_task->next = _terminated_list;
 	_terminated_list = _cur_task;
+	io_proc_end(_cur_task->process);
 	sched_block();
 	sched_unlock();
 }

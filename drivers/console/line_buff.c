@@ -1,6 +1,7 @@
 #include "line_buff.h"
 #include <sys/key_codes.h>
 
+#include <kernel/fs/node.h>
 #include <kernel/fault.h>
 #include <kernel/debug.h>
 
@@ -27,7 +28,6 @@ static void _remove(line_buff_t* lb)
 	for (size_t i = lb->cur_pos; i <= lb->len; i++)
 		lb->result[i] = lb->result[i + 1];
 	lb->len--;
-	dbg_dump_stack();
 }
 
 void lb_init(line_buff_t* lb)
@@ -35,7 +35,7 @@ void lb_init(line_buff_t* lb)
 	memset(lb, 0, sizeof(line_buff_t));
 }
 
-uint8_t lb_add_code(line_buff_t* lb, uint8_t code)
+uint8_t lb_add_code(line_buff_t* lb, uint8_t code, fs_node_t* history)
 {
 	if (code == KEY_NEW_LINE)
 	{
@@ -70,4 +70,12 @@ uint8_t lb_add_code(line_buff_t* lb, uint8_t code)
 	}
 	_insert(lb, code);
 	return code;
+}
+
+void lb_set(line_buff_t* lb, const char* str)
+{
+	strcpy(lb->result, str);
+	lb->len = lb->cur_pos = strlen(str);
+
+	//printf("Set result %s %d\n", lb->result, lb->len);
 }

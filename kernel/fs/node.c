@@ -30,4 +30,13 @@ void fs_destroy_node(fs_node_t* n)
 	kfree(n);
 }
 
+bool fs_is_dir(const fs_node_t* node)
+{
+	return node->flags & FS_DIR;
+}
+bool fs_is_link(const fs_node_t* node)
+{
+	return node->link != NULL;
+}
+
 

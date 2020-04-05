@@ -40,7 +40,7 @@
 extern void switch_to_user_mode();
 
 uint8_t ram_disk_buff[0x10000];
-uint32_t ram_disk_len = 0x10000;
+uint32_t ram_disk_len = 0x20000;
 
 void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
@@ -76,25 +76,21 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	printf("initrd\n");
 	devfs_init();
 	kb_init();
-	bochs_dbg();
 	con_dev_init();
-	bochs_dbg();
 	syscall_init();
 	printf("ata\n");
-	bochs_dbg();
 	ata_init();
 	time_init();
 	
 	fs_node_t* parent;
-	fs_node_t* f = fs_get_abs_path("/initrd/bin/user_space", &parent);
+	const char* path = "/initrd/bin/shell";
+	fs_node_t* f = fs_get_abs_path(path, &parent);
 	if(f)
 	{
 		uint8_t* exe_buff = (uint8_t*)kmalloc(f->len);
 		ASSERT(exe_buff);
-	//	strcpy(exe_name, "user_space");
 		fs_read(f, exe_buff, 0, f->len);
-		//printf("Loading elf 0x%x %d %s/%s\n", buff[0], f->len, parent->name, exe_name);
-		proc_new_elf_proc("user_space2", exe_buff, f->len);
+		proc_new_elf_proc("shell", exe_buff, f->len);
 	}
 	
 	dsp_enable_cursor();

@@ -8,6 +8,10 @@
 #define SYSCALL_CLOSE 5
 #define SYSCALL_READ 6
 #define SYSCALL_PRINT_STR 7
+#define SYSCALL_READ_DIR 8
+#define SYSCALL_OPEN_DIR 9
+#define SYSCALL_CLOSE_DIR 10
+
 
 extern uint32_t perform_syscall(uint32_t id, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, uint32_t p5);
 
@@ -63,4 +67,24 @@ void sys_close(uint32_t fd)
 void sys_sleep_ms(uint32_t ms)
 {
 	SYSCALL1(SYSCALL_SLEEP, ms);
+}
+
+void sys_read_dir(const char* path, void(fn)(const char*))
+{
+	SYSCALL2(SYSCALL_READ_DIR, path, fn);
+}
+
+struct DIR* sys_opendir(const char* path)
+{
+	return (struct DIR*)SYSCALL1(SYSCALL_OPEN_DIR, path);
+}
+
+void sys_closedir(struct DIR* dir)
+{
+	SYSCALL1(SYSCALL_CLOSE_DIR, dir);
+}
+
+struct dirent* sys_readdir(struct DIR* dir)
+{
+	return (struct dirent*)SYSCALL1(SYSCALL_READ_DIR, dir);
 }

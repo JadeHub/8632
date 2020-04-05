@@ -8,7 +8,8 @@ string/*.c \
 ctype/*.c \
 stdlib/*.c \
 stdio/*.c \
-sys/*.c)
+sys/*.c \
+dirent/*.c)
 
 ASM_SOURCES = $(wildcard *.s)
 

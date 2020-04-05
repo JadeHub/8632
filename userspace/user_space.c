@@ -33,6 +33,11 @@ void test_sleep()
 	printf("Sleep finished\n");
 }
 
+void cb(const char* m)
+{
+	printf("CB %s\n", m);
+}
+
 void test_con()
 {
 	uint32_t fd = sys_open("/dev/console", 0);
@@ -91,6 +96,32 @@ void read_kbd()
 	}
 }
 
+#include <dirent.h>
+
+void test_dir()
+{
+	struct DIR* d = opendir("/");
+
+	if (!d)
+	{
+		printf("opendir failed\n");
+		return;
+	}
+
+	printf("dir opened\n");
+
+	struct dirent* de;
+	while (de = readdir(d))
+	{
+		if (!de)break;
+		printf("got %s\n", de->name);
+	}
+
+	//closedir(d);
+	//printf("dir closed\n");
+
+}
+
 void entry()
 {
 	char* msg = "Hello from user land %d";
@@ -104,9 +135,6 @@ void entry()
 	
 	test_con();
 	//read_kbd();
-
-	sys_exit(4);
-
-	printf("exit returned\n");
-	for(;;);
+	//test_dir();
+	sys_exit(0);
 }

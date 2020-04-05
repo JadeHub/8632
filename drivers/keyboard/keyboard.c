@@ -5,8 +5,6 @@
 #include <kernel/debug.h>
 #include <kernel/x86/interrupts.h>
 #include <kernel/types/kname.h>
-#include <kernel/types/cbuff.h>
-#include <kernel/tasks/sched.h>
 #include <drivers/ioports.h>
 #include <drivers/device_driver.h>
 
@@ -68,11 +66,7 @@ static size_t _read_keyboard(dev_device_t* d, uint8_t* buff, size_t off, size_t 
     for (;i < sz; i += sizeof(kb_event_t))
     {
         while (_events_empty())
-        {
-            sched_cur_thread()->next = _kb.waiters;
-            _kb.waiters = sched_cur_thread();
-            sched_block();
-        }
+            dev_block_until_read(&_kb.device);
 
         if (!_get_event((kb_event_t*)buff + i))
             break;
@@ -191,13 +185,7 @@ static void kb_isr(isr_state_t* state)
         e.pressed = pressed;
         _put_event(&e);
 
-        thread_t* t = _kb.waiters;
-        _kb.waiters = NULL;
-        while (t)
-        {
-            sched_unblock(t);
-            t = t->next;
-        }
+        dev_unblock_readers(&_kb.device);
     }
     _kb.wait_2nd = false;
 }

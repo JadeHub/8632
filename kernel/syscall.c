@@ -6,6 +6,7 @@
 #include <drivers/console/console.h>
 #include <kernel/time.h>
 #include <kernel/io/io.h>
+#include <dirent.h>
 
 #include <stdio.h>
 
@@ -30,25 +31,41 @@ static void syscall_exit(uint32_t code)
 {
 	printf("Exit ebx=0x%x\n", code);
     sched_exit(code);
-//	for (;;);
 }
 
 static uint32_t _syscall_open(const char* path, uint32_t flags)
 {
-    return open(path, flags);
+    return io_open(path, flags);
 }
 
 static void _syscall_close(uint32_t fd)
 {
-    close(fd);
+    io_close(fd);
 }
 
 static size_t _syscall_read(uint32_t fd, uint8_t* buff, size_t sz)
 {
-    return read(fd, buff, sz);
+    return io_read(fd, buff, sz);
 }
 
-static void* syscalls[7] =
+typedef void(dir_fn)(const char*);
+
+static dirent_t* _syscall_read_dir(struct DIR* dir)
+{
+    return io_readdir(dir);
+}
+
+static void _syscall_close_dir(struct DIR* dir)
+{
+    io_closedir(dir);
+}
+
+static struct DIR* _syscall_open_dir(const char* path)
+{
+    return io_opendir(path);
+}
+
+static void* syscalls[10] =
 {
 	&syscall_alloc,
 	&_syscall_sleep_ms,
@@ -56,7 +73,10 @@ static void* syscalls[7] =
     &_syscall_open,
     &_syscall_close,
     &_syscall_read,
-	&_syscall_print_str
+	&_syscall_print_str,
+    &_syscall_read_dir,
+    &_syscall_open_dir,
+    &_syscall_close_dir
 };
 
 void syscall_handler(isr_state_t* regs)

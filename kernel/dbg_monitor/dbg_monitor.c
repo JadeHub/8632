@@ -31,7 +31,7 @@ extern void kernel_cmd(const char*);
 
 fs_node_t* _cur_dir = NULL;
 
-static bool _ls_dir_cb(struct fs_node* parent, struct fs_node* child)
+static bool _ls_dir_cb(struct fs_node* parent, struct fs_node* child, void* data)
 {
 	dbg_mon_output_line("%08d %s", child->len, child->name);
 	return true;
@@ -41,7 +41,7 @@ static void _ls_cmd(const char* p)
 {
 	if (!_cur_dir)
 		return;
-	fs_read_dir(_cur_dir, &_ls_dir_cb);
+	fs_read_dir(_cur_dir, &_ls_dir_cb, 0);
 }
 
 static void _cd_cmd(const char* p)

@@ -87,7 +87,7 @@ static fs_node_t* _add_file_index(fs_node_t* parent, char* path, uint32_t offset
 	}
 }
 
-static bool _remove_dir_fns_cb(fs_node_t* parent, fs_node_t* child)
+static bool _remove_dir_fns_cb(fs_node_t* parent, fs_node_t* child, void* data)
 {
 	if (child->flags && FS_DIR)
 	{
@@ -117,7 +117,7 @@ void ramfs_init(uint8_t* data, uint32_t len)
 		_add_file_index(_rd.root_node, buff, hdr->start, hdr->len);
 	}
 	//remove the directory modificantion fns as we're read only
-	fs_walk_dir(_rd.root_node, &_remove_dir_fns_cb);
+	fs_walk_dir(_rd.root_node, &_remove_dir_fns_cb, 0);
 }
 
 fs_node_t* ramfs_root()
