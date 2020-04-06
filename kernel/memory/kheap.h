@@ -48,18 +48,18 @@ typedef struct
 /**
    Create a new heap.
 **/
-heap_t *create_heap(page_directory_t*, uint32_t start, uint32_t end, uint32_t max, uint8_t supervisor, uint8_t readonly);
+heap_t *heap_create(page_directory_t*, uint32_t start, uint32_t end, uint32_t max, uint8_t supervisor, uint8_t readonly);
 
 /**
    Allocates a contiguous region of memory 'size' in size. If page_align==1, it creates that block starting
    on a page boundary.
 **/
-void *alloc(uint32_t size, uint8_t page_align, heap_t *heap);
+void * heap_alloc(uint32_t size, uint8_t page_align, heap_t *heap);
 
 /**
-   Releases a block allocated with 'alloc'.
+   Releases a block allocated with 'heap_alloc'.
 **/
-//void free(void *p, heap_t *heap);
+void heap_free(void *p, heap_t *heap);
 
 
 #endif // KHEAP_H

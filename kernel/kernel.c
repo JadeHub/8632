@@ -8,10 +8,10 @@
 #include <drivers/timer/timer.h>
 #include <drivers/ata/ata.h>
 #include <drivers/display.h>
+#include <kernel/memory/phys_mem.h>
 #include <kernel/memory/paging.h>
 #include <kernel/memory/kheap.h>
 #include <kernel/memory/kmalloc.h>
-#include <kernel/dbg_monitor/dbg_monitor.h>
 #include <kernel/ramfs/ramfs.h>
 #include <kernel/devfs/devfs.h>
 #include <kernel/fs/fs.h>
@@ -65,6 +65,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	serial_init();
 	timer_init(1000, &ktimer_cb);
 	printf("timer\n");
+	phys_mem_init();
 	page_directory_t* kpages = paging_init();
 	printf("paging\n");
 	proc_init(kpages, esp, k_image);
@@ -94,8 +95,6 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	}
 	
 	dsp_enable_cursor();
-
-	dbg_mon_init();
 	switch_to_user_mode();
 
 	for (;;);

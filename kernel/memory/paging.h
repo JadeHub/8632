@@ -38,7 +38,6 @@ typedef struct page_directory
     uint32_t physicalAddr;
 } page_directory_t;
 
-extern page_directory_t* current_directory;
 extern page_directory_t* kernel_directory;
 
 page_directory_t* paging_init();
@@ -48,5 +47,4 @@ page_directory_t *clone_directory(page_directory_t *src);
 uint32_t alloc_pages(page_directory_t* pages, uint32_t start, uint32_t end);
 
 page_t *get_page(uint32_t address, int make, page_directory_t *dir);
-void alloc_frame(page_t *page, int is_kernel, int is_writeable);
-void free_frame(page_t *page);
+

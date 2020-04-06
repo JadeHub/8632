@@ -1,5 +1,6 @@
 #include "kheap.h"
 #include "paging.h"
+#include "phys_mem.h"
 
 #include <kernel/fault.h>
 
@@ -13,7 +14,7 @@ uint32_t kmalloc_int(uint32_t sz, int align, uint32_t *phys)
 {
     if (kheap != 0)
     {
-        void *addr = alloc(sz, (uint8_t)align, kheap);
+        void *addr = heap_alloc(sz, (uint8_t)align, kheap);
         if (phys != 0)
         {
             page_t *page = get_page((uint32_t)addr, 0, kernel_directory);
@@ -41,8 +42,7 @@ uint32_t kmalloc_int(uint32_t sz, int align, uint32_t *phys)
 
 void kfree(void *p)
 {
-    if (!p) return;
-    //free(p, kheap);
+    heap_free(p, kheap);
 }
 
 uint32_t kmalloc_a(uint32_t sz)
@@ -157,7 +157,7 @@ static int8_t header_t_less_than(void*a, void *b)
     return (((header_t*)a)->size < ((header_t*)b)->size)?1:0;
 }
 
-heap_t* create_heap(page_directory_t* page_dir, uint32_t start, uint32_t end_addr, uint32_t max, uint8_t supervisor, uint8_t readonly)
+heap_t* heap_create(page_directory_t* page_dir, uint32_t start, uint32_t end_addr, uint32_t max, uint8_t supervisor, uint8_t readonly)
 {
     heap_t *heap = (heap_t*)kmalloc(sizeof(heap_t));
 
@@ -199,7 +199,7 @@ heap_t* create_heap(page_directory_t* page_dir, uint32_t start, uint32_t end_add
     return heap;
 }
 
-void *alloc(uint32_t size, uint8_t page_align, heap_t *heap)
+void* heap_alloc(uint32_t size, uint8_t page_align, heap_t *heap)
 {
 
     // Make sure we take the size of header/footer into account.
@@ -255,7 +255,7 @@ void *alloc(uint32_t size, uint8_t page_align, heap_t *heap)
             footer->magic = HEAP_MAGIC;
         }
         // We now have enough space. Recurse, and call the function again.
-        return alloc(size, page_align, heap);
+        return heap_alloc(size, page_align, heap);
     }
 
     header_t *orig_hole_header = (header_t *)lookup_ordered_array(iterator, &heap->index);
@@ -321,8 +321,8 @@ void *alloc(uint32_t size, uint8_t page_align, heap_t *heap)
     // ...And we're done!
     return (void *) ( (uint32_t)block_header+sizeof(header_t) );
 }
-/*
-void free(void *p, heap_t *heap)
+
+void heap_free(void *p, heap_t *heap)
 {
     // Exit gracefully for null pointers.
     if (p == 0)
@@ -408,4 +408,4 @@ void free(void *p, heap_t *heap)
     if (do_add == 1)
         insert_ordered_array((void*)header, &heap->index);
 
-}*/
+}

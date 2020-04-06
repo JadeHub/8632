@@ -28,12 +28,11 @@ static uint32_t next_tid = 0;
 
 void proc_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_out)
 {
-	current_directory = thread->process->pages;
 	set_kernel_stack(thread->k_stack + KERNEL_STACK_SIZE);
 	thread->state = TS_RUNNING;
 	perform_task_switch(esp_out,
 		thread->esp,
-		current_directory->physicalAddr,
+		thread->process->pages->physicalAddr,
 		ebp_out);
 }
 
@@ -117,7 +116,7 @@ void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 	uint32_t start = 0x00700000;
 	uint32_t end = start + 0x100000;
 	alloc_pages(p->pages, start, end);
-	p->heap = create_heap(p->pages, start, end, end, 0, 0);
+	p->heap = heap_create(p->pages, start, end, end, 0, 0);
 
 	switch_page_directory(kernel_directory);
 

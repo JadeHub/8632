@@ -12,7 +12,7 @@
 
 static uint32_t syscall_alloc(heap_t* h, uint32_t size)
 {
-	uint32_t ret = (uint32_t)alloc(size, 0, h);
+	uint32_t ret = (uint32_t)heap_alloc(size, 0, h);
 	bochs_dbg();
 	return ret;
 }
