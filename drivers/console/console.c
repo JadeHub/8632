@@ -20,6 +20,9 @@ typedef struct console
 
     uint32_t kbd_fd;
     con_history_t* history;
+
+    bool in_esc;
+    char esc_buff[16];
 }console_t;
 
 static dev_driver_t _driver;
@@ -120,8 +123,47 @@ static size_t _write_con(dev_device_t* d, const uint8_t* buff, size_t off, size_
     return sz;
 }
 
+static void _append_char(char* str, char c)
+{
+    while ((*str) != '\0')
+        str++;
+    (*str++) = c;
+    (*str) = '\0';
+}
+
+static bool _process_esc_sequence(const char* str)
+{
+    if (strcmp(str, "c") == 0)
+    {
+        con_clear();
+        return true;
+    }
+    return false;
+}
+
+static bool _handle_esc_char(uint8_t c)
+{
+    if (c == KEY_ESC)
+    {
+        ASSERT(!_console.in_esc);
+        _console.in_esc = true;
+        _console.esc_buff[0] = '\0';
+        return true;
+    }
+
+    if (_console.in_esc)
+    {
+        _append_char(_console.esc_buff, (char)c);
+        if (_process_esc_sequence(_console.esc_buff))
+            _console.in_esc = false;
+        return true;
+    }
+    return false;
+}
+
 void con_init()
 {
+    memset(&_console, 0, sizeof(console_t));
     dsp_clear_screen();
     dsp_set_cursor(_console.cursor_x, _console.cursor_y);
 }
@@ -144,7 +186,11 @@ void con_dev_init()
 
 void con_putc(uint8_t c)
 {
-    if(c == KEY_TAB)
+    if (_handle_esc_char(c))
+    {
+        return;
+    }
+    else if(c == KEY_TAB)
     {
         _console.cursor_x += 4;
     }

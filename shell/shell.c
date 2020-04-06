@@ -64,6 +64,11 @@ static bool _process_cmd(char* cmd)
 	{
 		cd_cmd(p.count, p.params, &_shell_state);
 	}
+	else if (strcmp(p.params[0], "clear") == 0)
+	{
+		clear_cmd(p.count, p.params, &_shell_state);
+	//	printf("\033c");
+	}
 	else if (strlen(cmd) > 0)
 	{
 		printf("Command \'%s\' not found.\n", p.params[0]);
