@@ -27,9 +27,8 @@ static void _syscall_print_str(const char* buff, uint32_t sz)
     con_write_buff(buff, sz);
 }
 
-static void syscall_exit(uint32_t code)
+static void _syscall_exit(uint32_t code)
 {
-	printf("Exit ebx=0x%x\n", code);
     sched_exit(code);
 }
 
@@ -43,12 +42,15 @@ static void _syscall_close(uint32_t fd)
     io_close(fd);
 }
 
+static size_t _syscall_write(uint32_t fd, uint8_t* buff, size_t sz)
+{
+    return io_write(fd, buff, sz);
+}
+
 static size_t _syscall_read(uint32_t fd, uint8_t* buff, size_t sz)
 {
     return io_read(fd, buff, sz);
 }
-
-typedef void(dir_fn)(const char*);
 
 static dirent_t* _syscall_read_dir(struct DIR* dir)
 {
@@ -65,23 +67,30 @@ static struct DIR* _syscall_open_dir(const char* path)
     return io_opendir(path);
 }
 
-static void _syscall_clear_console()
+static uint32_t _syscall_start_proc(const char* path, const char* args[], uint32_t fds[3])
 {
-
+    return proc_start_user_proc(path, args, fds);
 }
 
-static void* syscalls[10] =
+static uint32_t _syscall_wait_pid(uint32_t pid)
+{
+    return proc_wait_pid(pid);
+}
+
+static void* syscalls[12] =
 {
 	&syscall_alloc,
 	&_syscall_sleep_ms,
-	&syscall_exit,
+	&_syscall_exit,
     &_syscall_open,
     &_syscall_close,
     &_syscall_read,
-	&_syscall_print_str,
+	&_syscall_write,
     &_syscall_read_dir,
     &_syscall_open_dir,
-    &_syscall_close_dir
+    &_syscall_close_dir,
+    &_syscall_start_proc,
+    &_syscall_wait_pid
 };
 
 void syscall_handler(isr_state_t* regs)

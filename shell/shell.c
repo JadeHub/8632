@@ -2,6 +2,7 @@
 
 #include <commands/built_in.h>
 #include <sys/syscall.h>
+#include <sys/wait.h>
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -69,6 +70,13 @@ static bool _process_cmd(char* cmd)
 		clear_cmd(p.count, p.params, &_shell_state);
 	//	printf("\033c");
 	}
+	else if (strcmp(p.params[0], "test") == 0)
+	{
+		uint32_t fds[3];
+		uint32_t pid = sys_start_proc("/initrd/bin/user_space", p.params, fds);
+		uint32_t code = wait_pid(pid);
+		printf("Prog exited with code %d\n", code);
+	}
 	else if (strlen(cmd) > 0)
 	{
 		printf("Command \'%s\' not found.\n", p.params[0]);
@@ -94,7 +102,8 @@ static size_t _read_line(char* buff, size_t sz, uint32_t fd)
 
 uint32_t shell()
 {
-	uint32_t fd = sys_open("/dev/console/con1", 0);
+//	uint32_t fd = sys_open("/dev/console/con1", 0);
+	uint32_t fd = 0;
 	if (fd == 0xffffffff)
 	{
 		printf("Failed to open consol");
@@ -106,11 +115,10 @@ uint32_t shell()
 	{
 		printf("Prompt$ ");
 		_read_line(buff, 80, fd);
-		printf("Read %d bytes\n", strlen(buff));
 		if (!_process_cmd(buff))
 			break;
 	};
-	sys_close(fd);
+	//sys_close(fd);
 	return 0;
 }
 

@@ -73,17 +73,12 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	ata_init();
 	time_init();
 	
-	fs_node_t* parent;
-	const char* path = "/initrd/bin/shell";
-	fs_node_t* f = fs_get_abs_path(path, &parent);
-	if(f)
-	{
-		uint8_t* exe_buff = (uint8_t*)kmalloc(f->len);
-		ASSERT(exe_buff);
-		fs_read(f, exe_buff, 0, f->len);
-		proc_new_elf_proc("shell", exe_buff, f->len);
-	}
-	
+	const char* args[2];
+	args[0] = "shell";
+	args[1] = NULL;
+	uint32_t fds[3];
+
+	proc_start_user_proc("/initrd/bin/shell", args, fds);
 	dsp_enable_cursor();
 	switch_to_user_mode();
 

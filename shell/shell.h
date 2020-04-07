@@ -12,5 +12,5 @@ typedef struct shell_state
 typedef struct params
 {
 	int count;
-	char* params[64];
+	const char* params[64];
 }params_t;

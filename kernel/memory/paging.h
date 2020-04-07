@@ -41,6 +41,7 @@ typedef struct page_directory
 extern page_directory_t* kernel_directory;
 
 page_directory_t* paging_init();
+void page_dir_destroy_directory(page_directory_t*);
 
 void switch_page_directory(page_directory_t *new);
 page_directory_t *clone_directory(page_directory_t *src);

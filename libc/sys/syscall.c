@@ -7,11 +7,12 @@
 #define SYSCALL_OPEN 4
 #define SYSCALL_CLOSE 5
 #define SYSCALL_READ 6
-#define SYSCALL_PRINT_STR 7
+#define SYSCALL_WRITE 7
 #define SYSCALL_READ_DIR 8
 #define SYSCALL_OPEN_DIR 9
 #define SYSCALL_CLOSE_DIR 10
-
+#define SYSCALL_START_PROC 11
+#define SYSCALL_WAIT_PID 12
 
 extern uint32_t perform_syscall(uint32_t id, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, uint32_t p5);
 
@@ -40,7 +41,7 @@ void sys_print_str(const char* buff, uint32_t sz)
 #ifdef _LIBK
 	con_write_buff(buff, sz);
 #else
-	SYSCALL2(SYSCALL_PRINT_STR, buff, sz);
+	sys_write(1, buff, sz);
 #endif
 }
 
@@ -52,6 +53,11 @@ void sys_exit(uint32_t exit_code)
 uint32_t sys_open(const char* path, uint32_t flags)
 {
 	return SYSCALL2(SYSCALL_OPEN, path, flags);
+}
+
+size_t sys_write(uint32_t fd, const uint8_t* buff, size_t sz)
+{
+	return (size_t)SYSCALL3(SYSCALL_WRITE, fd, buff, sz);
 }
 
 size_t sys_read(uint32_t fd, uint8_t* buff, size_t sz)
@@ -87,4 +93,13 @@ void sys_closedir(struct DIR* dir)
 struct dirent* sys_readdir(struct DIR* dir)
 {
 	return (struct dirent*)SYSCALL1(SYSCALL_READ_DIR, dir);
+}
+uint32_t sys_start_proc(const char* path, const char* args[], uint32_t fds[3])
+{
+	return SYSCALL3(SYSCALL_START_PROC, path, args, fds);
+}
+
+uint32_t sys_wait_pid(uint32_t pid)
+{
+	return SYSCALL1(SYSCALL_WAIT_PID, pid);
 }

@@ -23,6 +23,10 @@ static void _stack_unwind_cb(const char* name, uint32_t addr, uint32_t sz, uint3
 
 static void page_fault(isr_state_t* regs)
 {
+    static bool _in = false;
+
+    if (_in) return;
+    _in = true;
 
     // The faulting address is stored in the CR2 register.
     uint32_t faulting_address;
@@ -45,6 +49,7 @@ static void page_fault(isr_state_t* regs)
 
     dbg_dump_stack(us ? sched_cur_proc()->elf_img : dbg_kernel_image(), regs->ebp, regs->eip);
     KPANIC("Page fault");
+    _in = false;
 }
 
 
@@ -79,7 +84,12 @@ static page_table_t *clone_table(page_table_t *src, uint32_t *physAddr)
     return table;
 }
 
-page_directory_t *clone_directory(page_directory_t *src)
+void page_dir_destroy_directory(page_directory_t* dir)
+{
+    kfree(dir);
+}
+
+page_directory_t* clone_directory(page_directory_t *src)
 {
     uint32_t phys;
     // Make a new page directory and obtain its physical address.

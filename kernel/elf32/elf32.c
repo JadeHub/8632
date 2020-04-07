@@ -105,8 +105,8 @@ bool elf_load_raw_image(process_t* p, const char* name, const uint8_t* data, uin
 
 		phdr->memsz = 0x8000;
 		_load_elf_data(pages, data, phdr);
-		printf("PHeader type 0x%x offset 0x%08x vaddr %08x mem sz %08x\n", phdr->type, phdr->offset, phdr->vaddr, phdr->memsz);
-		printf("Section header 0x%x hdr 0x%x\n", hdr->shoff, hdr);
+		//printf("PHeader type 0x%x offset 0x%08x vaddr %08x mem sz %08x\n", phdr->type, phdr->offset, phdr->vaddr, phdr->memsz);
+		//printf("Section header 0x%x hdr 0x%x\n", hdr->shoff, hdr);
 	}
 
 	//elf_shdr_t* section = (elf_shdr_t*)((data + hdr->shoff) + hdr->shstrndx * hdr->shentsize);

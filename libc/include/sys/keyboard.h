@@ -1,5 +1,9 @@
 #pragma once
 
+#include <sys/cdefs.h>
+
+__LIBC_BEGIN_H
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -25,3 +29,5 @@ const char* kb_key_name(uint8_t code);
 bool kb_is_shift(kb_state_t*);
 bool kb_is_alt(kb_state_t*);
 bool kb_is_ctrl(kb_state_t*);
+
+__LIBC_END_H

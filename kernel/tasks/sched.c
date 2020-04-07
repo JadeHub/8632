@@ -100,6 +100,8 @@ static void _switch_task(uint64_t ms)
 	prev->cpu_time += (ms - _prev_switch_time);
 	_prev_switch_time = ms;
 
+//	printf("Switching to %s\n", _cur_task->process->name);
+
 	proc_switch_to_thread(_cur_task, &prev->esp, &prev->ebp);
 	sched_unlock();	
 }
@@ -184,8 +186,8 @@ thread_t* sched_cur_thread()
 
 process_t* sched_cur_proc()
 {
-	ASSERT(_cur_task && _cur_task->process);
-	return _cur_task->process;
+	return _cur_task ? _cur_task->process : NULL;
+
 }
 
 void sched_run()
@@ -251,7 +253,32 @@ void sched_exit(uint32_t code)
 	sched_lock();
 	_cur_task->next = _terminated_list;
 	_terminated_list = _cur_task;
+	_cur_task->state = TS_TERM;
+
+	_cur_task->process->exit_code = code;
+
+	//todo - this is really only thread ending event, not proc
 	io_proc_end(_cur_task->process);
-	sched_block();
+
+	thread_t* thread = _cur_task->waiters;
+	_cur_task->waiters = NULL;
+	while (thread)
+	{
+		sched_unblock(thread);
+		thread = thread->next;
+	}
+	_switch_task(time_ms());
+	sched_unlock();
+}
+
+void sched_wait_task(thread_t* task)
+{
+	sched_lock();
+	if (task->state != TS_TERM)
+	{
+		_cur_task->next = task->waiters;
+		task->waiters = _cur_task;
+		sched_block();
+	}
 	sched_unlock();
 }

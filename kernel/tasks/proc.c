@@ -9,6 +9,7 @@
 #include <kernel/fault.h>
 #include <kernel/io/io.h>
 #include <kernel/debug.h>
+#include <kernel/fs/fs.h>
 
 #include <stdbool.h>
 #include <string.h>
@@ -23,8 +24,21 @@ extern heap_t* kheap;
 #define KERNEL_STACK_SIZE 2048
 
 static process_t* _kproc = 0; //The kernal execution context
-static uint32_t next_pid = 0;
+static uint32_t next_pid = 1;
 static uint32_t next_tid = 0;
+
+static process_t* _find_process(uint32_t pid)
+{
+	process_t* p = _kproc;
+
+	while (p)
+	{
+		if (p->id == pid)
+			return p;
+		p = p->next;
+	}
+	return NULL;
+}
 
 void proc_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_out)
 {
@@ -98,32 +112,52 @@ void _init_proc(process_t* p)
 	sched_task(p->main_thread);
 }
 
-void proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
+uint32_t proc_start_user_proc(const char* path, const char* args[], uint32_t fds[3])
 {
-	process_t* p = (process_t*)kmalloc(sizeof(process_t));
-	memset(p, 0, sizeof(process_t));
-	p->id = next_pid++;
-	sprintf(p->name, "user proc %s", name);
-	printf("New proc %s\n", p->name);
+	fs_node_t* fnode = fs_get_abs_path(path, NULL);
+	if (fnode && fnode->len > 0)
+	{
+		uint8_t* exe_buff = (uint8_t*)kmalloc(fnode->len);
+		ASSERT(exe_buff);
+		if (fs_read(fnode, exe_buff, 0, fnode->len) == fnode->len)
+			return proc_new_elf_proc(args[0], exe_buff, fnode->len);
+	}
+	return 0;
+}
 
-	p->pages = clone_directory(kernel_directory);
-	switch_page_directory(p->pages);
+uint32_t proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
+{
+	page_directory_t* cur_page_dir = sched_cur_proc() ? sched_cur_proc()->pages : kernel_directory;
+	ASSERT(cur_page_dir);
 
-	bool loaded = elf_load_raw_image(p, name, data, len);
-	ASSERT(loaded);
+	process_t* proc = (process_t*)kmalloc(sizeof(process_t));
+	memset(proc, 0, sizeof(process_t));
+	proc->id = next_pid++;
+	sprintf(proc->name, "user proc %s", name);
+	//printf("New proc %s\n", proc->name);
+
+	proc->pages = clone_directory(kernel_directory);
+	switch_page_directory(proc->pages);
+
+	if (!elf_load_raw_image(proc, name, data, len))
+	{
+		page_dir_destroy_directory(proc->pages);
+		kfree(proc);
+		return 0;
+	}
 
 	//heap at 0x00700000
 	uint32_t start = 0x00700000;
 	uint32_t end = start + 0x100000;
-	alloc_pages(p->pages, start, end);
-	p->heap = heap_create(p->pages, start, end, end, 0, 0);
+	alloc_pages(proc->pages, start, end);
+	proc->heap = heap_create(proc->pages, start, end, end, 0, 0);
 
-	switch_page_directory(kernel_directory);
+	switch_page_directory(cur_page_dir);
 
-	p->main_thread = _create_thread(p->entry, false);
-	p->main_thread->process = p;
-
-	_init_proc(p);	
+	proc->main_thread = _create_thread(proc->entry, false);
+	proc->main_thread->process = proc;
+	_init_proc(proc);
+	return proc->id;
 }
 
 void proc_init(page_directory_t* kernel_pages, uint32_t initial_esp, elf_image_t* k_elf_image)
@@ -146,8 +180,13 @@ process_t* proc_kernel_proc()
 	return _kproc;
 }
 
-process_t* proc_proc_list()
+uint32_t proc_wait_pid(uint32_t pid)
 {
-	return _kproc;
+	process_t* proc = _find_process(pid);
+	if (proc)
+	{
+		sched_wait_task(proc->main_thread);
+		return proc->exit_code;
+	}
+	return 0;
 }
-

@@ -8,6 +8,11 @@
 
 #define INVALID_FD 0xFFFFFFFF;
 
+//open flags
+#define IO_OPEN_R	0x01
+#define IO_OPEN_W	0x02
+#define IO_OPEN_RW	0x03
+
 uint32_t io_open(const char* path, uint32_t flags);
 void io_close(uint32_t file);
 size_t io_read(uint32_t file, uint8_t* buff, size_t sz);

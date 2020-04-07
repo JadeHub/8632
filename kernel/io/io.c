@@ -99,6 +99,16 @@ static uint32_t _find_fd(proc_io_data_t* proc, fs_node_t* fnode)
 	return INVALID_FD;
 }
 
+static proc_file_desc_t* _create_file_desc(fs_node_t* node, uint32_t flags)
+{
+	proc_file_desc_t* desc = (proc_file_desc_t*)kmalloc(sizeof(proc_file_desc_t));
+	memset(desc, 0, sizeof(proc_file_desc_t));
+	desc->node = node;
+	desc->flags = flags;
+	desc->offset = 0;
+	return desc;
+}
+
 uint32_t io_open(const char* path, uint32_t flags)
 {
 	proc_io_data_t* proc = _cur_proc_data();
@@ -117,11 +127,7 @@ uint32_t io_open(const char* path, uint32_t flags)
 	fd = _free_fd(proc);
 	if (io_is_valid_fd(fd))
 	{
-		proc->fds[fd] = (proc_file_desc_t*)kmalloc(sizeof(proc_file_desc_t));
-		memset(proc->fds[fd], 0, sizeof(proc_file_desc_t));
-		proc->fds[fd]->node = node;
-		proc->fds[fd]->flags = flags;
-		proc->fds[fd]->offset = 0;
+		proc->fds[fd] = _create_file_desc(node, flags);
 		fs_open(node, flags);
 	}
 	return fd;
@@ -145,7 +151,9 @@ size_t io_read(uint32_t fd, uint8_t* buff, size_t sz)
 size_t io_write(uint32_t fd, const uint8_t* buff, size_t len)
 {
 	proc_io_data_t* proc = _cur_proc_data();
+	ASSERT(proc);
 	ASSERT(proc->fds[fd]->node);
+	
 	size_t sz = fs_write(proc->fds[fd]->node, buff, 0, len);
 	//proc->fds[fd]->offset += read;
 	return sz;
@@ -164,6 +172,11 @@ void io_proc_start(process_t* p)
 	res->proc = p;
 	INIT_LIST_HEAD(&res->open_dirs);
 	hash_tbl_add(_proc_io, p->id, &res->hash_item);
+
+	fs_node_t* node = fs_get_abs_path("/dev/console/con1", NULL);
+	res->fds[0] = _create_file_desc(node, IO_OPEN_R); //input
+	res->fds[1] = _create_file_desc(node, IO_OPEN_W); //output
+	res->fds[2] = _create_file_desc(node, IO_OPEN_W); //error
 }
 
 void io_proc_end(process_t* p)

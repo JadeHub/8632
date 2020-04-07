@@ -55,7 +55,7 @@ typedef struct kb_device
 
     kb_event_handler observer;
 
-    thread_t* waiters;
+    //thread_t* waiters;
 }kb_device_t;
 
 static kb_device_t _kb;

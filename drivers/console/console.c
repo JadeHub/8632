@@ -66,7 +66,7 @@ static void _on_kb_event(kb_event_t* kbe)
         if (cur_len == 0)
             _console.line_buff.cursor_start_x = _console.cursor_x;
 
-        if (kb_is_ctrl(kbe))
+        if (kb_is_ctrl(&kbe->state))
         {
             if (kbe->code == 'c')
             {
@@ -103,15 +103,14 @@ static void _on_kb_event(kb_event_t* kbe)
 
 static int32_t _open_con(dev_device_t* d, uint32_t flags)
 {
-    kb_register_event_handler(_on_kb_event);
-    _console.history = con_his_create();
+    
     return 0;
 }
 
 static void _close_con(dev_device_t* d)
 {
-    kb_remove_event_handler();
-    con_his_destroy(_console.history);
+//    kb_remove_event_handler();
+  //  con_his_destroy(_console.history);
 }
 
 static size_t _read_con(dev_device_t* d, uint8_t* buff, size_t off, size_t sz)
@@ -195,6 +194,9 @@ void con_dev_init()
 
     dev_install_driver(&_driver);
     dev_register_device(&_console.device);    
+
+    kb_register_event_handler(_on_kb_event);
+    _console.history = con_his_create();
 }
 
 void con_putc(uint8_t c)

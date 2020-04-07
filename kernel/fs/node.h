@@ -38,6 +38,7 @@ typedef struct fs_node
 	fs_remove_child_fn_t remove_child;
 }fs_node_t;
 
+//node flag values
 #define FS_FILE		1
 #define FS_DIR		2
 //sym link, mount, char/block dev...

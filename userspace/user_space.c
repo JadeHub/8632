@@ -117,7 +117,7 @@ void test_dir()
 		printf("got %s\n", de->name);
 	}
 
-	//closedir(d);
+	closedir(d);
 	//printf("dir closed\n");
 
 }
@@ -126,15 +126,15 @@ void entry()
 {
 	char* msg = "Hello from user land %d";
 
-	printf("printf %d %s\n", 57, "testing");
+	printf("printf %d %s\n", 12, "testing");
 
 	//test_io();
 
 	//for(int j=0;j<5;j++)
 		//test_sleep();
 	
-	test_con();
+	//test_con();
 	//read_kbd();
-	//test_dir();
+	//ftest_dir();
 	sys_exit(0);
 }

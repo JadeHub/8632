@@ -45,17 +45,12 @@ const char* con_his_get(con_history_t* history, size_t index)
 	size_t i = 0;
 	while (child != &history->list && i < index)
 	{
-		//	printf("read 0.1\n");
 		child = child->next;
 		i++;
 	}
 	if (i != index)
 		return NULL;
-	//printf("read 1\n");
 	item_t* item = list_entry(child, item_t, list_item);
-	//printf("read 2\n");
-	//printf("\nreading history off %d \n", off);
-
 	return item->value;
 }
 

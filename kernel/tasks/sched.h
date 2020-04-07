@@ -41,4 +41,7 @@ Terminate current thread
 */
 void sched_exit(uint32_t code);
 
-//void sched_block();
+/*
+Wait until the thread has terminated
+*/
+void sched_wait_task(thread_t*);
