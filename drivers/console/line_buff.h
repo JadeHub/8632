@@ -12,6 +12,8 @@ typedef struct line_buff
 	size_t len;
 	size_t cur_pos;
 	size_t history_pos;
+
+	uint8_t cursor_start_x;
 }line_buff_t;
 
 void lb_init(line_buff_t*);

@@ -39,6 +39,7 @@ bool cbuff8_get(cbuff8_t* b, uint8_t* val)
 	*val = b->buff[b->tail];
 	b->full = false;
 	b->tail = (b->tail + 1) % b->len;
+	return true;
 }
 
 bool cbuff8_empty(cbuff8_t* b)
@@ -102,6 +103,7 @@ bool cbuff32_get(cbuff32_t* b, uint32_t* val)
 	*val = b->buff[b->tail];
 	b->full = false;
 	b->tail = (b->tail + 1) % b->len;
+	return true;
 }
 
 bool cbuff32_empty(cbuff32_t* b)

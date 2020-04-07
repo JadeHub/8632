@@ -76,6 +76,22 @@ static bool _process_cmd(char* cmd)
 	return true;
 }
 
+static size_t _read_line(char* buff, size_t sz, uint32_t fd)
+{
+	if (sz == 0)
+		return 0;
+
+	size_t i = 0;
+	for (; i < sz - 1; i++)
+	{
+		sys_read(fd, buff + i, 1);
+		if (buff[i] == '\n')
+			break;
+	}
+	buff[i++] = '\0';
+	return i;
+}
+
 uint32_t shell()
 {
 	uint32_t fd = sys_open("/dev/console/con1", 0);
@@ -89,7 +105,8 @@ uint32_t shell()
 	while(1)
 	{
 		printf("Prompt$ ");
-		sys_read(fd, buff, 79);
+		_read_line(buff, 80, fd);
+		printf("Read %d bytes\n", strlen(buff));
 		if (!_process_cmd(buff))
 			break;
 	};

@@ -53,6 +53,8 @@ typedef struct kb_device
     kb_state_t state;
     bool wait_2nd;  //Are we waiting for a second byte from the keyboard
 
+    kb_event_handler observer;
+
     thread_t* waiters;
 }kb_device_t;
 
@@ -185,6 +187,9 @@ static void kb_isr(isr_state_t* state)
         e.pressed = pressed;
         _put_event(&e);
 
+        if (_kb.observer)
+            _kb.observer(&e);
+
         dev_unblock_readers(&_kb.device);
     }
     _kb.wait_2nd = false;
@@ -204,4 +209,14 @@ void kb_init()
 
     dev_install_driver(&_kb.driver);
     dev_register_device(&_kb.device);
+}
+
+void kb_register_event_handler(kb_event_handler cb)
+{
+    _kb.observer = cb;
+}
+
+void kb_remove_event_handler()
+{
+    _kb.observer = NULL;
 }

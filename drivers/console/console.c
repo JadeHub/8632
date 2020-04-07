@@ -10,7 +10,12 @@
 #include <kernel/io/io.h>
 #include <kernel/fs/fs.h>
 
+#include <kernel/types/cbuff.h>
+
 #include <string.h>
+#include <stdio.h>
+
+static char _input_buff[1024];
 
 typedef struct console
 {
@@ -18,7 +23,12 @@ typedef struct console
     uint8_t cursor_x;
     uint8_t cursor_y;
 
-    uint32_t kbd_fd;
+    //input buffer for kb isr
+    line_buff_t line_buff;
+
+    //stream buffer for clients to read from
+    cbuff8_t* input_buff;
+
     con_history_t* history;
 
     bool in_esc;
@@ -30,27 +40,6 @@ static console_t _console;
 
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
-
-static int32_t _open_con(dev_device_t* d, uint32_t flags)
-{
-     _console.kbd_fd = io_open("/dev/keyboard", 0);
-    ASSERT(_console.kbd_fd != 0xffffffff);
-    _console.history = con_his_create();
-    return 0;
-}
-
-static void _close_con(dev_device_t* d)
-{
-    con_his_destroy(_console.history);
-    io_close(_console.kbd_fd);
-}
-
-static void _erase(uint8_t cursor_start_x, size_t prev_len)
-{
-    uint8_t xcur = cursor_start_x;
-    for (size_t x=0; x < prev_len; x++)
-        dsp_print_char(' ', xcur++, _console.cursor_y);
-}
 
 static void _replace_str(line_buff_t* lb, uint8_t start_x, size_t prev_len)
 {
@@ -64,62 +53,85 @@ static void _replace_str(line_buff_t* lb, uint8_t start_x, size_t prev_len)
         dsp_print_char(lb->result[pos], xcur++, _console.cursor_y);
 }
 
-static bool _is_ctrl_c(kb_event_t* kbe)
+static bool _is_ctrl_and(kb_event_t* kbe, uint8_t code)
 {
-    return (kbe->code == 'c' || kbe->code == 'C') && kb_is_ctrl(&kbe->state);
+    return kbe->code == code && kb_is_ctrl(&kbe->state);
+}
+
+static void _on_kb_event(kb_event_t* kbe)
+{
+    if (kbe->pressed)
+    {
+        size_t cur_len = _console.line_buff.len;
+        if (cur_len == 0)
+            _console.line_buff.cursor_start_x = _console.cursor_x;
+
+        if (kb_is_ctrl(kbe))
+        {
+            if (kbe->code == 'c')
+            {
+                //send sigterm
+            }
+            return;
+        }
+
+        lb_result_t result = lb_add_code(&_console.line_buff, kbe->code, _console.history);
+        if (result == BREAK)
+        {
+            con_putc('\n');
+            con_his_add(_console.history, _console.line_buff.result);
+            //Copy the line from the line_buff to the input stream buffer
+            for (size_t i = 0; i < _console.line_buff.len; i++)
+                cbuff8_put(_console.input_buff, _console.line_buff.result[i]);
+            cbuff8_put(_console.input_buff, '\n');
+            lb_init(&_console.line_buff);
+            dev_unblock_readers(&_console.device);
+            return;
+        }
+        else if (result == REPLACE)
+        {
+            _replace_str(&_console.line_buff, _console.line_buff.cursor_start_x, cur_len);
+        }
+        else if (result == APPEND)
+        {
+            dsp_print_char(kbe->code, _console.cursor_x, _console.cursor_y);
+        }
+        _console.cursor_x = _console.line_buff.cursor_start_x + _console.line_buff.cur_pos;
+        dsp_set_cursor(_console.cursor_x, _console.cursor_y);
+    }
+}
+
+static int32_t _open_con(dev_device_t* d, uint32_t flags)
+{
+    kb_register_event_handler(_on_kb_event);
+    _console.history = con_his_create();
+    return 0;
+}
+
+static void _close_con(dev_device_t* d)
+{
+    kb_remove_event_handler();
+    con_his_destroy(_console.history);
 }
 
 static size_t _read_con(dev_device_t* d, uint8_t* buff, size_t off, size_t sz)
 {
-    line_buff_t lb;
-    kb_event_t kbe;
-
-    lb_init(&lb);
-    uint8_t cursor_start_x = _console.cursor_x;
-    while(lb.len < sz)
+    size_t i;
+    for (i = 0; i < sz; i++)
     {
-       io_read(_console.kbd_fd, (uint8_t*)&kbe, sizeof(kb_event_t));
-       if (kbe.pressed)
-       {
-           if (_is_ctrl_c(&kbe))
-           {
-               con_putc('^');
-               con_putc('c');
-               con_putc('\n');
-               buff[0] = '\0';
-               return 0;
-           }
+        uint8_t val;
 
-           if (kb_is_ctrl(&kbe.state) || kb_is_alt(&kbe.state))
-           {
-               continue;
-           }
-
-           size_t cur_len = lb.len;
-           lb_result_t result = lb_add_code(&lb, kbe.code, _console.history);
-           if (result == BREAK)
-               break;
-           else if (result == REPLACE)
-               _replace_str(&lb, cursor_start_x, cur_len);
-           else if (result == APPEND)
-               dsp_print_char(kbe.code, _console.cursor_x, _console.cursor_y);
-           _console.cursor_x = cursor_start_x + lb.cur_pos;
-           dsp_set_cursor(_console.cursor_x, _console.cursor_y);
-       }
+        while (!cbuff8_get(_console.input_buff, &val))
+            dev_block_until_read(&_console.device);
+        buff[i] = val;
     }
-    con_putc('\n');
-    strcpy(buff, lb.result);
-    if (strlen(buff) > 0)
-        con_his_add(_console.history, buff);
-    return strlen(buff);
+    return i;
 }
 
 static size_t _write_con(dev_device_t* d, const uint8_t* buff, size_t off, size_t sz)
 {
-    for (size_t i = off; i < (off + sz); i++)
-    {
+    for (size_t i = 0; i < sz; i++)
         con_putc(buff[i]);
-    }
     return sz;
 }
 
@@ -164,6 +176,7 @@ static bool _handle_esc_char(uint8_t c)
 void con_init()
 {
     memset(&_console, 0, sizeof(console_t));
+    _console.input_buff = cbuff8_create(_input_buff, 1024);
     dsp_clear_screen();
     dsp_set_cursor(_console.cursor_x, _console.cursor_y);
 }
