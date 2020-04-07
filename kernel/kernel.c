@@ -55,31 +55,21 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	elf_image_t* k_image = mb_get_kernel_elf();
 	dbg_init(k_image);
 	gdt_init();
-	printf("gdt\n");
 	idt_init();
-	printf("idt\n");	
 	fault_init();
-
 	io_init();
-
 	serial_init();
 	timer_init(1000, &ktimer_cb);
-	printf("timer\n");
 	phys_mem_init();
 	page_directory_t* kpages = paging_init();
-	printf("paging\n");
 	proc_init(kpages, esp, k_image);
 	sched_init(proc_kernel_proc());
-	printf("sched\n");
 	fs_init();
-	printf("fs\n");
 	ramfs_init(ram_disk_buff, ram_disk_len);
-	printf("initrd\n");
 	devfs_init();
 	kb_init();
 	con_dev_init();
 	syscall_init();
-	printf("ata\n");
 	ata_init();
 	time_init();
 	

@@ -35,7 +35,6 @@ static void page_fault(isr_state_t* regs)
     int reserved = regs->err_code & 0x8;     // Overwritten CPU-reserved bits of page entry?
     int id = regs->err_code & 0x10;          // Caused by an instruction fetch?
 
-  
     // Output an error message.
     printf("Page fault! ( ");
     if (present) {printf("present ");}
