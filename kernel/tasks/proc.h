@@ -2,8 +2,11 @@
 
 #include <stdint.h>
 
+#include <sys/signals.h>
+
 #include <kernel/memory/kheap.h>
 #include <kernel/memory/paging.h>
+#include <kernel/x86/interrupts.h>
 
 #include <kernel/elf32/elf32.h>
 
@@ -18,7 +21,13 @@ typedef struct process
 	uint32_t entry;
 	elf_image_t* elf_img;
 
-	uint32_t exit_code;
+	int32_t exit_code;
+
+	//signal data
+	bool pending_signals[SIG_COUNT];
+	sig_handler_t sig_handlers[SIG_COUNT];
+	isr_state_t sig_return_state;
+	bool in_sig;
 
 	struct thread* main_thread;
 	struct process* next;
@@ -71,6 +80,6 @@ uint32_t proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len);
 
 void proc_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_out);
 
-uint32_t proc_wait_pid(uint32_t);
+int32_t proc_wait_pid(uint32_t);
 
 process_t* proc_kernel_proc();

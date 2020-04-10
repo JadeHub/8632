@@ -51,7 +51,6 @@ isr_common_stub:
 
 	popa
 	add esp, 8		; the two values pushed by isrXX (int_num, err_code)
-	;sti
 	iret
 
 

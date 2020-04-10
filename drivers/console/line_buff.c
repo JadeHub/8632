@@ -22,6 +22,7 @@ static void _insert(line_buff_t* lb, char code)
 	lb->result[lb->cur_pos] = code;
 	lb->cur_pos++;
 	lb->len++;
+	lb->result[lb->len] = '\0';
 }
 
 static void _remove(line_buff_t* lb)

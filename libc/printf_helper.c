@@ -21,8 +21,9 @@ static inline int _emit(const char c, char* buff, size_t* pos, size_t buff_sz)
 	{
 		buff[*pos] = c;
 		(*pos)++;
+		return 1;
 	}
-	return 1;
+	return 0;
 }
 
 static int _emit_str(char* buff, size_t* buff_pos, size_t buff_sz,

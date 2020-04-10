@@ -16,7 +16,7 @@
 #include <stdio.h>
 
 extern void start_kernel_mode_thread(uint32_t entry);
-extern void start_user_mode_thread(uint32_t entry);
+extern void start_user_mode_thread(uint32_t entry, uint32_t esp);
 extern void perform_task_switch(uint32_t* esp_out, uint32_t esp, uint32_t dir_addr, uint32_t* ebp_out);
 
 extern heap_t* kheap;
@@ -61,18 +61,18 @@ void idle_task()
 	}
 }
 
-void kernel_thread_entry(uint32_t entry)
+void kernel_thread_entry(uint32_t entry, uint32_t user_esp)
 {
 	sched_unlock();
 	start_kernel_mode_thread(entry);
 }
 
 //called by perform_task_switch() the first time a thread is run
-void user_thread_entry(uint32_t entry)
+void user_thread_entry(uint32_t entry, uint32_t esp)
 {
 	//setup thread here
 	sched_unlock();
-	start_user_mode_thread(entry);
+	start_user_mode_thread(entry, esp);
 }
 
 static thread_t* _create_thread(uint32_t entry, bool kernel_mode)
@@ -84,14 +84,16 @@ static thread_t* _create_thread(uint32_t entry, bool kernel_mode)
 	t->id = next_tid++;
 	t->k_stack = kmalloc(KERNEL_STACK_SIZE);
 	//setup the stack so that we will return from perform_task_switch() to the function with the entry point on the stack
-	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 4) = entry;
-	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 12) = kernel_mode ? (uint32_t)&kernel_thread_entry : (uint32_t)&user_thread_entry;
-	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 16) = 0; //ebx
-	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 20) = 0; //esi
-	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 24) = 0; //edi
-	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 28) = 0;// t->k_stack; //ebp
+	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 4) = 0x00505000;
+	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 8) = entry;
 
-	t->esp = t->k_stack + KERNEL_STACK_SIZE - 28;
+	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 16) = kernel_mode ? (uint32_t)&kernel_thread_entry : (uint32_t)&user_thread_entry;
+	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 20) = 0; //ebx
+	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 24) = 0; //esi
+	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 28) = 0; //edi
+	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 32) = 0;// t->k_stack; //ebp
+
+	t->esp = t->k_stack + KERNEL_STACK_SIZE - 32;
 
 	t->state = TS_READY_TO_RUN;
 	return t;
@@ -180,7 +182,7 @@ process_t* proc_kernel_proc()
 	return _kproc;
 }
 
-uint32_t proc_wait_pid(uint32_t pid)
+int32_t proc_wait_pid(uint32_t pid)
 {
 	process_t* proc = _find_process(pid);
 	if (proc)

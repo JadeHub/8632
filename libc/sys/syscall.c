@@ -13,9 +13,12 @@
 #define SYSCALL_CLOSE_DIR 10
 #define SYSCALL_START_PROC 11
 #define SYSCALL_WAIT_PID 12
+#define SYSCALL_REG_SIG_HANDLER 13
+#define SYSCALL_SIG_HANDLER_RET 14
 
 extern uint32_t perform_syscall(uint32_t id, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, uint32_t p5);
 
+#define SYSCALL0(code) perform_syscall(code, 0, 0, 0, 0, 0)
 #define SYSCALL1(code, param) perform_syscall(code, (uint32_t)param, 0, 0, 0, 0)
 #define SYSCALL2(code, param1, param2) perform_syscall(code, (uint32_t)param1, (uint32_t)param2, 0, 0, 0)
 #define SYSCALL3(code, param1, param2, param3)	\
@@ -45,7 +48,7 @@ void sys_print_str(const char* buff, uint32_t sz)
 #endif
 }
 
-void sys_exit(uint32_t exit_code)
+void sys_exit(int32_t exit_code)
 {
 	SYSCALL1(SYSCALL_EXIT, exit_code);
 }
@@ -102,4 +105,14 @@ uint32_t sys_start_proc(const char* path, const char* args[], uint32_t fds[3])
 uint32_t sys_wait_pid(uint32_t pid)
 {
 	return SYSCALL1(SYSCALL_WAIT_PID, pid);
+}
+
+void sys_reg_sig_handler(int sig, sig_handler_t handler)
+{
+	SYSCALL2(SYSCALL_REG_SIG_HANDLER, sig, handler);
+}
+
+void sys_sig_handler_return()
+{
+	SYSCALL0(SYSCALL_SIG_HANDLER_RET);
 }

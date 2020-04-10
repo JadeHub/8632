@@ -1,6 +1,6 @@
 /* The bootloader will look at this image and start execution at the symbol
    designated at the entry point. */
-ENTRY(entry)
+ENTRY(__entry)
 
 /* Tell where the various sections of the object files will be put in the final
    kernel image. */

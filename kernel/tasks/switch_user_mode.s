@@ -32,16 +32,16 @@ start_user_mode_thread:
     
     mov ebx, [esp+4]    ; addr    
 
-    mov eax, esp
+    mov eax, [esp+8]    ; esp
     push long 0x23  ;SS
-    push 0x00505000        ;ESP
+    push eax        ;ESP
     pushf           ;Flags
     pop eax
     or eax, 0x200 ; enable interrupts
     push eax
     push long 0x1B	;CS 0x1B = user code (gdt index 3)
     push ebx      ; Address 
-    mov ebp, 0x00
+    mov ebp, 0x00 ;todo -hmm?
     iret
 
 [GLOBAL start_kernel_mode_thread:function]

@@ -122,10 +122,9 @@ uint32_t shell()
 	return 0;
 }
 
-void entry()
+int main(int argc, char* argv[])
 {
 	strcpy(_shell_state.current_dir, "/");
 	printf("Starting shell\n");
-	uint32_t exit_code = shell();
-	sys_exit(exit_code);
+	return shell();
 }

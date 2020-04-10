@@ -79,7 +79,8 @@ static void _on_kb_event(kb_event_t* kbe)
         if (result == BREAK)
         {
             con_putc('\n');
-            con_his_add(_console.history, _console.line_buff.result);
+            if (strlen(_console.line_buff.result))
+                con_his_add(_console.history, _console.line_buff.result);
             //Copy the line from the line_buff to the input stream buffer
             for (size_t i = 0; i < _console.line_buff.len; i++)
                 cbuff8_put(_console.input_buff, _console.line_buff.result[i]);

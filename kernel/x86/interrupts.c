@@ -1,8 +1,10 @@
 #include "interrupts.h"
-#include <kernel/utils.h>
-#include <drivers/ioports.h>
-
 #include "isr.h"
+
+#include <kernel/utils.h>
+#include <kernel/signals/signal.h>
+
+#include <drivers/ioports.h>
 
 struct idt_entry {
 
@@ -137,7 +139,7 @@ void isr_handler(isr_state_t* regs)
 	}
 	if (isr_handlers[regs->int_no] != 0)
     {
-		isr_callback_t handler = isr_handlers[regs->int_no];
-		handler(regs);
+		isr_handlers[regs->int_no](regs);
 	}
+	sig_handle_pending(regs);
 }

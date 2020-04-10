@@ -100,7 +100,7 @@ static void _switch_task(uint64_t ms)
 	prev->cpu_time += (ms - _prev_switch_time);
 	_prev_switch_time = ms;
 
-//	printf("Switching to %s\n", _cur_task->process->name);
+	//printf("Switching to %s\n", _cur_task->process->name);
 
 	proc_switch_to_thread(_cur_task, &prev->esp, &prev->ebp);
 	sched_unlock();	
@@ -247,7 +247,7 @@ void sched_unlock()
 	//spin_unlock(&_sched_slock);
 }
 
-void sched_exit(uint32_t code)
+void sched_exit(int32_t code)
 {
 	printf("Task end %s %d used %lldms cpu time\n", _nameof(_cur_task), code, _cur_task->cpu_time);
 	sched_lock();

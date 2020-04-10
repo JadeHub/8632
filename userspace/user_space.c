@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <sys/syscall.h>
+#include <sys/signals.h>
 
 void test_io()
 {
@@ -33,10 +34,6 @@ void test_sleep()
 	printf("Sleep finished\n");
 }
 
-void cb(const char* m)
-{
-	printf("CB %s\n", m);
-}
 
 void test_con()
 {
@@ -122,11 +119,23 @@ void test_dir()
 
 }
 
-void entry()
+extern uint32_t regs_cs();
+
+void cb()
+{
+	printf("CB! \n");
+	sys_sig_handler_return();
+}
+
+
+
+int main(int argc, char* argv[])
 {
 	char* msg = "Hello from user land %d";
 
 	printf("printf %d %s\n", 12, "testing");
+
+	sys_reg_sig_handler(1, cb);
 
 	//test_io();
 
@@ -136,5 +145,5 @@ void entry()
 	//test_con();
 	//read_kbd();
 	//ftest_dir();
-	sys_exit(0);
+	return 0;
 }

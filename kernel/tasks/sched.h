@@ -39,7 +39,7 @@ void sched_task(thread_t* th);
 /*
 Terminate current thread
 */
-void sched_exit(uint32_t code);
+void sched_exit(int32_t code);
 
 /*
 Wait until the thread has terminated

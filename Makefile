@@ -13,6 +13,7 @@ kernel/ramfs/*.c \
 kernel/devfs/*.c \
 kernel/types/*.c \
 kernel/io/*.c \
+kernel/signals/*.c \
 drivers/*.c \
 drivers/keyboard/*.c \
 drivers/console/*.c \
