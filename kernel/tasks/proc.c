@@ -192,3 +192,15 @@ int32_t proc_wait_pid(uint32_t pid)
 	}
 	return 0;
 }
+
+process_t* proc_get_pid(uint32_t pid)
+{
+	process_t* proc = _kproc;
+	while (proc)
+	{
+		if (proc->id == pid)
+			return proc;
+		proc = proc->next;
+	}
+	return NULL;
+}

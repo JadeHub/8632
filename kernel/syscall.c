@@ -83,7 +83,7 @@ static uint32_t _syscall_wait_pid(isr_state_t* regs, uint32_t pid)
 static void _syscall_register_sig_handler(isr_state_t* regs, int sig, sig_handler_t handler)
 {
     sig_set_handler(sched_cur_proc(), sig, handler);
-    sig_queue_signal(sched_cur_proc(), sig);
+   // sig_queue_signal(sched_cur_proc(), sig);
 }
 
 static void _syscall_sig_handler_return(isr_state_t* regs)
@@ -91,7 +91,12 @@ static void _syscall_sig_handler_return(isr_state_t* regs)
     sig_return(sched_cur_proc(), regs);
 }
 
-static void* syscalls[14] =
+static bool _syscall_sig_send_signal(uint32_t pid, uint32_t sig)
+{
+    return sig_queue_signal(proc_get_pid(pid), sig);
+}
+
+static void* syscalls[15] =
 {
 	&syscall_alloc,
 	&_syscall_sleep_ms,
@@ -106,7 +111,8 @@ static void* syscalls[14] =
     &_syscall_start_proc,
     &_syscall_wait_pid,
     &_syscall_register_sig_handler,
-    &_syscall_sig_handler_return
+    &_syscall_sig_handler_return,
+    &_syscall_sig_send_signal
 };
 
 void syscall_handler(isr_state_t* regs)

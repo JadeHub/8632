@@ -15,6 +15,7 @@
 #define SYSCALL_WAIT_PID 12
 #define SYSCALL_REG_SIG_HANDLER 13
 #define SYSCALL_SIG_HANDLER_RET 14
+#define SYSCALL_SIG_SEND 15
 
 extern uint32_t perform_syscall(uint32_t id, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, uint32_t p5);
 
@@ -115,4 +116,9 @@ void sys_reg_sig_handler(int sig, sig_handler_t handler)
 void sys_sig_handler_return()
 {
 	SYSCALL0(SYSCALL_SIG_HANDLER_RET);
+}
+
+bool sys_send_signal(uint32_t pid, uint32_t sig)
+{
+	return SYSCALL2(SYSCALL_SIG_SEND, pid, sig);
 }

@@ -11,7 +11,7 @@ void sig_set_handler(process_t* proc, int sig, sig_handler_t handler)
 
 bool sig_queue_signal(process_t* proc, int sig)
 {
-	if (!proc->sig_handlers[sig - 1])
+	if (!proc || !proc->sig_handlers[sig - 1])
 		return false;
 
 	proc->pending_signals[sig-1] = true;

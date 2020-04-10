@@ -22,10 +22,8 @@ void sys_closedir(struct DIR*);
 struct dirent* sys_readdir(struct DIR*);
 uint32_t sys_start_proc(const char* path, const char* args[], uint32_t fds[3]);
 uint32_t sys_wait_pid(uint32_t);
-
-//void (*cb)(void)
-
 void sys_reg_sig_handler(int, sig_handler_t);
 void sys_sig_handler_return();
+bool sys_send_signal(uint32_t pid, uint32_t sig);
 
 __LIBC_END_H

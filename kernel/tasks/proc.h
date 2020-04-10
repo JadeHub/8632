@@ -83,3 +83,4 @@ void proc_switch_to_thread(thread_t* thread, uint32_t* esp_out, uint32_t* ebp_ou
 int32_t proc_wait_pid(uint32_t);
 
 process_t* proc_kernel_proc();
+process_t* proc_get_pid(uint32_t pid);
