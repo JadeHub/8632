@@ -84,7 +84,7 @@ static thread_t* _create_thread(uint32_t entry, bool kernel_mode)
 	t->id = next_tid++;
 	t->k_stack = kmalloc(KERNEL_STACK_SIZE);
 	//setup the stack so that we will return from perform_task_switch() to the function with the entry point on the stack
-	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 4) = 0x00505000;
+	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 4) = 0x00505000; //esp
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 8) = entry;
 
 	*(uint32_t*)(t->k_stack + KERNEL_STACK_SIZE - 16) = kernel_mode ? (uint32_t)&kernel_thread_entry : (uint32_t)&user_thread_entry;
@@ -99,35 +99,7 @@ static thread_t* _create_thread(uint32_t entry, bool kernel_mode)
 	return t;
 }
 
-void _init_proc(process_t* p)
-{
-	//setup io data for this proc
-	io_proc_start(p);
-	
-	//Add proc to list
-	process_t* tmp = _kproc;
-	while (tmp->next)
-		tmp = tmp->next;
-	tmp->next = p;
-
-	//schedule the main thread
-	sched_task(p->main_thread);
-}
-
-uint32_t proc_start_user_proc(const char* path, const char* args[], uint32_t fds[3])
-{
-	fs_node_t* fnode = fs_get_abs_path(path, NULL);
-	if (fnode && fnode->len > 0)
-	{
-		uint8_t* exe_buff = (uint8_t*)kmalloc(fnode->len);
-		ASSERT(exe_buff);
-		if (fs_read(fnode, exe_buff, 0, fnode->len) == fnode->len)
-			return proc_new_elf_proc(args[0], exe_buff, fnode->len);
-	}
-	return 0;
-}
-
-uint32_t proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
+static process_t* _proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 {
 	page_directory_t* cur_page_dir = sched_cur_proc() ? sched_cur_proc()->pages : kernel_directory;
 	ASSERT(cur_page_dir);
@@ -145,7 +117,7 @@ uint32_t proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 	{
 		page_dir_destroy_directory(proc->pages);
 		kfree(proc);
-		return 0;
+		return NULL;
 	}
 
 	//heap at 0x00700000
@@ -158,8 +130,36 @@ uint32_t proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 
 	proc->main_thread = _create_thread(proc->entry, false);
 	proc->main_thread->process = proc;
-	_init_proc(proc);
-	return proc->id;
+	return proc;
+}
+
+
+uint32_t proc_start_user_proc(const char* path, const char* args[], uint32_t fds[3])
+{
+	fs_node_t* fnode = fs_get_abs_path(path, NULL);
+	if (fnode && fnode->len > 0)
+	{
+		uint8_t* exe_buff = (uint8_t*)kmalloc(fnode->len);
+		ASSERT(exe_buff);
+		if (fs_read(fnode, exe_buff, 0, fnode->len) == fnode->len)
+		{
+			process_t* proc = _proc_new_elf_proc(args[0], exe_buff, fnode->len);
+			kfree(exe_buff);
+			if (!proc) return 0;
+
+			io_proc_start(proc, fds);
+
+			process_t* tmp = _kproc;
+			while (tmp->next)
+				tmp = tmp->next;
+			tmp->next = proc;
+
+			//schedule the main thread
+			sched_task(proc->main_thread);		
+			return proc->id;
+		}
+	}
+	return 0;
 }
 
 void proc_init(page_directory_t* kernel_pages, uint32_t initial_esp, elf_image_t* k_elf_image)

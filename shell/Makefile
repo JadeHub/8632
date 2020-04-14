@@ -6,15 +6,17 @@ C_SOURCES = $(wildcard \
 commands/*.c)
 
 OBJS = ${C_SOURCES:.c=.o}
+LIBS = ../libc/libc.a
 
 all: shell
 
-shell: $(OBJS) 
-	$(CC) -T link.ld -o $@  ${OBJS} ../libc/libc.a -ffreestanding -O2 -nostdlib -lgcc
+shell: $(OBJS) $(LIBS)
+	$(CC) -T link.ld -o $@  ${OBJS} $(LIBS) -ffreestanding -O2 -nostdlib -lgcc
 
 %.o: %.c
 	$(CC) ${CFLAGS} -c $< -o $@
 
 clean:
-	rm shell
-	rm *.o
+	rm -f shell
+	rm -f *.o
+	rm -f commands/*.o

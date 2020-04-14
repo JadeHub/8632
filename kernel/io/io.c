@@ -73,13 +73,14 @@ inline static uint32_t _cur_proc_id()
 	return sched_cur_proc()->id;
 }
 
-static proc_io_data_t* _cur_proc_data()
+static proc_io_data_t* _get_proc_data(process_t* proc)
 {
-	proc_io_data_t* res = hash_tbl_lookup(_proc_io, _cur_proc_id(), proc_io_data_t, hash_item);
-	return res;
+	if (hash_tbl_has(_proc_io, proc->id))
+		return hash_tbl_lookup(_proc_io, proc->id, proc_io_data_t, hash_item);
+	return NULL;
 }
 
-static uint32_t _free_fd(proc_io_data_t* p)
+static fd_t _free_fd(proc_io_data_t* p)
 {
 	for (int i = 0; i < MAX_FD_CNT; i++)
 		if (p->fds[i] == NULL || p->fds[i]->node == NULL)
@@ -90,13 +91,19 @@ static uint32_t _free_fd(proc_io_data_t* p)
 /*
 Find a file decriptor for fnode belonging to proc
 */
-static uint32_t _find_fd(proc_io_data_t* proc, fs_node_t* fnode)
+static fd_t _find_fd(proc_io_data_t* proc, fs_node_t* fnode)
 {
 	//dbg_dump_stack();
 	for (int i = 0; i < MAX_FD_CNT; i++)
 		if (proc->fds[i] && proc->fds[i]->node == fnode)
 			return i;
 	return INVALID_FD;
+}
+
+static proc_file_desc_t* _get_file_desc(process_t* proc, uint32_t fd)
+{
+	proc_io_data_t* data = _get_proc_data(proc);
+	return data ? data->fds[fd] : NULL;
 }
 
 static proc_file_desc_t* _create_file_desc(fs_node_t* node, uint32_t flags)
@@ -109,16 +116,16 @@ static proc_file_desc_t* _create_file_desc(fs_node_t* node, uint32_t flags)
 	return desc;
 }
 
-uint32_t io_open(const char* path, uint32_t flags)
+fd_t io_open(const char* path, uint32_t flags)
 {
-	proc_io_data_t* proc = _cur_proc_data();
+	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	//Find the node
 	fs_node_t* parent;
 	fs_node_t* node = fs_get_abs_path(path, &parent);
 	if (!node)
 		return INVALID_FD;
 	//already open?
-	uint32_t fd = _find_fd(proc, node);
+	fd_t fd = _find_fd(proc, node);
 	if (io_is_valid_fd(fd))
 	{
 		printf("Already open 0x%x\n", fd);
@@ -133,24 +140,24 @@ uint32_t io_open(const char* path, uint32_t flags)
 	return fd;
 }
 
-void io_close(uint32_t fd)
+void io_close(fd_t fd)
 {
-	proc_io_data_t* proc = _cur_proc_data();
+	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	proc->fds[fd]->node = NULL;
 }
 
-size_t io_read(uint32_t fd, uint8_t* buff, size_t sz)
+size_t io_read(fd_t fd, uint8_t* buff, size_t sz)
 {
-	proc_io_data_t* proc = _cur_proc_data();
+	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	ASSERT(proc->fds[fd]->node);
 	size_t read = fs_read(proc->fds[fd]->node, buff, proc->fds[fd]->offset, sz);
 	proc->fds[fd]->offset += read;
 	return read;
 }
 
-size_t io_write(uint32_t fd, const uint8_t* buff, size_t len)
+size_t io_write(fd_t fd, const uint8_t* buff, size_t len)
 {
-	proc_io_data_t* proc = _cur_proc_data();
+	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	ASSERT(proc);
 	ASSERT(proc->fds[fd]->node);
 	
@@ -164,7 +171,7 @@ void io_init()
 	_proc_io = hash_tbl_create(64);
 }
 
-void io_proc_start(process_t* p)
+void io_proc_start(process_t* p, fd_t fds[3])
 {
 	ASSERT(!hash_tbl_has(_proc_io, p->id));
 	proc_io_data_t* res = (proc_io_data_t*)kmalloc(sizeof(proc_io_data_t));
@@ -174,15 +181,31 @@ void io_proc_start(process_t* p)
 	hash_tbl_add(_proc_io, p->id, &res->hash_item);
 
 	fs_node_t* node = fs_get_abs_path("/dev/console/con1", NULL);
-	res->fds[0] = _create_file_desc(node, IO_OPEN_R); //input
-	res->fds[1] = _create_file_desc(node, IO_OPEN_W); //output
-	res->fds[2] = _create_file_desc(node, IO_OPEN_W); //error
+	//FD 0 Input 
+	if (fds[0] == INVALID_FD)
+		res->fds[0] = _create_file_desc(node, IO_OPEN_R); //input
+	else
+		io_dup_fd(fds[0], p, 0);
+
+	//FD 1 Output
+	if (fds[1] == INVALID_FD)
+		res->fds[1] = _create_file_desc(node, IO_OPEN_W); //input
+	else
+		io_dup_fd(fds[1], p, 1);
+
+	//FD 2 Error
+	if (fds[2] == INVALID_FD)
+		res->fds[2] = _create_file_desc(node, IO_OPEN_R); //input
+	else
+		io_dup_fd(fds[2], p, 2);
 }
 
 void io_proc_end(process_t* p)
 {
 	ASSERT(hash_tbl_has(_proc_io, p->id));
 	proc_io_data_t* res = hash_tbl_lookup(_proc_io, p->id, proc_io_data_t, hash_item);
+
+	//destroy any open FDs
 
 	//close any open DIRs
 	list_head_t* child = res->open_dirs.next;
@@ -218,7 +241,7 @@ bool _dir_read_cb(struct fs_node* parent, struct fs_node* child, void* data)
 
 struct DIR* io_opendir(const char* path)
 {
-	proc_io_data_t* proc = _cur_proc_data();
+	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	//Find the node
 	fs_node_t* parent;
 	fs_node_t* node = fs_get_abs_path(path, &parent);
@@ -262,4 +285,23 @@ struct dirent* io_readdir(struct DIR* dir)
 	else
 		desc->cur = list_next_entry(desc->cur, list_item);
 	return result;
+}
+
+bool io_dup_fd(fd_t source, process_t* dest_p, fd_t dest)
+{
+	if (!io_is_valid_fd(source) || !io_is_valid_fd(dest))
+		return false;
+
+	proc_file_desc_t* desc = _get_file_desc(sched_cur_proc(), source);
+	if (!desc)
+		return false;
+
+	proc_io_data_t* dest_data = _get_proc_data(dest_p);
+	if (dest_data->fds[dest])
+	{
+		//close?
+		kfree(dest_data->fds[dest]);
+	}
+	dest_data->fds[dest] = _create_file_desc(desc->node, desc->flags);
+	return true;
 }

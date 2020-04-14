@@ -77,6 +77,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	args[0] = "shell";
 	args[1] = NULL;
 	uint32_t fds[3];
+	fds[0] = fds[1] = fds[2] = INVALID_FD;
 
 	proc_start_user_proc("/initrd/bin/shell", args, fds);
 	dsp_enable_cursor();

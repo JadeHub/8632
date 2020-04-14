@@ -127,7 +127,13 @@ void cb()
 	sys_sig_handler_return();
 }
 
+static uint64_t _coutn = 0;
 
+void calc()
+{
+	_coutn++;
+	sys_sleep_ms(10);
+}
 
 int main(int argc, char* argv[])
 {
@@ -137,6 +143,11 @@ int main(int argc, char* argv[])
 
 	sys_reg_sig_handler(1, cb);
 
+	//sys_send_signal()
+
+	//for (int i = 0; i < 100000; i++)
+	//	for (int j = 0; j < 10000; j++)
+		//	calc();
 	//test_io();
 
 	//for(int j=0;j<5;j++)
