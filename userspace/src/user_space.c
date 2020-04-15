@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
 {
 	char* msg = "Hello from user land %d";
 
-	printf("printf %d %s\n", 12, "testing");
+	printf("\033[01;33m %d %s\n", 12, "testing");
 
 	sys_reg_sig_handler(1, cb);
 

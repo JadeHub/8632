@@ -14,6 +14,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static char _input_buff[1024];
 
@@ -143,14 +144,95 @@ static void _append_char(char* str, char c)
     (*str) = '\0';
 }
 
-static bool _process_esc_sequence(const char* str)
+/*
+Escape sequence handling
+see https://en.wikipedia.org/wiki/ANSI_escape_code
+
+Minimal support
+/033c clear
+
+/033[....m (The SGR (Select Graphic Rendition) commands)
+/033[31m Set foreground colour to 31 (red)
+/033[30;47m Set foreground colour to 30 (black) and background to 47 (white)
+
+*/
+
+static dsp_color _translate_fg_colour(uint8_t c)
+{
+    if (c == 30)
+        return BLACK;
+    else if (c == 31)
+        return RED;
+    else if (c == 32)
+        return GREEN;
+    else if (c == 33)
+        return YELLOW;
+    else if (c == 34)
+        return BLUE;
+    else if (c == 35)
+        return PURPLE;
+    else if (c == 36)
+        return CYAN;
+    else if (c == 37)
+        return DARK_GREY;
+    else if (c == 90)
+        return GREY;
+    else if (c == 91)
+        return LIGHT_RED;
+    else if (c == 92)
+        return LIGHT_GREEN;
+    else if (c == 93)
+        return YELLOW;
+    else if (c == 94)
+        return BLUE;
+    else if (c == 95)
+        return LIGHT_BLUE;
+    else if (c == 96)
+        return LIGHT_CYAN;
+    else if (c == 97)
+        return WHITE;
+    return WHITE;
+}
+
+static dsp_color _translate_bk_colour(uint8_t c)
+{
+    //background colours offset by 10
+    return _translate_fg_colour(c - 10);
+}
+
+
+static bool _process_sgr_esc(char* str)
+{
+    size_t len = strlen(str);
+
+    if (len > 0 && str[0] == '[' && str[len - 1] == 'm')
+    {
+        str[len - 1] = '\0';
+        str++;
+        len -= 2;
+        char* sep;
+        if (sep = strchr(str, ';'))
+        {
+            int back = atoi(sep);
+            *sep = '\0';
+            int fore = atoi(str);
+            dsp_set_text_attr(_translate_fg_colour(fore), _translate_fg_colour(back));
+            return true;
+        }
+
+    }
+    return false;
+}
+
+static bool _process_esc_sequence(char* str)
 {
     if (strcmp(str, "c") == 0)
     {
         con_clear();
         return true;
     }
-    return false;
+    
+    return _process_sgr_esc(str);
 }
 
 static bool _handle_esc_char(uint8_t c)

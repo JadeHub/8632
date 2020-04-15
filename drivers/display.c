@@ -6,22 +6,36 @@
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
 
-static uint16_t* video_memory = (uint16_t *) 0xb8000;
-static uint16_t text_attr = (1 << 12) | (15 << 8);
+static uint16_t* _video_memory = (uint16_t *) 0xb8000;
+static uint8_t _foreground = WHITE;
+static uint8_t _background = BLUE;
+static uint16_t _text_attr = (BLUE << 12) | (WHITE << 8);
 
 static uint16_t get_char_offset(uint8_t col, uint8_t row)
 {
 	return row * SCREEN_WIDTH + col;
 }
 
-void dsp_set_text_attr(uint8_t fore, uint8_t back)
+void dsp_set_text_attr(dsp_color fore, dsp_color back)
 {
-	text_attr = (back << 12) | (fore << 8);
+	_text_attr = (back << 12) | (fore << 8);
+}
+
+void dsp_set_foreground(dsp_color c)
+{
+	_foreground = c;
+	dsp_set_text_attr(_foreground, _background);
+}
+
+void dsp_set_background(dsp_color c)
+{
+	_background = c;
+	dsp_set_text_attr(_foreground, _background);
 }
 
 void dsp_print_char(uint8_t c, uint8_t col, uint8_t row)
 {
-	video_memory[get_char_offset(col, row)] = c | text_attr;
+	_video_memory[get_char_offset(col, row)] = c | _text_attr;
 }
 
 void dsp_clear_screen()
@@ -37,9 +51,9 @@ void dsp_scroll(uint8_t lines)
 	{
 		int i;
 		for (i = 0; i < 24 * 80; i++)
-			video_memory[i] = video_memory[i+80];
+			_video_memory[i] = _video_memory[i+80];
 		for (i = 24*80; i < 25*80; i++)
-			video_memory[i] = ' ' | text_attr;
+			_video_memory[i] = ' ' | _text_attr;
 		lines--;	
 	}
 }
