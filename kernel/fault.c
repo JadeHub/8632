@@ -25,7 +25,7 @@ static int _j = 0;
 void panic_impl(const char* msg, const char* file, uint32_t line)
 {
     printf("KPANIC %s at %s:%d\n", msg, file, line);
-    //dbg_dump_current_stack();
+    dbg_dump_current_stack();
     for(;;)
         ;
 }

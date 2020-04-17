@@ -4,22 +4,22 @@
 
 typedef enum
 {
-	BLACK			= 1,
-	BLUE			= 2,
-	GREEN			= 3,
-	CYAN			= 4,
-	RED				= 5,
-	PURPLE			= 6,
-	BROWN			= 7,
-	GREY			= 8,
-	DARK_GREY		= 9,
-	LIGHT_BLUE		= 10,
-	LIGHT_GREEN		= 11,
-	LIGHT_CYAN		= 12,
-	LIGHT_RED		= 13,
-	LIGHT_PURPLE	= 14,
-	YELLOW			= 15,
-	WHITE			= 16
+	BLACK			= 0,
+	BLUE			= 1,
+	GREEN			= 2,
+	CYAN			= 3,
+	RED				= 4,
+	PURPLE			= 5,
+	BROWN			= 6,
+	GREY			= 7,
+	DARK_GREY		= 8,
+	LIGHT_BLUE		= 9,
+	LIGHT_GREEN		= 10,
+	LIGHT_CYAN		= 11,
+	LIGHT_RED		= 12,
+	LIGHT_PURPLE	= 13,
+	YELLOW			= 14,
+	WHITE			= 15
 }dsp_color;
 
 void dsp_print_char(uint8_t c, uint8_t col, uint8_t row);

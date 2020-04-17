@@ -36,8 +36,10 @@ void mb_init(const multiboot_data_t* data)
 	for(int i=0; i<data->mod_count;i++)
 	{
 		module_data_t* mod = &data->modules[i];
+		printf("Loaded multiboot module %s 0x%08x 0x%08x 0x%x\n",
+			mod->name, mod->start, mod->end, mod->end - mod->start);
 		KLOG(LL_INFO, "BOOT", "Loaded multiboot module %s 0x%08x 0x%08x 0x%x\n",
-				data->modules->name, data->modules->start, data->modules->end, data->modules->end - data->modules->start);
+				mod->name, mod->start, mod->end, mod->end - mod->start);
 	}
 }
 
@@ -76,7 +78,7 @@ uint32_t mb_copy_mod(const char* name, uint8_t* buff, uint32_t buff_len)
 	uint32_t len = mod->end - mod->start;
 	if (len > buff_len)
 	{
-		printf("Module length too long %u > %u\n", len, buff_len);
+		printf("Module length too long 0x%x > 0x%x\n", len, buff_len);
 		return 0;
 	}
 	memcpy(buff, (void*)mod->start, len);

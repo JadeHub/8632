@@ -12,7 +12,7 @@ all: bin/user_space \
 bin/user_space: src/user_space.o $(LIBS)
 	$(CC) -o $@ src/user_space.o $(LIBS) ${LDDFLAGS}
 
-bin/cat: src/cat.o $(LIBS)
+bin/cat: src/cat.o $(LIBS) 
 	$(CC) -o $@ src/cat.o $(LIBS) ${LDDFLAGS}
 
 %.o: %.c

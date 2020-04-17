@@ -174,9 +174,9 @@ static dsp_color _translate_fg_colour(uint8_t c)
     else if (c == 36)
         return CYAN;
     else if (c == 37)
-        return DARK_GREY;
-    else if (c == 90)
         return GREY;
+    else if (c == 90)
+        return DARK_GREY;
     else if (c == 91)
         return LIGHT_RED;
     else if (c == 92)
@@ -200,7 +200,6 @@ static dsp_color _translate_bk_colour(uint8_t c)
     return _translate_fg_colour(c - 10);
 }
 
-
 static bool _process_sgr_esc(char* str)
 {
     size_t len = strlen(str);
@@ -213,10 +212,10 @@ static bool _process_sgr_esc(char* str)
         char* sep;
         if (sep = strchr(str, ';'))
         {
-            int back = atoi(sep);
+            int back = atoi(sep+1);
             *sep = '\0';
             int fore = atoi(str);
-            dsp_set_text_attr(_translate_fg_colour(fore), _translate_fg_colour(back));
+            dsp_set_text_attr(_translate_fg_colour(fore), _translate_bk_colour(back));
             return true;
         }
 
@@ -261,6 +260,8 @@ void con_init()
     _console.input_buff = cbuff8_create(_input_buff, 1024);
     dsp_clear_screen();
     dsp_set_cursor(_console.cursor_x, _console.cursor_y);
+    dsp_set_text_attr(LIGHT_CYAN, BLACK);
+    con_clear();
 }
 
 void con_dev_init()
@@ -280,6 +281,8 @@ void con_dev_init()
 
     kb_register_event_handler(_on_kb_event);
     _console.history = con_his_create();
+
+    
 }
 
 void con_putc(uint8_t c)
@@ -330,5 +333,5 @@ void con_clear()
 {
     dsp_clear_screen();
     _console.cursor_x = _console.cursor_y = 0;
-    dsp_set_cursor(_console.cursor_x, _console.cursor_y);
+    dsp_set_cursor(_console.cursor_x, _console.cursor_y);    
 }

@@ -18,6 +18,8 @@ static uint16_t get_char_offset(uint8_t col, uint8_t row)
 
 void dsp_set_text_attr(dsp_color fore, dsp_color back)
 {
+	_foreground = fore;
+	_background = back;
 	_text_attr = (back << 12) | (fore << 8);
 }
 

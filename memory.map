@@ -8,6 +8,14 @@
 0x0008-0000     0x0009-FFFF     bios data
 0x0007-0000		initial kernel stack
 
+0x0004-B024 end placement new
+
+0xD624 bytes
+
+0x0003-DA00 Kernel .end
+
+0x0001-8000 buff
+
 ~412k~
 
 0x0000-9000		Kernel start

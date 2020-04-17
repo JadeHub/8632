@@ -73,6 +73,9 @@ static bool _process_cmd(char* cmd)
 	else if (strcmp(p.params[0], "test") == 0)
 	{
 		uint32_t fds[3];
+		fds[0] = 0xffffffff;
+		fds[1] = 0xffffffff;
+		fds[2] = 0xffffffff;
 		uint32_t pid = sys_start_proc("/initrd/bin/user_space", p.params, fds);
 		uint32_t code = wait_pid(pid);
 		printf("Prog exited with code %d\n", code);

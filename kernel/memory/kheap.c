@@ -2,7 +2,10 @@
 #include "paging.h"
 #include "phys_mem.h"
 
+#include <stdio.h>
 #include <kernel/fault.h>
+#include <kernel/debug.h>
+#include <kernel/utils.h>
 
 // end is defined in the linker script.
 extern uint32_t end;
@@ -36,6 +39,9 @@ uint32_t kmalloc_int(uint32_t sz, int align, uint32_t *phys)
         }
         uint32_t tmp = placement_address;
         placement_address += sz;
+      //  dbg_dump_current_stack();
+     //   bochs_dbg();
+        
         return tmp;
     }
 }

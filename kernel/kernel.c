@@ -39,29 +39,44 @@
 
 extern void switch_to_user_mode();
 
-uint8_t ram_disk_buff[0x10000];
-uint32_t ram_disk_len = 0x20000;
+#define RAM_DISK_LEN 0x20000
+
+uint8_t ram_disk_buff[RAM_DISK_LEN];
+uint32_t ram_disk_len = RAM_DISK_LEN;
+
+extern uint32_t end;
 
 void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
 	con_init();
 	printf("Hello World %d 0x%x\n", mb_data->mod_count, *((uint8_t*)mb_data->modules->start));
+	printf("Buffer 0x%08x End 0x%08x\n", ram_disk_buff, end);
+	memset(ram_disk_buff, 0, RAM_DISK_LEN);
 	mb_init(mb_data);
 	ram_disk_len = mb_copy_mod("/boot/ramdisk", ram_disk_buff, ram_disk_len);
 	if (!ram_disk_len)
 		KPANIC("Module /boot/ramdisk not found\n");
 	printf("Ram Disk 0x%08x bytes\n", ram_disk_len);
 	
+	//bochs_dbg();
+
 	elf_image_t* k_image = mb_get_kernel_elf();
 	dbg_init(k_image);
 	gdt_init();
 	idt_init();
 	fault_init();
-	io_init();
+	
 	serial_init();
 	timer_init(1000, &ktimer_cb);
 	phys_mem_init();
+	
+	
+	
+	
 	page_directory_t* kpages = paging_init();
+
+	io_init();
+
 	proc_init(kpages, esp, k_image);
 	sched_init(proc_kernel_proc());
 	fs_init();
@@ -72,7 +87,6 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	syscall_init();
 	ata_init();
 	time_init();
-	
 	const char* args[2];
 	args[0] = "shell";
 	args[1] = NULL;

@@ -55,7 +55,7 @@ static void page_fault(isr_state_t* regs)
 
 extern void copy_page_physical(uint32_t, uint32_t);
 
-static page_table_t *clone_table(page_table_t *src, uint32_t *physAddr)
+static page_table_t* _clone_table(page_table_t *src, uint32_t *physAddr)
 {
     // Make a new page table, which is page aligned.
     page_table_t *table = (page_table_t*)kmalloc_ap(sizeof(page_table_t), physAddr);
@@ -120,15 +120,18 @@ page_directory_t* clone_directory(page_directory_t *src)
         {
             // Copy the table.
             uint32_t phys;
-            dir->tables[i] = clone_table(src->tables[i], &phys);
+            dir->tables[i] = _clone_table(src->tables[i], &phys);
             dir->tablesPhysical[i] = phys | 0x07;
         }*/
     }
     return dir;
 }
 
+extern uint32_t placement_address;
+
 page_directory_t* paging_init()
 {
+    //printf("Placement max 1 0x%08x\n", placement_address);
     uint32_t phys;
     kernel_directory = (page_directory_t*)kmalloc_a(sizeof(page_directory_t));
     memset(kernel_directory, 0, sizeof(page_directory_t));
@@ -143,6 +146,8 @@ page_directory_t* paging_init()
     for (i = KHEAP_START; i < KHEAP_START+KHEAP_INITIAL_SIZE; i += 0x1000)
         get_page(i, 1, kernel_directory);
 
+    //printf("Placement max 2 0x%08x\n", placement_address);
+
     //Map the first megabyte for use by the kernel
     for(i=0; i< 0x100000; i += 0x1000)
     {
@@ -151,18 +156,19 @@ page_directory_t* paging_init()
     }
     idt_register_handler(ISR14, &page_fault);
 
+    //printf("Placement max 3 0x%08x\n", placement_address);
     // Now allocate those pages we mapped earlier.
     for (i = KHEAP_START; i < KHEAP_START+KHEAP_INITIAL_SIZE; i += 0x1000)
         alloc_frame( get_page(i, 1, kernel_directory), 0, 0);
 
+    //printf("Placement max 4 0x%08x\n", placement_address);
+
     switch_page_directory(kernel_directory);
 	enable_paging();
-
     // Initialise the kernel heap.
     kheap = heap_create(kernel_directory, KHEAP_START, KHEAP_START+KHEAP_INITIAL_SIZE, 0xCFFFF000, 0, 0);
     switch_page_directory(kernel_directory);
-	printf("Virtual Memory mode\n");
-
+    //printf("Placement max 5 0x%08x\n", placement_address);
 	return kernel_directory;
 }
 
