@@ -9,7 +9,7 @@
 #include <kernel/fault.h>
 #include <kernel/io/io.h>
 #include <kernel/debug.h>
-#include <kernel/fs/fs.h>
+#include <kernel/vfs/vfs.h>
 
 #include <stdbool.h>
 #include <string.h>

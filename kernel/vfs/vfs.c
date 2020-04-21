@@ -1,6 +1,6 @@
-#include "fs.h"
+#include "vfs.h"
 
-#include <kernel/fs/dir.h>
+#include <kernel/vfs/dir.h>
 #include <kernel/fault.h>
 #include <kernel/utils.h>
 #include <kernel/types/kname.h>

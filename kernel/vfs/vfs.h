@@ -1,6 +1,6 @@
 #pragma once
 
-#include <kernel/fs/node.h>
+#include <kernel/vfs/node.h>
 
 void fs_init();
 

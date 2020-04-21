@@ -1,6 +1,6 @@
 #pragma once
 
-#include <kernel/fs/node.h>
+#include <kernel/vfs/node.h>
 #include <kernel/types/list.h>
 
 typedef struct dirent

@@ -2,7 +2,7 @@
 
 #include <kernel/types/list.h>
 #include <kernel/types/kname.h>
-#include <kernel/fs/node.h>
+#include <kernel/vfs/node.h>
 #include <kernel/tasks/proc.h>
 
 #include <stdint.h>

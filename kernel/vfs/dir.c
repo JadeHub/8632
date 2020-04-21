@@ -1,7 +1,7 @@
 #include "dir.h"
 
 #include <kernel/memory/kmalloc.h>
-#include <kernel/fs/fs.h>
+#include <kernel/vfs/vfs.h>
 
 #include <stdio.h>
 #include <string.h>

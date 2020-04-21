@@ -16,8 +16,8 @@
 #include <kernel/memory/kmalloc.h>
 #include <kernel/ramfs/ramfs.h>
 #include <kernel/devfs/devfs.h>
-#include <kernel/fs/fs.h>
-#include <kernel/fs/dir.h>
+#include <kernel/vfs/vfs.h>
+#include <kernel/vfs/dir.h>
 
 #include <drivers/ata/ata.h>
 #include <drivers/serial/serial_io.h>

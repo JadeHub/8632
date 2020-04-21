@@ -8,7 +8,7 @@ kernel/tasks/*.c \
 kernel/dbg_monitor/*.c \
 kernel/sync/*.c \
 kernel/elf32/*.c \
-kernel/fs/*.c \
+kernel/vfs/*.c \
 kernel/ramfs/*.c \
 kernel/devfs/*.c \
 kernel/types/*.c \

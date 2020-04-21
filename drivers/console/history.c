@@ -1,6 +1,6 @@
 #include "history.h"
 
-#include <kernel/fs/fs.h>
+#include <kernel/vfs/vfs.h>
 #include <kernel/fault.h>
 #include <kernel/types/list.h>
 #include <kernel/memory/kmalloc.h>

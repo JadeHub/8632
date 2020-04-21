@@ -8,7 +8,7 @@
 #include <drivers/device_driver.h>
 #include <kernel/fault.h>
 #include <kernel/io/io.h>
-#include <kernel/fs/fs.h>
+#include <kernel/vfs/vfs.h>
 
 #include <kernel/types/cbuff.h>
 

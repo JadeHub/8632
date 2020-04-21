@@ -1,7 +1,7 @@
 #include "devfs.h"
 
-#include <kernel/fs/fs.h>
-#include <kernel/fs/dir.h>
+#include <kernel/vfs/vfs.h>
+#include <kernel/vfs/dir.h>
 #include <kernel/fault.h>
 
 #include <stdio.h>

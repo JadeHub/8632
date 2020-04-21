@@ -1,7 +1,7 @@
 #include "io.h"
 
 #include <kernel/types/hash_tbl.h>
-#include <kernel/fs/fs.h>
+#include <kernel/vfs/vfs.h>
 #include <kernel/fault.h>
 #include <kernel/memory/kmalloc.h>
 #include <kernel/debug.h>
