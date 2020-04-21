@@ -20,8 +20,14 @@ uint16_t inw(uint16_t port)
 	return ret;
 }
 
-void insl(unsigned short int port, void *addr, unsigned long int count)
+uint32_t inl(uint16_t port)
 {
-	asm volatile("cld ; rep ; insl":"=D" (addr), "=c" (count)
-		: "d" (port), "0" (addr), "1" (count));
+	uint32_t ret;
+	asm volatile ("inl %1, %0" : "=a" (ret) : "dN" (port));
+	return ret;
+}
+
+void outl(uint16_t port, uint32_t val)
+{
+	asm volatile ("outl %1, %0" : : "dN" (port), "a" (val));
 }

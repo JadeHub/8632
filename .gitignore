@@ -1,4 +1,5 @@
 sysroot
+fat_image
 *.a
 isodir/
 *.iso

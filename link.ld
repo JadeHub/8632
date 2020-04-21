@@ -31,6 +31,6 @@ SECTIONS
 		*(COMMON)
 		*(.bss)
 	}
-	. = 0x40000;
+	. = 0x50000;
 	end = .; _end = .; __end = .;
 }

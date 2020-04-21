@@ -6,7 +6,9 @@
 #include <drivers/console/console.h>
 #include <drivers/keyboard/keyboard.h>
 #include <drivers/timer/timer.h>
-#include <drivers/ata/ata.h>
+#include <drivers/pci/pci.h>
+#include <drivers/pci/ide.h>
+//#include <drivers/ata/ata.h>
 #include <drivers/display.h>
 #include <kernel/memory/phys_mem.h>
 #include <kernel/memory/paging.h>
@@ -85,8 +87,32 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	kb_init();
 	con_dev_init();
 	syscall_init();
-	ata_init();
+	pci_init();
+	//ata_init();
 	time_init();
+	/*
+	uint8_t dbuff[1024];
+	memset(dbuff, 1, 1024);
+	dbuff[0] = 0xA;
+	dbuff[1] = 0xB;
+	dbuff[2] = 0xC;
+	dbuff[3] = 0xD;
+	dbuff[4] = 0xE;
+
+	dbuff[0 + 512] = 0xD;
+	dbuff[1 + 512] = 0xE;
+	dbuff[2 + 512] = 0xA;
+	dbuff[3 + 512] = 0xD;
+	dbuff[4 + 512] = 0xF;
+
+//	ide_write(2, 0, dbuff);
+
+	uint8_t dbuff2[1024];
+	ide_read(2, 0, dbuff2);
+	
+	printf("IDE Read sec 1 0x%x 0x%x 0x%x 0x%x 0x%x\n", dbuff2[0], dbuff2[1], dbuff2[2], dbuff2[3], dbuff2[4]);
+	printf("IDE Read sec 2 0x%x 0x%x 0x%x 0x%x 0x%x\n", dbuff2[0+512], dbuff2[1 + 512], dbuff2[2 + 512], dbuff2[3 + 512], dbuff2[4 + 512]);
+	*/
 	const char* args[2];
 	args[0] = "shell";
 	args[1] = NULL;

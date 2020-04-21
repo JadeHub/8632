@@ -18,8 +18,10 @@ drivers/*.c \
 drivers/keyboard/*.c \
 drivers/console/*.c \
 drivers/ata/*.c \
+drivers/pci/*.c \
 drivers/timer/*.c \
 drivers/serial/*.c \
+drivers/fat/*.c \
 drivers/cmos/*.c)
 
 HEADERS = $(wildcard \
@@ -63,7 +65,7 @@ bochs: all
 kernel.iso: kernel.bin
 		./make_iso.sh
 
-kernel.bin: multiboot/multiboot.o ${KERNEL_OBJ} ${ASM_OBJ} libc/libk.a
+kernel.bin: multiboot/multiboot.o ${KERNEL_OBJ} ${ASM_OBJ} libc/libk.a 
 		i686-elf-gcc -T link.ld -o kernel.bin $^ -ffreestanding -O2 -nostdlib -lgcc 
 
 %.o: %.c ${HEADERS}
