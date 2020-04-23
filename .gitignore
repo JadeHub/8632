@@ -1,4 +1,4 @@
-
+userspace/bin/*
 sysroot
 fat_image
 *.a

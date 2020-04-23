@@ -15,6 +15,8 @@ typedef struct device
 	fs_node_t* fs_node;
 	struct dev_driver* driver;
 
+	list_head_t list;
+
 	thread_t* read_waiters;
 }dev_device_t;
 

@@ -3,6 +3,8 @@
 #include <sys/cdefs.h>
 #include <sys/signal_defs.h>
 
+#include <dirent.h>
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -20,7 +22,7 @@ void sys_sleep_ms(uint32_t);
 void sys_read_dir(const char* path, void(fn)(const char*));
 struct DIR* sys_opendir(const char*);
 void sys_closedir(struct DIR*);
-struct dirent* sys_readdir(struct DIR*);
+bool sys_readdir(struct DIR*, struct dirent*);
 uint32_t sys_start_proc(const char* path, const char* args[], uint32_t fds[3]);
 uint32_t sys_wait_pid(uint32_t);
 void sys_reg_sig_handler(int, sig_handler_t);

@@ -84,8 +84,11 @@ void sys_read_dir(const char* path, void(fn)(const char*))
 	SYSCALL2(SYSCALL_READ_DIR, path, fn);
 }
 
+#include <stdio.h>
+
 struct DIR* sys_opendir(const char* path)
 {
+	printf("calling open dir %s\n", path);
 	return (struct DIR*)SYSCALL1(SYSCALL_OPEN_DIR, path);
 }
 
@@ -94,9 +97,9 @@ void sys_closedir(struct DIR* dir)
 	SYSCALL1(SYSCALL_CLOSE_DIR, dir);
 }
 
-struct dirent* sys_readdir(struct DIR* dir)
+bool sys_readdir(struct DIR* dir, struct dirent* entry)
 {
-	return (struct dirent*)SYSCALL1(SYSCALL_READ_DIR, dir);
+	return (bool)SYSCALL2(SYSCALL_READ_DIR, dir, entry);
 }
 uint32_t sys_start_proc(const char* path, const char* args[], uint32_t fds[3])
 {

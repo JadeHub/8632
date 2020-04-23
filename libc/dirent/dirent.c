@@ -13,7 +13,7 @@ void closedir(struct DIR* dir)
 	sys_closedir(dir);
 }
 
-struct dirent* readdir(struct DIR* dir)
+bool readdir(struct DIR* dir, struct dirent* ent)
 {
-	return sys_readdir(dir);
+	return sys_readdir(dir, ent);
 }

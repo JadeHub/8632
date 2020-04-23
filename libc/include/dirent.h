@@ -3,6 +3,7 @@
 #include <sys/cdefs.h>
 
 #include <stdint.h>
+#include <stdbool.h>
 
 __LIBC_BEGIN_H
 
@@ -21,6 +22,6 @@ typedef struct dirent
 
 struct DIR* opendir(const char*);
 void closedir(struct DIR*);
-struct dirent* readdir(struct DIR*);
+bool readdir(struct DIR*, struct dirent*);
 
 __LIBC_END_H

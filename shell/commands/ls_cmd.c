@@ -14,12 +14,13 @@ void ls_cmd(size_t count, const char* params[], shell_state_t* shell)
 		printf("Can't read directory %s\n", path);
 		return;
 	}
-	struct dirent* de;
-	while (de = readdir(d))
+	printf("DIR Oopen\n");
+	struct dirent de;
+	while (readdir(d, &de))
 	{
 		//if (!de)
 			//break;
-		printf("%s\n", de->name);
+		printf("%s\n", de.name);
 	}
 	closedir(d);
 }

@@ -207,8 +207,8 @@ void kb_init()
     _kb.driver.read = &_read_keyboard;
     _kb.device.driver = &_kb.driver;
 
-    dev_install_driver(&_kb.driver);
-    dev_register_device(&_kb.device);
+    //dev_install_driver(&_kb.driver);
+    //dev_register_device(&_kb.device);
 }
 
 void kb_register_event_handler(kb_event_handler cb)

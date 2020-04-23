@@ -41,4 +41,4 @@ struct dirent;
 
 struct DIR* io_opendir(const char*);
 void io_closedir(struct DIR*);
-struct dirent* io_readdir(struct DIR*);
+bool io_readdir(struct DIR*, struct dirent*);

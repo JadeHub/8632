@@ -1,6 +1,5 @@
 #include "vfs.h"
 
-#include <kernel/vfs/dir.h>
 #include <kernel/fault.h>
 #include <kernel/utils.h>
 #include <kernel/types/kname.h>
@@ -8,21 +7,37 @@
 
 #include <stddef.h>
 
-static fs_node_t* _root = NULL;
-
 static inline bool _is_dir(const fs_node_t* n)
 {
 	return n->flags & FS_DIR;
 }
 
-void fs_init()
+static fs_node_t* _get_node(fs_node_t* n, const char* path, fs_node_t** parent)
 {
-	_root = fs_create_root_node(0);
-}
+	ASSERT(n);
+	char* sep = strchr(path, '/');
+	if (sep)
+	{
+		//Given "blah/blah2/file"
+		*sep = '\0';
+		sep++;
+		//path = "blah"
+		//sep = "blah2/file"
+		fs_node_t* sub = fs_find_child(n, path);
+		//handle "blah/" case
+		if (*sep == '\0')
+		{
+			if (parent)
+				*parent = n;
+			return sub;
+		}
+		return sub ? _get_node(sub, sep, parent) : NULL;
+	}
+	fs_node_t* child = fs_find_child(n, path);
 
-fs_node_t* fs_root()
-{
-	return _root;
+	if (child && parent)
+		*parent = n;
+	return child;
 }
 
 int32_t fs_open(fs_node_t* n, uint32_t flags)
@@ -66,52 +81,6 @@ fs_node_t* fs_find_child(fs_node_t* n, const char* name)
 	return NULL;
 }
 
-fs_node_t* fs_add_child_node(fs_node_t* n, fs_node_t* child)
-{
-	if (_is_dir(n) && n->add_child)
-		return (*n->add_child)(n, child);
-	return NULL;
-}
-
-bool fs_remove_child_node(fs_node_t* n, fs_node_t* child)
-{
-	if (_is_dir(n) && n->remove_child)
-		return (*n->remove_child)(n, child);
-	return false;
-}
-
-fs_node_t* fs_install_root_fs(fs_node_t* n)
-{
-	return fs_add_child_node(_root, n);
-}
-
-static fs_node_t* _get_node(fs_node_t* n, const char* path, fs_node_t** parent)
-{
-	char* sep = strchr(path, '/');
-	if (sep)
-	{
-		//Given "blah/blah2/file"
-		*sep = '\0';
-		sep++;
-		//path = "blah"
-		//sep = "blah2/file"
-		fs_node_t* sub = fs_find_child(n, path);
-		//handle "blah/" case
-		if (*sep == '\0')
-		{
-			if (parent)
-				*parent = n;
-			return sub;
-		}
-		return sub ? _get_node(sub, sep, parent) : NULL;
-	}
-	fs_node_t* child = fs_find_child(n, path);
-
-	if (child && parent)
-		*parent = n;
-	return child;
-}
-
 fs_node_t* fs_get_abs_path(const char* path, fs_node_t** parent)
 {
 	char tmp[512];
@@ -119,12 +88,12 @@ fs_node_t* fs_get_abs_path(const char* path, fs_node_t** parent)
 
 	if (strcmp(path, "/") == 0)
 	//if (path[0] == '/' && path[1] == 0)
-		return _root;
+		return fs_root();
 	
 	fs_node_t* res = NULL;
 	if (tmp[0] == '/')
-		return _get_node(_root, tmp + 1, parent);
+		return _get_node(fs_root(), tmp + 1, parent);
 	else
-		return _get_node(_root, tmp, parent);
+		return _get_node(fs_root(), tmp, parent);
 }
 

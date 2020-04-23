@@ -17,7 +17,6 @@
 #include <kernel/ramfs/ramfs.h>
 #include <kernel/devfs/devfs.h>
 #include <kernel/vfs/vfs.h>
-#include <kernel/vfs/dir.h>
 
 #include <drivers/ata/ata.h>
 #include <drivers/serial/serial_io.h>
@@ -47,6 +46,12 @@ uint8_t ram_disk_buff[RAM_DISK_LEN];
 uint32_t ram_disk_len = RAM_DISK_LEN;
 
 extern uint32_t end;
+
+static bool _dir_read_cb2(struct fs_node* parent, struct fs_node* child, void* data)
+{
+	printf("GOT %s\n", child->name);
+	return true;
+}
 
 void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
@@ -83,6 +88,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	sched_init(proc_kernel_proc());
 	fs_init();
 	ramfs_init(ram_disk_buff, ram_disk_len);
+	//bochs_dbg();
 	devfs_init();
 	kb_init();
 	con_dev_init();
@@ -90,36 +96,42 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	pci_init();
 	//ata_init();
 	time_init();
-	/*
-	uint8_t dbuff[1024];
-	memset(dbuff, 1, 1024);
-	dbuff[0] = 0xA;
-	dbuff[1] = 0xB;
-	dbuff[2] = 0xC;
-	dbuff[3] = 0xD;
-	dbuff[4] = 0xE;
 
-	dbuff[0 + 512] = 0xD;
-	dbuff[1 + 512] = 0xE;
-	dbuff[2 + 512] = 0xA;
-	dbuff[3 + 512] = 0xD;
-	dbuff[4 + 512] = 0xF;
+	fs_node_t* parent;
+	fs_node_t* node = fs_get_abs_path("/initrd/bin", &parent);
+	if (!node || (!node->flags & FS_DIR))
+	{
+		KPANIC("Error 1");
+	}
 
-//	ide_write(2, 0, dbuff);
+	fs_read_dir(node, _dir_read_cb2, 0);
 
-	uint8_t dbuff2[1024];
-	ide_read(2, 0, dbuff2);
-	
-	printf("IDE Read sec 1 0x%x 0x%x 0x%x 0x%x 0x%x\n", dbuff2[0], dbuff2[1], dbuff2[2], dbuff2[3], dbuff2[4]);
-	printf("IDE Read sec 2 0x%x 0x%x 0x%x 0x%x 0x%x\n", dbuff2[0+512], dbuff2[1 + 512], dbuff2[2 + 512], dbuff2[3 + 512], dbuff2[4 + 512]);
-	*/
+	printf("Done");
+
+
+	//bochs_dbg();
+
+	node = fs_get_abs_path("/initrd/bin", &parent);
+	if (!node || (!node->flags & FS_DIR))
+	{
+		KPANIC("Error 1");
+	}
+
+	fs_read_dir(node, _dir_read_cb2, 0);
+
+	printf("Done");
+
+	//bochs_dbg();
+
 	const char* args[2];
 	args[0] = "shell";
 	args[1] = NULL;
 	uint32_t fds[3];
 	fds[0] = fds[1] = fds[2] = INVALID_FD;
 
+	//proc_start_user_proc("/initrd/bin/shell", args, fds);
 	proc_start_user_proc("/initrd/bin/shell", args, fds);
+
 	dsp_enable_cursor();
 	switch_to_user_mode();
 

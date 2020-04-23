@@ -77,8 +77,15 @@ static bool _process_cmd(char* cmd)
 		fds[1] = 0xffffffff;
 		fds[2] = 0xffffffff;
 		uint32_t pid = sys_start_proc("/initrd/bin/user_space", p.params, fds);
-		uint32_t code = wait_pid(pid);
-		printf("Prog exited with code %d\n", code);
+		if (pid == 0)
+		{
+			printf("Failed to exec\n");
+		}
+		else
+		{
+			uint32_t code = wait_pid(pid);
+			printf("Prog exited with code %d\n", code);
+		}
 	}
 	else if (strlen(cmd) > 0)
 	{

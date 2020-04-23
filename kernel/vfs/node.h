@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include <kernel/types/list.h>
+
 struct fs_node;
 
 //file io
@@ -15,8 +17,6 @@ typedef size_t (*fs_write_fn_t)(struct fs_node*, const uint8_t* buff, size_t off
 typedef bool(*fs_read_dir_cb_fn_t)(struct fs_node* parent, struct fs_node* child, void*);
 typedef uint32_t (*fs_read_dir_fn_t)(struct fs_node*, fs_read_dir_cb_fn_t, void*);
 typedef struct fs_node* (*fs_find_child_fn_t)(struct fs_node*, const char* name); //find a child by name
-typedef struct fs_node* (*fs_add_child_fn_t)(struct fs_node*, struct fs_node*);
-typedef bool (*fs_remove_child_fn_t)(struct fs_node*, struct fs_node*);
 
 typedef struct fs_node
 {
@@ -28,14 +28,14 @@ typedef struct fs_node
 	void* data; //fs driver data
 	struct fs_node* link;
 
+	list_head_t list;
+
 	fs_open_fn_t open;
 	fs_close_fn_t close;
 	fs_read_fn_t read;
 	fs_write_fn_t write;
 	fs_read_dir_fn_t read_dir;
 	fs_find_child_fn_t find_child;	
-	fs_add_child_fn_t add_child;
-	fs_remove_child_fn_t remove_child;
 }fs_node_t;
 
 //node flag values

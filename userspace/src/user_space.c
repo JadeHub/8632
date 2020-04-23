@@ -107,11 +107,11 @@ void test_dir()
 
 	printf("dir opened\n");
 
-	struct dirent* de;
-	while (de = readdir(d))
+	struct dirent de;
+	while (readdir(d, &de))
 	{
-		if (!de)break;
-		printf("got %s\n", de->name);
+		
+		printf("got %s\n", de.name);
 	}
 
 	closedir(d);
@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
 {
 	char* msg = "Hello from user land %d";
 
-	printf("\033[91;40mHello");
+	printf("Hello\n");
 	//printf("Hello\n");
 
 	sys_reg_sig_handler(1, cb);

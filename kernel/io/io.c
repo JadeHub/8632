@@ -180,7 +180,7 @@ void io_proc_start(process_t* p, fd_t fds[3])
 	INIT_LIST_HEAD(&res->open_dirs);
 	hash_tbl_add(_proc_io, p->id, &res->hash_item);
 
-	fs_node_t* node = fs_get_abs_path("/dev/console/con1", NULL);
+	fs_node_t* node = fs_get_abs_path("/dev/con1", NULL);
 	//FD 0 Input 
 	if (fds[0] == INVALID_FD)
 		res->fds[0] = _create_file_desc(node, IO_OPEN_R); //input
@@ -242,9 +242,11 @@ bool _dir_read_cb(struct fs_node* parent, struct fs_node* child, void* data)
 struct DIR* io_opendir(const char* path)
 {
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	ASSERT(proc);
 	//Find the node
 	fs_node_t* parent;
 	fs_node_t* node = fs_get_abs_path(path, &parent);
+	printf("get_abs %s 0x%x\n", path, node);
 	if (!node || (!node->flags & FS_DIR))
 		return NULL;
 
@@ -262,6 +264,8 @@ struct DIR* io_opendir(const char* path)
 
 void io_closedir(struct DIR* dir)
 {
+	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	ASSERT(proc);
 	proc_dir_desc_t* desc = (proc_dir_desc_t*)dir;
 	list_head_t* child = desc->child_list.next;
 	while (child != &desc->child_list)
@@ -271,20 +275,25 @@ void io_closedir(struct DIR* dir)
 		kfree(item);
 		child = next;
 	}
+	list_delete(&desc->list_item);
 	kfree(desc);
 }
 
-struct dirent* io_readdir(struct DIR* dir)
+bool io_readdir(struct DIR* dir, struct dirent* ent)
 {
 	proc_dir_desc_t* desc = (proc_dir_desc_t*)dir;
 	if (desc->cur == NULL)
-		return NULL;
+		return false;
 	dirent_t* result = &desc->cur->entry;
 	if (desc->cur->list_item.next == &desc->child_list)
 		desc->cur = NULL;
 	else
 		desc->cur = list_next_entry(desc->cur, list_item);
-	return result;
+	strcpy(ent->name, result->name);
+	ent->size = result->size;
+	ent->type = result->type
+		;
+	return true;
 }
 
 bool io_dup_fd(fd_t source, process_t* dest_p, fd_t dest)

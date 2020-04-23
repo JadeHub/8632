@@ -55,9 +55,9 @@ static size_t _syscall_read(isr_state_t* regs, uint32_t fd, uint8_t* buff, size_
     return io_read(fd, buff, sz);
 }
 
-static dirent_t* _syscall_read_dir(isr_state_t* regs, struct DIR* dir)
+static bool _syscall_read_dir(isr_state_t* regs, struct DIR* dir, struct dirent* ent)
 {
-    return io_readdir(dir);
+    return io_readdir(dir, ent);
 }
 
 static void _syscall_close_dir(isr_state_t* regs, struct DIR* dir)
@@ -67,7 +67,9 @@ static void _syscall_close_dir(isr_state_t* regs, struct DIR* dir)
 
 static struct DIR* _syscall_open_dir(isr_state_t* regs, const char* path)
 {
-    return io_opendir(path);
+    struct DIR* r = io_opendir(path);
+    //printf("syscall done\n");
+    return r;
 }
 
 static uint32_t _syscall_start_proc(isr_state_t* regs, const char* path, const char* args[], uint32_t fds[3])

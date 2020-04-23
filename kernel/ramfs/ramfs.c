@@ -1,12 +1,12 @@
 #include "ramfs.h"
 
 #include <kernel/vfs/vfs.h>
-#include <kernel/vfs/dir.h>
 #include <kernel/memory/kmalloc.h>
 #include <kernel/fault.h>
 #include <kernel/utils.h>
 
 #include <string.h>
+#include <stdio.h>
 
 typedef struct header
 {
@@ -28,6 +28,47 @@ typedef struct ramdisk
 static ramdisk_t _rd;
 static uint32_t _next_inode = 0;
 
+typedef struct
+{
+	list_head_t children;
+}dir_t;
+
+
+static uint32_t _fs_read_dir(fs_node_t* node, fs_read_dir_cb_fn_t cb, void* data)
+{
+	dir_t* dir = (dir_t*)node->data;
+	//printf("Enumerating %s\n", node->name);
+	fs_node_t* child;
+	uint32_t count = 0;
+	list_for_each_entry(child, &dir->children, list)
+	{
+		//printf("Enum %s\n", child->name);
+		count++;
+		if (!cb(node, child, data))
+			break;
+	}
+	//printf("Finished enum\n");
+	return count;
+}
+
+static fs_node_t* _fs_find_child(fs_node_t* node, const char* name)
+{
+	dir_t* dir = (dir_t*)node->data;
+	//printf("Searching for %s in %s\n", name, node->name);
+	fs_node_t* child;
+	list_for_each_entry(child, &dir->children, list)
+	{
+		//printf("Checking %s\n", child->name);
+		if (strcmp(name, child->name) == 0)
+		{
+		//	printf("Found\n");
+			return child;
+		}
+	}
+//	printf("Not found\n");
+	return NULL;
+}
+
 static inline uint32_t _min(uint32_t a, uint32_t b)
 {
 	return a < b ? a : b;
@@ -43,8 +84,35 @@ static size_t _read_file(struct fs_node* f, uint8_t* buff, size_t off, size_t sz
 	return read_sz;
 }
 
+static fs_node_t* _create_dir_node(const char* name)
+{
+	fs_node_t* node = fs_create_node(name);
+	node->inode = _next_inode++;
+	node->flags |= FS_DIR;
+	dir_t* dir = (dir_t*)kmalloc(sizeof(dir_t));
+	INIT_LIST_HEAD(&dir->children);
+	node->data = dir;
+	node->read_dir = _fs_read_dir;
+	node->find_child = _fs_find_child;
+	return node;
+}
+
 static fs_node_t* _find_or_add_dir(fs_node_t* parent, char* name)
 {
+//	printf("Seeking %s in %s\n", name, parent->name);
+	ASSERT(parent);
+	fs_node_t* node = _fs_find_child(parent, name);
+	if (node)
+		return node;
+
+	dir_t* parent_data = (dir_t*)parent->data;
+	//printf("Creating %s in %s\n", name, parent->name);
+	node = _create_dir_node(name);
+	list_add(&node->list, &parent_data->children);
+	return node;
+	//return NULL;
+	/*
+
 	fs_node_t* child =  fs_find_child(parent, name);
 	if(child) return child;
 
@@ -55,7 +123,7 @@ static fs_node_t* _find_or_add_dir(fs_node_t* parent, char* name)
 		fs_destroy_node(child);
 		child = NULL;
 	}
-	return child;
+	return child;*/
 }
 
 static fs_node_t* _add_file_index(fs_node_t* parent, char* path, uint32_t offset, uint32_t len)
@@ -78,23 +146,15 @@ static fs_node_t* _add_file_index(fs_node_t* parent, char* path, uint32_t offset
 		file->data = (void*)offset;
 		file->len = len;
 		file->read = &_read_file;
-		if(fs_add_child_node(parent, file) != file)
+		/*if(fs_add_child_node(parent, file) != file)
 		{
 			fs_destroy_node(file);
 			file = NULL;
-		}
+		}*/
+		dir_t* data = (dir_t*)parent->data;
+		list_add(&file->list, &data->children);
 		return file;
 	}
-}
-
-static bool _remove_dir_fns_cb(fs_node_t* parent, fs_node_t* child, void* data)
-{
-	if (child->flags && FS_DIR)
-	{
-		child->add_child = NULL;
-		child->remove_child = NULL;
-	}
-	return true;
 }
 
 void ramfs_init(uint8_t* data, uint32_t len)
@@ -106,7 +166,8 @@ void ramfs_init(uint8_t* data, uint32_t len)
 	_rd.files = *(uint32_t*)_rd.data;
 	_rd.headers = (header_t*)(_rd.data + sizeof(uint32_t));
 		
-	_rd.root_node = fs_create_dir_node("initrd", _next_inode++);
+	_rd.root_node = _create_dir_node("initrd");
+	
 	fs_install_root_fs(_rd.root_node);
 	char buff[256];
 	header_t* hdr = _rd.headers;
@@ -117,7 +178,7 @@ void ramfs_init(uint8_t* data, uint32_t len)
 		_add_file_index(_rd.root_node, buff, hdr->start, hdr->len);
 	}
 	//remove the directory modificantion fns as we're read only
-	fs_walk_dir(_rd.root_node, &_remove_dir_fns_cb, 0);
+	//fs_walk_dir(_rd.root_node, &_remove_dir_fns_cb, 0);
 }
 
 fs_node_t* ramfs_root()
