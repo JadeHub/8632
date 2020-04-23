@@ -9,7 +9,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-
 //ATA STATUS
 #define ATA_SR_BSY     0x80    // Busy
 #define ATA_SR_DRDY    0x40    // Drive ready
@@ -54,7 +53,7 @@
 #define ATA_READ 0
 #define ATA_WRITE 1
 
-typedef struct 
+typedef struct ide_channel_regs
 {
 	uint8_t index;
 	uint16_t base;  // I/O Base.
@@ -65,26 +64,74 @@ typedef struct
 
 typedef struct
 {
-	uint8_t reserved;
-	ide_channel_regs_t* channel;
-	uint8_t drive; //0 (Master) or 1 (Slave)
-	uint8_t type; //0 (ATA) or 1 (ATAPI)
-	uint16_t signature;
-	uint16_t capabilities;
-	uint32_t cmd_sets;
-	uint32_t sectors;
-	char model[41];
-}ide_device_t;
-
-typedef struct
-{
 	uint8_t bus;
 	uint8_t slot;
 	ide_device_t devices[4];
 	ide_channel_regs_t channels[2];
 }ide_ctrl_t;
 
+struct chs_addr
+{
+	uint8_t head, sector, cylinder;
+} __attribute__((packed));
+
+struct mbr_pe
+{
+	uint8_t status;
+	struct chs_addr begin;
+	uint8_t type;
+	struct chs_addr end;
+	uint32_t lba;
+	uint32_t sectors;
+} __attribute__((packed));
+
+struct mbr
+{
+	uint8_t code[446];
+	struct mbr_pe partitions[4];
+	uint16_t signature; // 0xAA55 in memory, 0x55AA on disk
+}__attribute__((packed));
+
+typedef struct mbr mbr_t;
+
 static ide_ctrl_t* _ide_controllers[2] = { NULL, NULL };
+
+static void _detect_partitions(ide_device_t* ide)
+{
+	uint8_t mbr_buff[512];
+	memset(mbr_buff, 0, 512);
+
+	ide_read_sectors(ide, 1, 0, mbr_buff);
+	mbr_t* mbr = (mbr_t*)mbr_buff;
+
+	if (mbr->signature != 0xAA55)
+		return;
+
+	for (int i = 0; i < 4; i++)
+	{
+		ide->partitions[i].present = mbr->partitions[i].type != 0 && mbr->partitions[i].type != 0xEE;
+		ide->partitions[i].type = mbr->partitions[i].type;
+		ide->partitions[i].lba = mbr->partitions[i].lba;
+		ide->partitions[i].sectors = mbr->partitions[i].sectors;
+
+		printf("Partition type: 0x%x, lba: 0x%x, size: 0x%x present %d\n",
+			ide->partitions[i].type,
+			ide->partitions[i].lba,
+			ide->partitions[i].sectors,
+			ide->partitions[i].present);
+		/*if (mbr->partitions[i].type == 0xee)
+		{
+			printf("Protective MBR found, assuming GPT partition table\n");
+			//ide_detect_gpt_partitions();
+			return;
+		}
+		if (mbr->partitions[i].type == 0xc)
+		{
+			printf("Partition found %d at LBA %d (size: %d) FAT32\n", i, mbr->partitions[i].lba, mbr->partitions[i].sectors);
+
+		}*/
+	}
+}
 
 static inline void insl(int port, void* addr, int cnt)
 {
@@ -106,8 +153,6 @@ static inline void insw(uint16_t port, void* addr, int cnt)
 		: "d" (port)
 		: "memory");
 }
-
-void detect_partitions(ide_device_t*);
 
 static void _ide_reg_write(ide_channel_regs_t* channel, uint8_t reg, uint8_t data)
 {
@@ -143,7 +188,7 @@ static uint8_t _ide_reg_read(ide_channel_regs_t* channel, uint8_t reg)
 	return result;
 }
 
-void _ide_read_buffer(ide_channel_regs_t* channel, uint8_t reg, void* buffer, uint32_t count)
+static void _ide_read_buffer(ide_channel_regs_t* channel, uint8_t reg, void* buffer, uint32_t count)
 {
 	if (reg > 0x07 && reg < 0x0C)
 		_ide_reg_write(channel, ATA_REG_CONTROL, channel->nIEN | 0x80);
@@ -452,7 +497,7 @@ void ide_init(uint8_t bus, uint8_t slot)
 			uint16_t* signature = (uint16_t*)(ide_buf + ATA_IDENT_DEVICETYPE);
 			uint16_t* capabilities = (uint16_t*)(ide_buf + ATA_IDENT_CAPABILITIES);
 			uint32_t* cmdsets = (uint32_t*)(ide_buf + ATA_IDENT_COMMANDSETS);
-			ide->devices[count].reserved = true;
+			ide->devices[count].present = true;
 			ide->devices[count].type = type;
 			ide->devices[count].channel = &ide->channels[i];
 			ide->devices[count].drive = j;
@@ -488,7 +533,7 @@ void ide_init(uint8_t bus, uint8_t slot)
 				ide->devices[count].capabilities,
 				ide->devices[count].model);
 			
-			detect_partitions(&ide->devices[count]);
+			_detect_partitions(&ide->devices[count]);
 
 			count++;			
 		}
@@ -504,8 +549,7 @@ void ide_init(uint8_t bus, uint8_t slot)
 
 uint8_t ide_write_sectors(ide_device_t* ide, uint8_t numsects, uint32_t lba, void* buff)
 {
-
-	if (ide->reserved == 0)
+	if (ide->present == 0)
 	{
 		return 1; //unknown drive
 	}
@@ -525,7 +569,7 @@ uint8_t ide_write_sectors(ide_device_t* ide, uint8_t numsects, uint32_t lba, voi
 
 uint8_t ide_read_sectors(ide_device_t* ide, uint8_t numsects, uint32_t lba, void* buff)
 {
-	if (ide->reserved == 0)
+	if (ide->present == 0)
 	{
 		printf("ide_read_sectors No Drive\n");
 		//No drive
@@ -547,70 +591,10 @@ uint8_t ide_read_sectors(ide_device_t* ide, uint8_t numsects, uint32_t lba, void
 	return _ide_ata_access(ide, ATA_READ, lba, numsects, buff);
 }
 
-
-uint8_t ide_write(uint8_t numsects, uint32_t lba, void* buff)
+ide_device_t* ide_get_device(uint8_t controller, uint8_t drive)
 {
-	uint8_t err = ide_write_sectors(&_ide_controllers[0]->devices[0], numsects, lba, buff);
-	ASSERT(err == 0);
-	return err;
+	if (controller <= 1 && _ide_controllers[controller] && drive <= 3)
+		return &_ide_controllers[controller]->devices[drive];
+	return NULL;
 }
 
-uint8_t ide_read(uint8_t numsects, uint32_t lba, void* buff)
-{
-	uint8_t err = ide_read_sectors(&_ide_controllers[0]->devices[0], numsects, lba, buff);
-	ASSERT(err == 0);
-	return err;
-}
-
-
-struct chs_addr {
-	uint8_t head, sector, cylinder;
-} __attribute__((packed));
-
-struct mbr_pe {
-	uint8_t status;
-	struct chs_addr begin;
-	uint8_t type;
-	struct chs_addr end;
-	uint32_t lba;
-	uint32_t sectors;
-} __attribute__((packed));
-
-struct mbr {
-	uint8_t code[446];
-	struct mbr_pe partitions[4];
-	uint16_t signature; // 0xAA55 in memory, 0x55AA on disk
-}__attribute__((packed));
-
-typedef struct mbr mbr_t;
-
-void detect_partitions(ide_device_t* ide)
-{
-	uint8_t mbr_buff[512];
-	memset(mbr_buff, 0, 512);
-
-	ide_read_sectors(ide, 1, 0, mbr_buff);
-	mbr_t* mbr = (mbr_t*)mbr_buff;
-
-	if (mbr->signature != 0xAA55)
-	{
-		printf("No MBR found\n");
-		return;
-	}
-	printf("MBR!\n");
-	for (int i = 0; i < 4; i++)
-	{
-		printf("Partition type: 0x%x, lba: 0x%x, size: 0x%x status %d\n", mbr->partitions[i].type, mbr->partitions[i].lba, mbr->partitions[i].sectors, mbr->partitions[i].status);
-		if (mbr->partitions[i].type == 0xee)
-		{
-			printf("Protective MBR found, assuming GPT partition table\n");
-			//ide_detect_gpt_partitions();
-			return;
-		}
-		if (mbr->partitions[i].type == 0xc)
-		{
-			printf("Partition found %d at LBA %d (size: %d) FAT32\n", i, mbr->partitions[i].lba, mbr->partitions[i].sectors);
-			
-		}
-	}
-}

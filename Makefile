@@ -14,6 +14,7 @@ kernel/devfs/*.c \
 kernel/types/*.c \
 kernel/io/*.c \
 kernel/signals/*.c \
+kernel/fatfs/*.c \
 drivers/*.c \
 drivers/keyboard/*.c \
 drivers/console/*.c \

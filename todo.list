@@ -12,7 +12,7 @@ memory
 
 
 create fat32 image file
-
+http://fejlesztek.hu/create-a-fat-file-system-image-on-linux/
 1)
 $ dd if=/dev/zero of=test.img count=50 bs=1M
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 // Channels:
 #define ATA_PRIMARY      0x00
@@ -32,7 +33,29 @@
 #define IDE_ERR_DEV			1
 #define IDE_ERR_DRQ			2
 
+typedef struct
+{
+	bool present;
+	uint32_t lba;
+	uint32_t sectors;
+	uint8_t type;
+}ide_partition_t;
+
+typedef struct
+{
+	bool present;
+	struct ide_channel_regs* channel;
+	uint8_t drive; //0 (Master) or 1 (Slave)
+	uint8_t type; //0 (ATA) or 1 (ATAPI)
+	uint16_t signature;
+	uint16_t capabilities;
+	uint32_t cmd_sets;
+	uint32_t sectors;
+	char model[41];
+	ide_partition_t partitions[4];
+}ide_device_t;
 
 void ide_init(uint8_t bus, uint8_t slot);
-uint8_t ide_write(uint8_t numsects, uint32_t lba, void* buff);
-uint8_t ide_read(uint8_t numsects, uint32_t lba, void* buff);
+uint8_t ide_read_sectors(ide_device_t* ide, uint8_t numsects, uint32_t lba, void* buff);
+uint8_t ide_write_sectors(ide_device_t* ide, uint8_t numsects, uint32_t lba, void* buff);
+ide_device_t* ide_get_device(uint8_t controller, uint8_t drive);
