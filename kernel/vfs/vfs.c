@@ -40,10 +40,10 @@ static fs_node_t* _get_node(fs_node_t* n, const char* path, fs_node_t** parent)
 	return child;
 }
 
-int32_t fs_open(fs_node_t* n, uint32_t flags)
+int32_t fs_open(fs_node_t* parent, fs_node_t* n, uint32_t flags)
 {
 	if (n->open)
-		return (*n->open)(n, flags);
+		return (*n->open)(parent, n, flags);
 	return 0;
 }
 
@@ -67,6 +67,13 @@ size_t fs_write(fs_node_t* n, const uint8_t* buff, size_t off, size_t sz)
 	return 0;
 }
 
+bool fs_remove_file(fs_node_t* n)
+{
+	if (n->remove)
+		return (*n->remove)(n);
+	return false;
+}
+
 uint32_t fs_read_dir(fs_node_t* n, fs_read_dir_cb_fn_t cb, void* data)
 {
 	if (_is_dir(n) && n->read_dir)
@@ -78,6 +85,7 @@ fs_node_t* fs_find_child(fs_node_t* n, const char* name)
 {
 	if (_is_dir(n) && n->find_child)
 		return (*n->find_child)(n, name);
+
 	return NULL;
 }
 

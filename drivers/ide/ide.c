@@ -1,6 +1,7 @@
 #include "ide.h"
-#include "pci.h"
+#include "mbr.h"
 
+#include <drivers/pci/pci.h>
 #include <drivers/ioports.h>
 #include <kernel/memory/kmalloc.h>
 #include <kernel/fault.h>
@@ -69,30 +70,6 @@ typedef struct
 	ide_device_t devices[4];
 	ide_channel_regs_t channels[2];
 }ide_ctrl_t;
-
-struct chs_addr
-{
-	uint8_t head, sector, cylinder;
-} __attribute__((packed));
-
-struct mbr_pe
-{
-	uint8_t status;
-	struct chs_addr begin;
-	uint8_t type;
-	struct chs_addr end;
-	uint32_t lba;
-	uint32_t sectors;
-} __attribute__((packed));
-
-struct mbr
-{
-	uint8_t code[446];
-	struct mbr_pe partitions[4];
-	uint16_t signature; // 0xAA55 in memory, 0x55AA on disk
-}__attribute__((packed));
-
-typedef struct mbr mbr_t;
 
 static ide_ctrl_t* _ide_controllers[2] = { NULL, NULL };
 
@@ -301,7 +278,6 @@ static uint8_t _ide_polling(ide_channel_regs_t* channel, uint32_t advanced_check
 
 static uint8_t _ide_ata_access(ide_device_t* ide, uint8_t direction, uint32_t lba, uint8_t numsects, void* buff) 
 {
-	
 	uint8_t lba_mode /* 0: CHS, 1:LBA28, 2: LBA48 */, dma /* 0: No DMA, 1: DMA */, cmd;
 	uint8_t lba_io[6];
 	
@@ -385,6 +361,7 @@ static uint8_t _ide_ata_access(ide_device_t* ide, uint8_t direction, uint32_t lb
 	_ide_reg_write(ide->channel, ATA_REG_COMMAND, cmd);
 	if (dma)
 	{
+		numsects = 0;
 		/*if (direction == ATA_READ);
 		// DMA Read.
 		else;
@@ -416,7 +393,7 @@ static uint8_t _ide_ata_access(ide_device_t* ide, uint8_t direction, uint32_t lb
 			_ide_polling(ide->channel, 0); // Polling.
 		}
 	}
-	return 0;
+	return numsects;
 }
 
 void ide_init(uint8_t bus, uint8_t slot)
@@ -551,18 +528,18 @@ uint8_t ide_write_sectors(ide_device_t* ide, uint8_t numsects, uint32_t lba, voi
 {
 	if (ide->present == 0)
 	{
-		return 1; //unknown drive
+		return 0; //unknown drive
 	}
 
 	if (ide->type != IDE_ATA)
 	{
 		printf("ide_write_sectors Not ATA %d\n", ide->type);
-		return 1;
+		return 0;
 	}
 
 	if ((lba + numsects) > ide->sectors)
 	{
-		return 1;
+		return 0;
 	}
 	return _ide_ata_access(ide, ATA_WRITE, lba, numsects, buff);
 }
@@ -573,26 +550,29 @@ uint8_t ide_read_sectors(ide_device_t* ide, uint8_t numsects, uint32_t lba, void
 	{
 		printf("ide_read_sectors No Drive\n");
 		//No drive
-		return 1;
+		return 0;
 	}
 
 	if (ide->type != IDE_ATA)
 	{
 		printf("ide_read_sectors Not ATA %d drive\n", ide->type);
-		return 1;
+		return 0;
 	}
 
 	if ((lba + numsects) > ide->sectors)
 	{
 		// Seeking to invalid position.
 		printf("ide_read_sectors Invalid pos\n");
-		return 1;
+		return 0;
 	}
 	return _ide_ata_access(ide, ATA_READ, lba, numsects, buff);
 }
 
+#include <kernel/utils.h>
+
 ide_device_t* ide_get_device(uint8_t controller, uint8_t drive)
 {
+	bochs_dbg();
 	if (controller <= 1 && _ide_controllers[controller] && drive <= 3)
 		return &_ide_controllers[controller]->devices[drive];
 	return NULL;

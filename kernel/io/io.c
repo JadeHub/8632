@@ -6,6 +6,7 @@
 #include <kernel/memory/kmalloc.h>
 #include <kernel/debug.h>
 #include <kernel/types/list.h>
+#include <kernel/utils.h>
 #include <dirent.h>
 
 #include <stdio.h>
@@ -82,7 +83,7 @@ static proc_io_data_t* _get_proc_data(process_t* proc)
 
 static fd_t _free_fd(proc_io_data_t* p)
 {
-	for (int i = 0; i < MAX_FD_CNT; i++)
+	for (int i = 1; i < MAX_FD_CNT; i++)
 		if (p->fds[i] == NULL || p->fds[i]->node == NULL)
 			return i;
 	return INVALID_FD;
@@ -93,10 +94,14 @@ Find a file decriptor for fnode belonging to proc
 */
 static fd_t _find_fd(proc_io_data_t* proc, fs_node_t* fnode)
 {
+	
 	//dbg_dump_stack();
 	for (int i = 0; i < MAX_FD_CNT; i++)
+	{
+	//	printf("Testing %d 0x%x\n", i, proc->fds[i]);
 		if (proc->fds[i] && proc->fds[i]->node == fnode)
 			return i;
+	}
 	return INVALID_FD;
 }
 
@@ -118,12 +123,22 @@ static proc_file_desc_t* _create_file_desc(fs_node_t* node, uint32_t flags)
 
 fd_t io_open(const char* path, uint32_t flags)
 {
+	ASSERT(sched_cur_proc());
+
+	//printf("OPEN 0 _cut_task==0x%x proc==0x%x id=%d\n", sched_cur_thread(), sched_cur_thread()->process, sched_cur_thread()->process->id);
+
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	//Find the node
 	fs_node_t* parent;
+
+
+	//printf("OPEN 0.1 _cut_task==0x%x proc==0x%x id=%d\n", sched_cur_thread(), sched_cur_thread()->process, sched_cur_thread()->process->id);
 	fs_node_t* node = fs_get_abs_path(path, &parent);
 	if (!node)
 		return INVALID_FD;
+
+	//printf("OPEN 1 _cut_task==0x%x proc==0x%x id=%d\n", sched_cur_thread(), sched_cur_thread()->process, sched_cur_thread()->process->id);
+
 	//already open?
 	fd_t fd = _find_fd(proc, node);
 	if (io_is_valid_fd(fd))
@@ -132,17 +147,27 @@ fd_t io_open(const char* path, uint32_t flags)
 		return fd;
 	}
 	fd = _free_fd(proc);
+
+	//printf("OPEN 2 _cut_task==0x%x proc==0x%x id=%d\n", sched_cur_thread(), sched_cur_thread()->process, sched_cur_thread()->process->id);
+
 	if (io_is_valid_fd(fd))
 	{
+		printf("Opening %s as %d\n", path, fd);
 		proc->fds[fd] = _create_file_desc(node, flags);
-		fs_open(node, flags);
+		fs_open(parent, node, flags);
 	}
+
+	printf("OPEN 3 _cut_task==0x%x proc==0x%x id=%d\n", sched_cur_thread(), sched_cur_thread()->process, sched_cur_thread()->process->id);
+
+	//bochs_dbg();
+
 	return fd;
 }
 
 void io_close(fd_t fd)
 {
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	fs_close(proc->fds[fd]->node);
 	proc->fds[fd]->node = NULL;
 }
 
@@ -155,9 +180,15 @@ size_t io_read(fd_t fd, uint8_t* buff, size_t sz)
 	return read;
 }
 
+extern uint32_t jj;
+
 size_t io_write(fd_t fd, const uint8_t* buff, size_t len)
 {
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	if (proc == 0)
+	{
+		printf("ARGH _cut_task==0x%x proc==0x%x id=%d jj=%d\n", sched_cur_thread(), sched_cur_thread()->process, sched_cur_thread()->process->id, jj);
+	}
 	ASSERT(proc);
 	ASSERT(proc->fds[fd]->node);
 	
@@ -176,11 +207,13 @@ void io_proc_start(process_t* p, fd_t fds[3])
 	ASSERT(!hash_tbl_has(_proc_io, p->id));
 	proc_io_data_t* res = (proc_io_data_t*)kmalloc(sizeof(proc_io_data_t));
 	memset(res, 0, sizeof(res));
+	for (int i = 0; i < 64; i++)
+		res->fds[i] = NULL;
 	res->proc = p;
 	INIT_LIST_HEAD(&res->open_dirs);
 	hash_tbl_add(_proc_io, p->id, &res->hash_item);
 
-	fs_node_t* node = fs_get_abs_path("/dev/con1", NULL);
+	/*fs_node_t* node = fs_get_abs_path("/dev/con1", NULL);
 	//FD 0 Input 
 	if (fds[0] == INVALID_FD)
 		res->fds[0] = _create_file_desc(node, IO_OPEN_R); //input
@@ -197,7 +230,9 @@ void io_proc_start(process_t* p, fd_t fds[3])
 	if (fds[2] == INVALID_FD)
 		res->fds[2] = _create_file_desc(node, IO_OPEN_R); //input
 	else
-		io_dup_fd(fds[2], p, 2);
+		io_dup_fd(fds[2], p, 2);*/
+
+	printf("IO Proc start 0x%x\n", res->fds[3]);
 }
 
 void io_proc_end(process_t* p)
@@ -205,7 +240,7 @@ void io_proc_end(process_t* p)
 	ASSERT(hash_tbl_has(_proc_io, p->id));
 	proc_io_data_t* res = hash_tbl_lookup(_proc_io, p->id, proc_io_data_t, hash_item);
 
-	//destroy any open FDs
+	//destroy any open FDs (what about 0, 1 & 2?)
 
 	//close any open DIRs
 	list_head_t* child = res->open_dirs.next;
@@ -246,7 +281,6 @@ struct DIR* io_opendir(const char* path)
 	//Find the node
 	fs_node_t* parent;
 	fs_node_t* node = fs_get_abs_path(path, &parent);
-	printf("get_abs %s 0x%x\n", path, node);
 	if (!node || (!node->flags & FS_DIR))
 		return NULL;
 
@@ -285,14 +319,14 @@ bool io_readdir(struct DIR* dir, struct dirent* ent)
 	if (desc->cur == NULL)
 		return false;
 	dirent_t* result = &desc->cur->entry;
-	if (desc->cur->list_item.next == &desc->child_list)
+	if(list_is_last(&desc->cur->list_item, &desc->child_list))
+//	if (desc->cur->list_item.next == &desc->child_list)
 		desc->cur = NULL;
 	else
 		desc->cur = list_next_entry(desc->cur, list_item);
 	strcpy(ent->name, result->name);
 	ent->size = result->size;
-	ent->type = result->type
-		;
+	ent->type = result->type;
 	return true;
 }
 

@@ -24,7 +24,7 @@ static size_t _read_device(fs_node_t* f, uint8_t* buff, size_t off, size_t sz)
 	return device->driver->read(device, buff, off, sz);
 }
 
-static int32_t _open_device(fs_node_t* f, uint32_t flags)
+static int32_t _open_device(fs_node_t* parent, fs_node_t* f, uint32_t flags)
 {
 	ASSERT(f);
 	dev_device_t* device = (dev_device_t*)f->data;

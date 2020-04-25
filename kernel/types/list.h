@@ -70,6 +70,16 @@ static inline bool list_empty(list_head_t* list)
     return list->next == list;
 }
 
+static inline bool list_is_last(list_head_t* item, list_head_t* head)
+{
+    return item->next == head;
+}
+
+static inline bool list_is_first(list_head_t* item, list_head_t* head)
+{
+    return item->prev == head;
+}
+
 /*
 Return the offset of MEMBER within struct TYPE
 */

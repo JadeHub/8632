@@ -76,6 +76,8 @@ static void _inital_switch()
 	proc_switch_to_thread(_cur_task, esp_ptr, ebp_ptr);
 }
 
+uint32_t jj = 0;
+
 static void _switch_task(uint64_t ms)
 {
 	//printf("Switching idle 0x%08x cur 0x%08x\n", _idle_task, _cur_task);
@@ -100,7 +102,8 @@ static void _switch_task(uint64_t ms)
 	prev->cpu_time += (ms - _prev_switch_time);
 	_prev_switch_time = ms;
 
-	//printf("Switching to %s\n", _cur_task->process->name);
+	//printf("Switching to cur_task=0x%x proc=0x%x name %s id=%d\n", _cur_task, _cur_task->process, _cur_task->process->name, _cur_task->process->id);
+	jj = _cur_task->process->id;
 
 	proc_switch_to_thread(_cur_task, &prev->esp, &prev->ebp);
 	sched_unlock();	

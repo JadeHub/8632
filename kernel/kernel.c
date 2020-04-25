@@ -7,7 +7,7 @@
 #include <drivers/keyboard/keyboard.h>
 #include <drivers/timer/timer.h>
 #include <drivers/pci/pci.h>
-#include <drivers/pci/ide.h>
+#include <drivers/ide/ide.h>
 //#include <drivers/ata/ata.h>
 #include <drivers/display.h>
 #include <kernel/memory/phys_mem.h>
@@ -17,7 +17,7 @@
 #include <kernel/ramfs/ramfs.h>
 #include <kernel/devfs/devfs.h>
 #include <kernel/vfs/vfs.h>
-
+#include <kernel/fatfs/fatfs.h>
 #include <drivers/ata/ata.h>
 #include <drivers/serial/serial_io.h>
 
@@ -76,51 +76,22 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	serial_init();
 	timer_init(1000, &ktimer_cb);
 	phys_mem_init();
-	
-	
-	
-	
 	page_directory_t* kpages = paging_init();
-
 	io_init();
-
 	proc_init(kpages, esp, k_image);
 	sched_init(proc_kernel_proc());
 	fs_init();
 	ramfs_init(ram_disk_buff, ram_disk_len);
-	//bochs_dbg();
 	devfs_init();
 	kb_init();
 	con_dev_init();
 	syscall_init();
-	pci_init();
+	//pci_init();
+	fatfs_mount_partition(0, 0, 0);
 	//ata_init();
 	time_init();
 
-	fs_node_t* parent;
-	fs_node_t* node = fs_get_abs_path("/initrd/bin", &parent);
-	if (!node || (!node->flags & FS_DIR))
-	{
-		KPANIC("Error 1");
-	}
-
-	fs_read_dir(node, _dir_read_cb2, 0);
-
-	printf("Done");
-
-
-	//bochs_dbg();
-
-	node = fs_get_abs_path("/initrd/bin", &parent);
-	if (!node || (!node->flags & FS_DIR))
-	{
-		KPANIC("Error 1");
-	}
-
-	fs_read_dir(node, _dir_read_cb2, 0);
-
-	printf("Done");
-
+	//fs_get_abs_path("/fat32/initrd", NULL);
 	//bochs_dbg();
 
 	const char* args[2];
@@ -129,8 +100,10 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	uint32_t fds[3];
 	fds[0] = fds[1] = fds[2] = INVALID_FD;
 
-	//proc_start_user_proc("/initrd/bin/shell", args, fds);
-	proc_start_user_proc("/initrd/bin/shell", args, fds);
+	if (proc_start_user_proc("/initrd/bin/shell", args, fds) == 0)
+	{
+		KPANIC("Failed to start shell");
+	}
 
 	dsp_enable_cursor();
 	switch_to_user_mode();

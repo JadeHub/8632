@@ -43,8 +43,14 @@ static elf_fn_symbol_t* _find_fn_containing(const elf_image_t* image, uint32_t a
 	return fn;
 }
 
+static bool _dumping_stack = false;
+
 static void _dbg_unwind_stack(const elf_image_t* image, uint32_t eip, uint32_t ebp, dbg_stack_callback_t cb)
 {
+	if (_dumping_stack)
+		return;
+	_dumping_stack = true;
+
 	while (eip && ebp)
 	{
 		elf_fn_symbol_t* fn;
@@ -76,6 +82,7 @@ static void _dbg_unwind_stack(const elf_image_t* image, uint32_t eip, uint32_t e
 		eip = *(uint32_t*)(ebp + 4);
 		ebp = *(uint32_t*)(ebp);
 	}
+	_dumping_stack = false;
 }
 
 static void _stack_unwind_cb(const char* name, uint32_t addr, uint32_t sz, uint32_t ebp, uint32_t ip)

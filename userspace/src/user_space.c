@@ -7,17 +7,17 @@
 
 void test_io()
 {
-	uint32_t fd = sys_open("/initrd/temp/f1.txt", 0);
+	uint32_t fd = sys_open("/fat32/initrd/test.txt", 0);
 	if (fd == 0xffffffff)
 	{
 		printf("Failed to open file");
 	}
 	else
 	{
-		printf("Opened file ");
+		printf("Opened file \n");
 
-		size_t l = 80;
-		char buff[80];
+		size_t l = 8000;
+		char buff[8000];
 		memset(buff, 0, l);
 		sys_read(fd, buff, l-1);
 		printf(buff);
@@ -142,8 +142,9 @@ int main(int argc, char* argv[])
 	printf("Hello\n");
 	//printf("Hello\n");
 
-	sys_reg_sig_handler(1, cb);
+	//sys_reg_sig_handler(1, cb);
 
+	test_io();
 	//sys_send_signal()
 
 	//for (int i = 0; i < 100000; i++)

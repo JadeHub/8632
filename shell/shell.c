@@ -112,8 +112,9 @@ static size_t _read_line(char* buff, size_t sz, uint32_t fd)
 
 uint32_t shell()
 {
-//	uint32_t fd = sys_open("/dev/console/con1", 0);
-	uint32_t fd = 0;
+	//printf("Opening\n");
+	uint32_t fd = sys_open("/dev/con1", 0);
+//	uint32_t fd = 0;
 	if (fd == 0xffffffff)
 	{
 		printf("Failed to open consol");
@@ -135,6 +136,6 @@ uint32_t shell()
 int main(int argc, char* argv[])
 {
 	strcpy(_shell_state.current_dir, "/");
-	printf("Starting shell\n");
+	//printf("Starting shell\n");
 	return shell();
 }

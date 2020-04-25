@@ -35,7 +35,6 @@ static inline bool io_is_valid_fd(fd_t fd)
 void io_proc_start(process_t* p, fd_t fds[3]);
 void io_proc_end(process_t* p);
 
-
 struct DIR;
 struct dirent;
 

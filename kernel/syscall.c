@@ -45,8 +45,13 @@ static void _syscall_close(isr_state_t* regs, uint32_t fd)
     io_close(fd);
 }
 
+#include <kernel/debug.h>
+
 static size_t _syscall_write(isr_state_t* regs, uint32_t fd, uint8_t* buff, size_t sz)
 {
+   // printf("Sys call write\n");
+  //  dbg_dump_current_stack();
+  //      bochs_dbg();
     return io_write(fd, buff, sz);
 }
 

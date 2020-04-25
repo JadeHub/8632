@@ -20,9 +20,9 @@ drivers/keyboard/*.c \
 drivers/console/*.c \
 drivers/ata/*.c \
 drivers/pci/*.c \
+drivers/ide/*.c \
 drivers/timer/*.c \
 drivers/serial/*.c \
-drivers/fat/*.c \
 drivers/cmos/*.c)
 
 HEADERS = $(wildcard \
