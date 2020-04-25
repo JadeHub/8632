@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <kernel/elf32/elf32.h>
+#include <kernel/utils.h>
 
 void dbg_init(const elf_image_t* kernel_image);
 

@@ -31,6 +31,7 @@ SECTIONS
 		*(COMMON)
 		*(.bss)
 	}
+	pkend = .;
 	. = 0x60000;
-	end = .; _end = .; __end = .;
+	kend = .; _end = .; __end = .;
 }

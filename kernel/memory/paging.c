@@ -168,7 +168,7 @@ page_directory_t* paging_init()
     // Initialise the kernel heap.
     kheap = heap_create(kernel_directory, KHEAP_START, KHEAP_START+KHEAP_INITIAL_SIZE, 0xCFFFF000, 0, 0);
     switch_page_directory(kernel_directory);
-    //printf("Placement max 5 0x%08x\n", placement_address);
+    printf("Placement max 5 0x%08x\n", placement_address);
 	return kernel_directory;
 }
 

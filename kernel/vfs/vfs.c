@@ -12,8 +12,15 @@ static inline bool _is_dir(const fs_node_t* n)
 	return n->flags & FS_DIR;
 }
 
-static fs_node_t* _get_node(fs_node_t* n, const char* path, fs_node_t** parent)
+#include <stdio.h>
+#include <kernel/tasks/sched.h>
+
+static fs_node_t* _get_node(fs_node_t* n, char* tmp, fs_node_t** parent)
 {
+	//printf("tmp = 0x%08x proc = 0x%08x\n", tmp, sched_cur_thread()->process);
+	char path[FS_MAX_PATH];
+	strcpy(path, tmp);
+	//printf("Searching '%s'\n", path);
 	ASSERT(n);
 	char* sep = strchr(path, '/');
 	if (sep)
@@ -23,6 +30,7 @@ static fs_node_t* _get_node(fs_node_t* n, const char* path, fs_node_t** parent)
 		sep++;
 		//path = "blah"
 		//sep = "blah2/file"
+		//printf("Finding sub '%s' in '%s'\n", path, n->name);
 		fs_node_t* sub = fs_find_child(n, path);
 		//handle "blah/" case
 		if (*sep == '\0')
@@ -33,6 +41,7 @@ static fs_node_t* _get_node(fs_node_t* n, const char* path, fs_node_t** parent)
 		}
 		return sub ? _get_node(sub, sep, parent) : NULL;
 	}
+//	printf("Finding '%s' in '%s'\n", path, n->name);
 	fs_node_t* child = fs_find_child(n, path);
 
 	if (child && parent)
@@ -83,7 +92,9 @@ fs_node_t* fs_find_child(fs_node_t* n, const char* name)
 
 fs_node_t* fs_get_abs_path(const char* path, fs_node_t** parent)
 {
-	char tmp[512];
+	if (strlen(path) > FS_MAX_PATH - 1)
+		return NULL;
+	char tmp[FS_MAX_PATH];
 	strcpy(tmp, path);
 
 	if (strcmp(path, "/") == 0)

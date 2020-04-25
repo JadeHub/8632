@@ -8,8 +8,8 @@
 #include <kernel/utils.h>
 
 // end is defined in the linker script.
-extern uint32_t end;
-uint32_t placement_address = (uint32_t)&end;
+extern uint32_t kend;
+uint32_t placement_address = (uint32_t)&kend;
 extern page_directory_t *kernel_directory;
 heap_t *kheap=0;
 

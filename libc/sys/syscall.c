@@ -88,7 +88,6 @@ void sys_read_dir(const char* path, void(fn)(const char*))
 
 struct DIR* sys_opendir(const char* path)
 {
-	printf("calling open dir %s\n", path);
 	return (struct DIR*)SYSCALL1(SYSCALL_OPEN_DIR, path);
 }
 

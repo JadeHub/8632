@@ -2,6 +2,8 @@
 
 #include <kernel/vfs/node.h>
 
+#define FS_MAX_PATH 1024
+
 void fs_init();
 
 fs_node_t* fs_root();

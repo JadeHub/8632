@@ -246,7 +246,7 @@ struct DIR* io_opendir(const char* path)
 	//Find the node
 	fs_node_t* parent;
 	fs_node_t* node = fs_get_abs_path(path, &parent);
-	printf("get_abs %s 0x%x\n", path, node);
+	//printf("get_abs %s 0x%x\n", path, node);
 	if (!node || (!node->flags & FS_DIR))
 		return NULL;
 

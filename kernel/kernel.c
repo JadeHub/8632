@@ -20,7 +20,7 @@
 
 #include <drivers/ata/ata.h>
 #include <drivers/serial/serial_io.h>
-
+#include <kernel/fatfs/fatfs.h>
 #include <kernel/elf32/elf32.h>
 #include <kernel/tasks/proc.h>
 #include <kernel/tasks/sched.h>
@@ -45,7 +45,8 @@ extern void switch_to_user_mode();
 uint8_t ram_disk_buff[RAM_DISK_LEN];
 uint32_t ram_disk_len = RAM_DISK_LEN;
 
-extern uint32_t end;
+extern uint32_t kend;
+extern uint32_t pkend;
 
 static bool _dir_read_cb2(struct fs_node* parent, struct fs_node* child, void* data)
 {
@@ -57,7 +58,6 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
 	con_init();
 	printf("Hello World %d 0x%x\n", mb_data->mod_count, *((uint8_t*)mb_data->modules->start));
-	printf("Buffer 0x%08x End 0x%08x\n", ram_disk_buff, end);
 	memset(ram_disk_buff, 0, RAM_DISK_LEN);
 	mb_init(mb_data);
 	ram_disk_len = mb_copy_mod("/boot/ramdisk", ram_disk_buff, ram_disk_len);
@@ -65,6 +65,9 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 		KPANIC("Module /boot/ramdisk not found\n");
 	printf("Ram Disk 0x%08x bytes\n", ram_disk_len);
 	
+	printf("kend = 0x%x pkend = 0x%x diff = 0x%x\n", &kend, &pkend, (&kend - &pkend));
+	ASSERT((&kend) > (&pkend));
+	//if (end )
 	//bochs_dbg();
 
 	elf_image_t* k_image = mb_get_kernel_elf();
@@ -97,31 +100,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	//ata_init();
 	time_init();
 
-	fs_node_t* parent;
-	fs_node_t* node = fs_get_abs_path("/initrd/bin", &parent);
-	if (!node || (!node->flags & FS_DIR))
-	{
-		KPANIC("Error 1");
-	}
-
-	fs_read_dir(node, _dir_read_cb2, 0);
-
-	printf("Done");
-
-
-	//bochs_dbg();
-
-	node = fs_get_abs_path("/initrd/bin", &parent);
-	if (!node || (!node->flags & FS_DIR))
-	{
-		KPANIC("Error 1");
-	}
-
-	fs_read_dir(node, _dir_read_cb2, 0);
-
-	printf("Done");
-
-	//bochs_dbg();
+	fatfs_mount_partition(0, 0, 0);
 
 	const char* args[2];
 	args[0] = "shell";
