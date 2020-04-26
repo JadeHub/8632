@@ -7,8 +7,7 @@
 #include <drivers/keyboard/keyboard.h>
 #include <drivers/timer/timer.h>
 #include <drivers/pci/pci.h>
-#include <drivers/pci/ide.h>
-//#include <drivers/ata/ata.h>
+#include <drivers/ide/ide.h>
 #include <drivers/display.h>
 #include <kernel/memory/phys_mem.h>
 #include <kernel/memory/paging.h>
@@ -97,7 +96,6 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	con_dev_init();
 	syscall_init();
 	pci_init();
-	//ata_init();
 	time_init();
 
 	fatfs_mount_partition(0, 0, 0);

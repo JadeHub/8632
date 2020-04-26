@@ -18,7 +18,7 @@ kernel/fatfs/*.c \
 drivers/*.c \
 drivers/keyboard/*.c \
 drivers/console/*.c \
-drivers/ata/*.c \
+drivers/ide/*.c \
 drivers/pci/*.c \
 drivers/timer/*.c \
 drivers/serial/*.c \

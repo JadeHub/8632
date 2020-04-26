@@ -1,5 +1,5 @@
 #include "pci.h"
-#include "ide.h"
+#include <drivers/ide/ide.h>
 
 #include <drivers/ioports.h>
 
