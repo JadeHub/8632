@@ -60,6 +60,16 @@ static bool _syscall_read_dir(isr_state_t* regs, struct DIR* dir, struct dirent*
     return io_readdir(dir, ent);
 }
 
+static void _syscall_fseek(isr_state_t* regs, uint32_t fd, uint32_t offset, int origin)
+{
+    io_seek(fd, offset, origin);
+}
+
+static void _syscall_fflush(isr_state_t* regs, uint32_t fd)
+{
+    io_flush(fd);
+}
+
 static void _syscall_close_dir(isr_state_t* regs, struct DIR* dir)
 {
     io_closedir(dir);
@@ -98,7 +108,7 @@ static bool _syscall_sig_send_signal(uint32_t pid, uint32_t sig)
     return sig_queue_signal(proc_get_pid(pid), sig);
 }
 
-static void* syscalls[15] =
+static void* syscalls[17] =
 {
 	&syscall_alloc,
 	&_syscall_sleep_ms,
@@ -114,7 +124,9 @@ static void* syscalls[15] =
     &_syscall_wait_pid,
     &_syscall_register_sig_handler,
     &_syscall_sig_handler_return,
-    &_syscall_sig_send_signal
+    &_syscall_sig_send_signal,
+    &_syscall_fseek,
+    &_syscall_fflush
 };
 
 void syscall_handler(isr_state_t* regs)

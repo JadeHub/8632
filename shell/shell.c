@@ -70,13 +70,16 @@ static bool _process_cmd(char* cmd)
 		clear_cmd(p.count, p.params, &_shell_state);
 	//	printf("\033c");
 	}
-	else if (strcmp(p.params[0], "t") == 0)
+	else if (strcmp(p.params[0], "tw") == 0)
 	{
-		uint8_t buff[4097];
-		uint32_t fd = sys_open("fatfs/initrd/bin/test.txt", 0);
-		size_t s = sys_read(fd, buff, 4097);
-		uint32_t val = buff[4096];
-		printf("Opened %d read %d 0x%x\n", fd, s, val);
+		uint8_t buff[10];
+		uint32_t fd = sys_open("fatfs/test.txt", 0);
+		//size_t s = sys_write(fd, "test", 4);
+		//printf("Opened %d wrote %d \n", fd, s);
+
+		size_t s = sys_read(fd, buff, 5);
+		printf("Read %d bytes %s\n", s, buff);
+		sys_close(fd);
 	}
 	else if (strcmp(p.params[0], "test") == 0)
 	{

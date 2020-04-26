@@ -17,6 +17,8 @@ void sys_exit(int32_t);
 uint32_t sys_open(const char*, uint32_t);
 size_t sys_read(uint32_t, uint8_t*, size_t);
 size_t sys_write(uint32_t, const uint8_t*, size_t);
+void sys_fseek(uint32_t, uint32_t, int);
+void sys_fflush(uint32_t);
 void sys_close(uint32_t);
 void sys_sleep_ms(uint32_t);
 void sys_read_dir(const char* path, void(fn)(const char*));

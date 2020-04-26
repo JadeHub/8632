@@ -116,9 +116,15 @@ static proc_file_desc_t* _create_file_desc(fs_node_t* node, uint32_t flags)
 	return desc;
 }
 
-fd_t io_open(const char* path, uint32_t flags)
+static proc_file_desc_t* _get_cur_proc_fd(uint32_t fd)
 {
-	
+	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	ASSERT(proc);
+	return proc->fds[fd];
+}
+
+fd_t io_open(const char* path, uint32_t flags)
+{	
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	ASSERT(proc);
 	printf("Open p=0x%x\n", proc);
@@ -152,28 +158,52 @@ fd_t io_open(const char* path, uint32_t flags)
 
 void io_close(fd_t fd)
 {
-	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
-	proc->fds[fd]->node = NULL;
+	proc_file_desc_t* file = _get_cur_proc_fd(fd);
+	if (!file)
+		return;
+	fs_close(file->node);
+	file->node = NULL;
 }
 
-size_t io_read(fd_t fd, uint8_t* buff, size_t sz)
+size_t io_read(fd_t fd, uint8_t* buff, size_t len)
 {
-	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
-	ASSERT(proc->fds[fd]->node);
-	size_t read = fs_read(proc->fds[fd]->node, buff, proc->fds[fd]->offset, sz);
-	proc->fds[fd]->offset += read;
-	return read;
+	proc_file_desc_t* file = _get_cur_proc_fd(fd);
+	if (!file)
+		return 0;
+	size_t sz = fs_read(file->node, buff, file->offset, len);
+	file->offset += sz;
+	return sz;
 }
 
 size_t io_write(fd_t fd, const uint8_t* buff, size_t len)
 {
-	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
-	ASSERT(proc);
-	ASSERT(proc->fds[fd]->node);
+	proc_file_desc_t* file = _get_cur_proc_fd(fd);
+	if (!file)
+		return 0;
 	
-	size_t sz = fs_write(proc->fds[fd]->node, buff, 0, len);
-	//proc->fds[fd]->offset += read;
+	size_t sz = fs_write(file->node, buff, file->offset, len);
+	file->offset += sz;
 	return sz;
+}
+
+void io_seek(fd_t fd, uint32_t offset, int origin)
+{
+	proc_file_desc_t* file = _get_cur_proc_fd(fd);
+	if (!file)
+		return;
+
+	if (offset > file->node->len)
+		offset = file->node->len;
+	file->offset = offset;
+}
+
+void io_flush(fd_t fd)
+{
+	proc_file_desc_t* file = _get_cur_proc_fd(fd);
+	if (!file)
+		return;
+
+
 }
 
 void io_init()

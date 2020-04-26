@@ -76,6 +76,12 @@ size_t fs_write(fs_node_t* n, const uint8_t* buff, size_t off, size_t sz)
 	return 0;
 }
 
+void fs_flush(fs_node_t* n)
+{
+	if (n->flush)
+		(*n->flush)(n);
+}
+
 uint32_t fs_read_dir(fs_node_t* n, fs_read_dir_cb_fn_t cb, void* data)
 {
 	if (_is_dir(n) && n->read_dir)
@@ -87,6 +93,13 @@ fs_node_t* fs_find_child(fs_node_t* n, const char* name)
 {
 	if (_is_dir(n) && n->find_child)
 		return (*n->find_child)(n, name);
+	return NULL;
+}
+
+fs_node_t* fs_create_child(fs_node_t* n, const char* name, uint32_t flags)
+{
+	if (fs_is_dir(n) && n->create_child)
+		return (*n->create_child)(n, name, flags);
 	return NULL;
 }
 

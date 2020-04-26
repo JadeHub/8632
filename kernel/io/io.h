@@ -20,6 +20,8 @@ fd_t io_open(const char* path, uint32_t flags);
 void io_close(fd_t file);
 size_t io_read(fd_t file, uint8_t* buff, size_t sz);
 size_t io_write(fd_t file, const uint8_t* buff, size_t sz);
+void io_seek(fd_t file, uint32_t offset, int origin);
+void io_flush(fd_t);
 
 /*
 Duplicate source fd from proc as dest fd for the current process

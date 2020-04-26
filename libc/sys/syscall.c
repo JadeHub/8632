@@ -16,6 +16,8 @@
 #define SYSCALL_REG_SIG_HANDLER 13
 #define SYSCALL_SIG_HANDLER_RET 14
 #define SYSCALL_SIG_SEND 15
+#define SYSCALL_FSEEK 16
+#define SYSCALL_FFLUSH 17
 
 extern uint32_t perform_syscall(uint32_t id, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, uint32_t p5);
 
@@ -62,6 +64,16 @@ uint32_t sys_open(const char* path, uint32_t flags)
 size_t sys_write(uint32_t fd, const uint8_t* buff, size_t sz)
 {
 	return (size_t)SYSCALL3(SYSCALL_WRITE, fd, buff, sz);
+}
+
+void sys_fseek(uint32_t fd, uint32_t off, int origin)
+{
+	return SYSCALL3(SYSCALL_FSEEK, fd, off, origin);
+}
+
+void sys_fflush(uint32_t fd)
+{
+	return SYSCALL1(SYSCALL_FFLUSH, fd);
 }
 
 size_t sys_read(uint32_t fd, uint8_t* buff, size_t sz)
