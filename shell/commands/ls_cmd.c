@@ -20,7 +20,12 @@ void ls_cmd(size_t count, const char* params[], shell_state_t* shell)
 	{
 		//if (!de)
 			//break;
-		printf("%s\n", de.name);
+		/*if (de.type & DT_DIR)
+			printf("D%28s\n", de.name);
+		else
+			printf(" %28s\n", de.name);*/
+
+		printf("%c%28s%10d\n", (de.type & DT_DIR ? 'D' : 'F'), de.name, de.size);
 	}
 	closedir(d);
 }

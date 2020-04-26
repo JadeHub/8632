@@ -80,7 +80,7 @@ static proc_io_data_t* _get_proc_data(process_t* proc)
 	return NULL;
 }
 
-static fd_t _free_fd(proc_io_data_t* p)
+static fd_t _find_free_fd(proc_io_data_t* p)
 {
 	for (int i = 0; i < MAX_FD_CNT; i++)
 		if (p->fds[i] == NULL || p->fds[i]->node == NULL)
@@ -118,24 +118,34 @@ static proc_file_desc_t* _create_file_desc(fs_node_t* node, uint32_t flags)
 
 fd_t io_open(const char* path, uint32_t flags)
 {
+	
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	ASSERT(proc);
+	printf("Open p=0x%x\n", proc);
+	//bochs_dbg();
 	//Find the node
 	fs_node_t* parent;
 	fs_node_t* node = fs_get_abs_path(path, &parent);
+	printf("Open node=0x%x p=0x%x\n", node, _get_proc_data(sched_cur_proc()));
+	//bochs_dbg();
 	if (!node)
 		return INVALID_FD;
 	//already open?
 	fd_t fd = _find_fd(proc, node);
+	printf("Found FD %d\n", fd);
 	if (io_is_valid_fd(fd))
 	{
 		printf("Already open 0x%x\n", fd);
+		//bochs_dbg();
 		return fd;
 	}
-	fd = _free_fd(proc);
+	fd = _find_free_fd(proc);
+	printf("Open fd=%d\n", fd);
+	//bochs_dbg();
 	if (io_is_valid_fd(fd))
 	{
 		proc->fds[fd] = _create_file_desc(node, flags);
-		fs_open(node, flags);
+		fs_open(parent, node, flags);
 	}
 	return fd;
 }
@@ -176,6 +186,8 @@ void io_proc_start(process_t* p, fd_t fds[3])
 	ASSERT(!hash_tbl_has(_proc_io, p->id));
 	proc_io_data_t* res = (proc_io_data_t*)kmalloc(sizeof(proc_io_data_t));
 	memset(res, 0, sizeof(res));
+	for (uint32_t i = 0; i < 64; i++)
+		res->fds[i] = NULL;
 	res->proc = p;
 	INIT_LIST_HEAD(&res->open_dirs);
 	hash_tbl_add(_proc_io, p->id, &res->hash_item);

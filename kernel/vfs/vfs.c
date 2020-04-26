@@ -49,10 +49,10 @@ static fs_node_t* _get_node(fs_node_t* n, char* tmp, fs_node_t** parent)
 	return child;
 }
 
-int32_t fs_open(fs_node_t* n, uint32_t flags)
+int32_t fs_open(fs_node_t* parent, fs_node_t* n, uint32_t flags)
 {
 	if (n->open)
-		return (*n->open)(n, flags);
+		return (*n->open)(parent,n, flags);
 	return 0;
 }
 

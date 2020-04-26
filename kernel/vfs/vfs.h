@@ -11,7 +11,7 @@ fs_node_t* fs_install_root_fs(fs_node_t* n);
 
 fs_node_t* fs_get_abs_path(const char* path, fs_node_t** parent);
 
-int32_t fs_open(fs_node_t*, uint32_t flags);
+int32_t fs_open(fs_node_t*, fs_node_t*, uint32_t flags);
 void fs_close(fs_node_t*);
 size_t fs_read(fs_node_t*, uint8_t* buff, size_t off, size_t sz);
 size_t fs_write(fs_node_t* node, const uint8_t* buff, size_t off, size_t sz);

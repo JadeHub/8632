@@ -142,7 +142,28 @@ int main(int argc, char* argv[])
 	printf("Hello\n");
 	//printf("Hello\n");
 
-	sys_reg_sig_handler(1, cb);
+	//sys_reg_sig_handler(1, cb);
+
+	uint32_t fd = sys_open("fatfs/initrd/bin/test.txt", 0);
+
+	if (fd == 0xffffffff)
+	{
+		printf("Failed to open file");
+	}
+	else
+	{
+		printf("Opened file\n");
+
+		size_t l = 80;
+		char buff[80];
+		memset(buff, 0, l);
+		//size_t s = sys_read(fd, buff, l-1);
+		size_t s = 12;
+		printf("Read %d bytes\n", s);
+		
+		//printf("%d 0x%x\n", buff[2000], buff[2000]);
+		sys_close(fd);
+	}
 
 	//sys_send_signal()
 
