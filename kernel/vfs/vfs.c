@@ -6,21 +6,11 @@
 #include <kernel/memory/kmalloc.h>
 
 #include <stddef.h>
-
-static inline bool _is_dir(const fs_node_t* n)
-{
-	return n->flags & FS_DIR;
-}
-
 #include <stdio.h>
-#include <kernel/tasks/sched.h>
 
 static fs_node_t* _get_node(fs_node_t* n, char* path, fs_node_t** parent)
 {
-	//printf("tmp = 0x%08x proc = 0x%08x\n", path, sched_cur_thread()->process);
-	//char path1[FS_MAX_PATH];
-	//strcpy(path1, path);
-	//printf("Searching '%s'\n", path);
+	
 	ASSERT(n);
 	char* sep = strchr(path, '/');
 	if (sep)
@@ -30,7 +20,6 @@ static fs_node_t* _get_node(fs_node_t* n, char* path, fs_node_t** parent)
 		sep++;
 		//path = "blah"
 		//sep = "blah2/file"
-		//printf("Finding sub '%s' in '%s'\n", path, n->name);
 		fs_node_t* sub = fs_find_child(n, path);
 		//handle "blah/" case
 		if (*sep == '\0')
@@ -41,47 +30,11 @@ static fs_node_t* _get_node(fs_node_t* n, char* path, fs_node_t** parent)
 		}
 		return sub ? _get_node(sub, sep, parent) : NULL;
 	}
-	//	printf("Finding '%s' in '%s'\n", path, n->name);
 	fs_node_t* child = fs_find_child(n, path);
-
 	if (child && parent)
 		*parent = n;
 	return child;
 }
-
-/*static fs_node_t* _get_node(fs_node_t* n, char* tmp, fs_node_t** parent)
-{
-	//printf("tmp = 0x%08x proc = 0x%08x\n", tmp, sched_cur_thread()->process);
-	char path[FS_MAX_PATH];
-	strcpy(path, tmp);
-	//printf("Searching '%s'\n", path);
-	ASSERT(n);
-	char* sep = strchr(path, '/');
-	if (sep)
-	{
-		//Given "blah/blah2/file"
-		*sep = '\0';
-		sep++;
-		//path = "blah"
-		//sep = "blah2/file"
-		//printf("Finding sub '%s' in '%s'\n", path, n->name);
-		fs_node_t* sub = fs_find_child(n, path);
-		//handle "blah/" case
-		if (*sep == '\0')
-		{
-			if (parent)
-				*parent = n;
-			return sub;
-		}
-		return sub ? _get_node(sub, sep, parent) : NULL;
-	}
-//	printf("Finding '%s' in '%s'\n", path, n->name);
-	fs_node_t* child = fs_find_child(n, path);
-
-	if (child && parent)
-		*parent = n;
-	return child;
-}*/
 
 int32_t fs_open(fs_node_t* parent, fs_node_t* n, uint32_t flags)
 {
@@ -118,14 +71,14 @@ void fs_flush(fs_node_t* n)
 
 uint32_t fs_read_dir(fs_node_t* n, fs_read_dir_cb_fn_t cb, void* data)
 {
-	if (_is_dir(n) && n->read_dir)
+	if (fs_is_dir(n) && n->read_dir)
 		return (*n->read_dir)(n, cb, data);
 	return 0;
 }
 
 fs_node_t* fs_find_child(fs_node_t* n, const char* name)
 {
-	if (_is_dir(n) && n->find_child)
+	if (fs_is_dir(n) && n->find_child)
 		return (*n->find_child)(n, name);
 	return NULL;
 }
@@ -152,23 +105,3 @@ fs_node_t* fs_get_abs_path(const char* path, fs_node_t** parent)
 	kfree(tmp);
 	return result;
 }
-
-/*fs_node_t* fs_get_abs_path2(const char* path, fs_node_t** parent)
-{
-	if (strlen(path) > FS_MAX_PATH - 1)
-		return NULL;
-	
-	//char tmp[FS_MAX_PATH];
-	//strcpy(tmp, path);
-	char* tmp = (char*)path;
-
-	if (strcmp(path, "/") == 0)
-		return fs_root();
-
-	fs_node_t* res = NULL;
-	if (tmp[0] == '/')
-		return _get_node2(fs_root(), tmp + 1, parent);
-	else
-		return _get_node2(fs_root(), tmp, parent);
-}*/
-

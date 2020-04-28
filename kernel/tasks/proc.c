@@ -21,7 +21,7 @@ extern void perform_task_switch(uint32_t* esp_out, uint32_t esp, uint32_t dir_ad
 
 extern heap_t* kheap;
 
-#define KERNEL_STACK_SIZE 2048
+#define KERNEL_STACK_SIZE 4096
 
 static process_t* _kproc = 0; //The kernal execution context
 static uint32_t next_pid = 1;

@@ -294,15 +294,9 @@ struct DIR* io_opendir(const char* path)
 {
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	ASSERT(proc);
-	printf("io_opendir 0 proc=0x%x\n", sched_cur_thread()->process);
-	//bochs_dbg();
 	//Find the node
 	fs_node_t* parent;
-	//fs_node_t* node = NULL;
 	fs_node_t* node = fs_get_abs_path(path, &parent);
-	printf("io_opendir 1 proc=0x%x\n", sched_cur_thread()->process);
-	//bochs_dbg();
-	//printf("get_abs %s 0x%x\n", path, node);
 	if (!node || (!node->flags & FS_DIR))
 		return NULL;
 

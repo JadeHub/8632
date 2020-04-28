@@ -8,9 +8,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-//asm routines
-extern uint32_t regs_ebp();
-extern uint32_t regs_eip();
+#include <kernel/x86/regs.h>
 
 static const elf_image_t* _k_image = NULL;
 
