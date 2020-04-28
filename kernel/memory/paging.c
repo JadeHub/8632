@@ -23,11 +23,6 @@ static void _stack_unwind_cb(const char* name, uint32_t addr, uint32_t sz, uint3
 
 static void page_fault(isr_state_t* regs)
 {
-    static bool _in = false;
-
-    if (_in) return;
-    _in = true;
-
     // The faulting address is stored in the CR2 register.
     uint32_t faulting_address;
     asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
@@ -48,8 +43,8 @@ static void page_fault(isr_state_t* regs)
     printf(") at 0x%08x - EIP: 0x%08x\n", faulting_address, regs->eip);
 
     dbg_dump_stack(us ? sched_cur_proc()->elf_img : dbg_kernel_image(), regs->ebp, regs->eip);
-    KPANIC("Page fault");
-    _in = false;
+  //  KPANIC("Page fault");
+    for (;;);
 }
 
 

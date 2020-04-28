@@ -22,6 +22,8 @@ size_t io_read(fd_t file, uint8_t* buff, size_t sz);
 size_t io_write(fd_t file, const uint8_t* buff, size_t sz);
 void io_seek(fd_t file, uint32_t offset, int origin);
 void io_flush(fd_t);
+int io_remove(const char* path);
+int io_mkdir(const char* path);
 
 /*
 Duplicate source fd from proc as dest fd for the current process

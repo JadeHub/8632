@@ -678,6 +678,36 @@ int fatfs_update_file_length(struct fatfs *fs, uint32 Cluster, char *shortname, 
     return 0;
 }
 #endif
+
+#include <kernel/debug.h>
+int fatfs_mark_file_deleted2(struct fatfs* fs, uint32 Cluster, char* shortname)
+{
+    uint8 item = 0;
+    uint16 recordoffset = 0;
+    int x = 0;
+    struct fat_dir_entry directoryEntry;
+
+    if (fatfs_get_file_entry(fs, Cluster, shortname, &directoryEntry))
+    {
+        // Mark as deleted
+        directoryEntry.Name[0] = FILE_HEADER_DELETED;
+
+#if FATFS_INC_TIME_DATE_SUPPORT
+        // Update access / modify time & date
+        fatfs_update_timestamps(&directoryEntry, 0, 1, 1);
+#endif
+
+        // Update sfn entry
+        memcpy((uint8*)(fs->currentsector.sector + recordoffset), (uint8*)&directoryEntry, sizeof(struct fat_dir_entry));
+
+        // Write sector back
+        return fs->disk_io.write_media(fs->currentsector.address, fs->currentsector.sector, 1);
+    }
+
+    return 0;
+}
+
+
 //-------------------------------------------------------------
 // fatfs_mark_file_deleted: Find a SFN entry and mark if as deleted
 // NOTE: shortname is XXXXXXXXYYY not XXXXXXXX.YYY
@@ -708,7 +738,6 @@ int fatfs_mark_file_deleted(struct fatfs *fs, uint32 Cluster, char *shortname)
 
                 // Overlay directory entry over buffer
                 directoryEntry = (struct fat_dir_entry*)(fs->currentsector.sector+recordoffset);
-
 #if FATFS_INC_LFN_SUPPORT
                 // Long File Name Text Found
                 if (fatfs_entry_lfn_text(directoryEntry) )
@@ -723,6 +752,15 @@ int fatfs_mark_file_deleted(struct fatfs *fs, uint32 Cluster, char *shortname)
 #endif
                 if (fatfs_entry_sfn_only(directoryEntry) )
                 {
+                  /*  if (directoryEntry->Name[0] == 't' &&
+                        directoryEntry->Name[1] == 'e' &&
+                        directoryEntry->Name[2] == 's' &&
+                        directoryEntry->Name[3] == 't')
+                    {
+                        printf("DIR TEST %s\n", directoryEntry->Name);
+                    }*/
+                    printf("DIR %s == %s\n", directoryEntry->Name, shortname);
+
                     if (strncmp((const char *)directoryEntry->Name, shortname, 11)==0)
                     {
                         // Mark as deleted

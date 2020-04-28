@@ -2,12 +2,14 @@
 
 char* strchr(const char* str, int ch)
 {
-	while (str && *str != '\0')
+	char* pos = NULL;
+
+	do
 	{
 		if (*str == ch)
-			return (char*)str;
+			pos = str;
 		str++;
-	}
-	return NULL;
+	} while (*str != '\0');
+	return str;
 }
 

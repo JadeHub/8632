@@ -16,6 +16,7 @@ void ls_cmd(size_t count, const char* params[], shell_state_t* shell)
 	}
 	//printf("DIR Oopen\n");
 	struct dirent de;
+	int i = 0;
 	while (readdir(d, &de))
 	{
 		//if (!de)
@@ -24,8 +25,10 @@ void ls_cmd(size_t count, const char* params[], shell_state_t* shell)
 			printf("D%28s\n", de.name);
 		else
 			printf(" %28s\n", de.name);*/
-
+	//	printf("%d ", i);
+		i++;
 		printf("%c%28s%10d\n", (de.type & DT_DIR ? 'D' : 'F'), de.name, de.size);
 	}
+	printf("Closing\n");
 	closedir(d);
 }

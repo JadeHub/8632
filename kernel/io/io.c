@@ -6,8 +6,8 @@
 #include <kernel/memory/kmalloc.h>
 #include <kernel/debug.h>
 #include <kernel/types/list.h>
-#include <dirent.h>
 
+#include <dirent.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -123,6 +123,17 @@ static proc_file_desc_t* _get_cur_proc_fd(uint32_t fd)
 	return proc->fds[fd];
 }
 
+bool _dir_empty_cb(struct fs_node* parent, struct fs_node* child, void* data)
+{
+	return false;
+}
+
+static bool _is_dir_empty(fs_node_t* node)
+{
+	ASSERT(node && fs_is_dir(node));
+	return fs_read_dir(node, _dir_empty_cb, NULL) == 0;
+}
+
 fd_t io_open(const char* path, uint32_t flags)
 {	
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
@@ -202,8 +213,6 @@ void io_flush(fd_t fd)
 	proc_file_desc_t* file = _get_cur_proc_fd(fd);
 	if (!file)
 		return;
-
-
 }
 
 void io_init()
@@ -215,7 +224,7 @@ void io_proc_start(process_t* p, fd_t fds[3])
 {
 	ASSERT(!hash_tbl_has(_proc_io, p->id));
 	proc_io_data_t* res = (proc_io_data_t*)kmalloc(sizeof(proc_io_data_t));
-	memset(res, 0, sizeof(res));
+	memset(res, 0, sizeof(proc_io_data_t));
 	for (uint32_t i = 0; i < 64; i++)
 		res->fds[i] = NULL;
 	res->proc = p;
@@ -285,9 +294,14 @@ struct DIR* io_opendir(const char* path)
 {
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	ASSERT(proc);
+	printf("io_opendir 0 proc=0x%x\n", sched_cur_thread()->process);
+	//bochs_dbg();
 	//Find the node
 	fs_node_t* parent;
+	//fs_node_t* node = NULL;
 	fs_node_t* node = fs_get_abs_path(path, &parent);
+	printf("io_opendir 1 proc=0x%x\n", sched_cur_thread()->process);
+	//bochs_dbg();
 	//printf("get_abs %s 0x%x\n", path, node);
 	if (!node || (!node->flags & FS_DIR))
 		return NULL;
@@ -333,9 +347,38 @@ bool io_readdir(struct DIR* dir, struct dirent* ent)
 		desc->cur = list_next_entry(desc->cur, list_item);
 	strcpy(ent->name, result->name);
 	ent->size = result->size;
-	ent->type = result->type
-		;
+	ent->type = result->type;
 	return true;
+}
+
+int io_mkdir(const char* path)
+{
+	/*char parent_path[FS_MAX_PATH];
+	char* slash = strrchr(path, FS_SEP_CHAR);
+	if(slash == NULL)
+		return -1;
+	char* name = slash + 1;
+	*/
+
+	return -1;
+}
+
+int io_remove(const char* path)
+{
+	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	ASSERT(proc);
+
+	//todo is file open?
+	bool result = false;
+	fs_node_t* parent;
+	fs_node_t* node = fs_get_abs_path(path, &parent);
+	
+	if (fs_is_dir(node) && !_is_dir_empty(node))
+		return -1;
+
+	if (node && node->remove)
+		result = (*node->remove)(parent, node);
+	return result ? 0 : -1;
 }
 
 bool io_dup_fd(fd_t source, process_t* dest_p, fd_t dest)

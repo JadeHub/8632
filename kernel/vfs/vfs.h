@@ -3,6 +3,7 @@
 #include <kernel/vfs/node.h>
 
 #define FS_MAX_PATH 1024
+#define FS_SEP_CHAR '/'
 
 void fs_init();
 
@@ -19,3 +20,4 @@ void fs_flush(fs_node_t*);
 uint32_t fs_read_dir(fs_node_t*, fs_read_dir_cb_fn_t, void*);
 fs_node_t* fs_find_child(fs_node_t*, const char* name);
 fs_node_t* fs_create_child(fs_node_t*, const char* name, uint32_t flags);
+

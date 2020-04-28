@@ -78,8 +78,12 @@ static void _syscall_close_dir(isr_state_t* regs, struct DIR* dir)
 static struct DIR* _syscall_open_dir(isr_state_t* regs, const char* path)
 {
     struct DIR* r = io_opendir(path);
-    //printf("syscall done\n");
     return r;
+}
+
+static int _syscall_mkdir(isr_state_t* regs, const char* path)
+{
+    return io_mkdir(path);
 }
 
 static uint32_t _syscall_start_proc(isr_state_t* regs, const char* path, const char* args[], uint32_t fds[3])
@@ -95,7 +99,6 @@ static uint32_t _syscall_wait_pid(isr_state_t* regs, uint32_t pid)
 static void _syscall_register_sig_handler(isr_state_t* regs, int sig, sig_handler_t handler)
 {
     sig_set_handler(sched_cur_proc(), sig, handler);
-   // sig_queue_signal(sched_cur_proc(), sig);
 }
 
 static void _syscall_sig_handler_return(isr_state_t* regs)
@@ -108,7 +111,17 @@ static bool _syscall_sig_send_signal(uint32_t pid, uint32_t sig)
     return sig_queue_signal(proc_get_pid(pid), sig);
 }
 
-static void* syscalls[17] =
+static int _syscall_remove(isr_state_t* regs, const char* path)
+{
+    return io_remove(path);
+}
+
+static int _syscall_rmdir(isr_state_t* regs, const char* path)
+{
+    return -1;
+}
+
+static void* syscalls[20] =
 {
 	&syscall_alloc,
 	&_syscall_sleep_ms,
@@ -126,7 +139,10 @@ static void* syscalls[17] =
     &_syscall_sig_handler_return,
     &_syscall_sig_send_signal,
     &_syscall_fseek,
-    &_syscall_fflush
+    &_syscall_fflush,
+    &_syscall_mkdir,
+    &_syscall_remove,
+    &_syscall_rmdir
 };
 
 void syscall_handler(isr_state_t* regs)

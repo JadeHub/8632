@@ -157,8 +157,8 @@ int main(int argc, char* argv[])
 		size_t l = 80;
 		char buff[80];
 		memset(buff, 0, l);
-		//size_t s = sys_read(fd, buff, l-1);
-		size_t s = 12;
+		size_t s = sys_read(fd, buff, l-1);
+		//size_t s = 12;
 		printf("Read %d bytes\n", s);
 		
 		//printf("%d 0x%x\n", buff[2000], buff[2000]);

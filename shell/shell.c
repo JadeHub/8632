@@ -61,6 +61,10 @@ static bool _process_cmd(char* cmd)
 	{
 		ls_cmd(p.count, p.params, &_shell_state);
 	}
+	else if (strcmp(p.params[0], "rm") == 0)
+	{
+		rm_cmd(p.count, p.params, &_shell_state);
+	}
 	else if (strcmp(p.params[0], "cd") == 0)
 	{
 		cd_cmd(p.count, p.params, &_shell_state);

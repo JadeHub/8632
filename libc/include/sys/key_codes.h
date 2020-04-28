@@ -1,5 +1,9 @@
 #pragma once
 
+#include <sys/cdefs.h>
+
+__LIBC_BEGIN_H
+
 #define KEY_ESC 27
 #define KEY_BACKSPACE 8
 #define KEY_TAB 9
@@ -37,3 +41,5 @@
 #define KEY_F10 160
 #define KEY_F11 161
 #define KEY_F12 162
+
+__LIBC_END_H

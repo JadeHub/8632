@@ -18,6 +18,9 @@
 #define SYSCALL_SIG_SEND 15
 #define SYSCALL_FSEEK 16
 #define SYSCALL_FFLUSH 17
+#define SYSCALL_MKDIR 18
+#define SYSCALL_REMOVE 19
+#define SYSCALL_RMDIR 20
 
 extern uint32_t perform_syscall(uint32_t id, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, uint32_t p5);
 
@@ -68,12 +71,12 @@ size_t sys_write(uint32_t fd, const uint8_t* buff, size_t sz)
 
 void sys_fseek(uint32_t fd, uint32_t off, int origin)
 {
-	return SYSCALL3(SYSCALL_FSEEK, fd, off, origin);
+	SYSCALL3(SYSCALL_FSEEK, fd, off, origin);
 }
 
 void sys_fflush(uint32_t fd)
 {
-	return SYSCALL1(SYSCALL_FFLUSH, fd);
+	SYSCALL1(SYSCALL_FFLUSH, fd);
 }
 
 size_t sys_read(uint32_t fd, uint8_t* buff, size_t sz)
@@ -91,11 +94,6 @@ void sys_sleep_ms(uint32_t ms)
 	SYSCALL1(SYSCALL_SLEEP, ms);
 }
 
-void sys_read_dir(const char* path, void(fn)(const char*))
-{
-	SYSCALL2(SYSCALL_READ_DIR, path, fn);
-}
-
 #include <stdio.h>
 
 struct DIR* sys_opendir(const char* path)
@@ -111,6 +109,11 @@ void sys_closedir(struct DIR* dir)
 bool sys_readdir(struct DIR* dir, struct dirent* entry)
 {
 	return (bool)SYSCALL2(SYSCALL_READ_DIR, dir, entry);
+}
+
+int sys_mkdir(const char* path)
+{
+	return SYSCALL1(SYSCALL_MKDIR, path);
 }
 uint32_t sys_start_proc(const char* path, const char* args[], uint32_t fds[3])
 {
@@ -135,4 +138,14 @@ void sys_sig_handler_return()
 bool sys_send_signal(uint32_t pid, uint32_t sig)
 {
 	return SYSCALL2(SYSCALL_SIG_SEND, pid, sig);
+}
+
+int sys_remove(const char* path)
+{
+	return SYSCALL1(SYSCALL_REMOVE, path);
+}
+
+int sys_rmdir(const char* path)
+{
+	return SYSCALL1(SYSCALL_RMDIR, path);
 }

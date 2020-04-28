@@ -2,14 +2,15 @@
 
 #include <kernel/vfs/vfs.h>
 #include <kernel/fault.h>
+#include <kernel/debug.h>
 #include <kernel/memory/kmalloc.h>
 #include <kernel/types/list.h>
 
 #include <drivers/ide/ide.h>
 #include <drivers/fat/fat_access.h>
 #include <drivers/fat/fat_table.h>
-//#include <drivers/fat/fat_cache.h>
 
+#include <sys/io_defs.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -25,6 +26,7 @@ typedef struct partition_fs
 
 typedef struct dir_info
 {
+	uint8 sfn[11];
 	uint32_t cluster;
 	list_head_t children;
 }dir_info_t;
@@ -39,6 +41,8 @@ typedef struct file_info
 {
 	uint32_t start_cluster;
 	uint32_t length;
+	uint32_t parent_cluster;
+	uint8 sfn[11];
 
 	cluster_lookup_t last_fat_lookup;
 
@@ -61,6 +65,7 @@ VFS interface
 */
 
 fs_node_t* _create_dir_node(const char* name, uint32_t cluster);
+fs_node_t* _create_file_node(const char* name, uint32_t length);
 
 static uint32_t _read_sectors(struct fatfs* fatfs, file_info_t* file, uint8_t* buffer, uint32_t offset, uint32_t size)
 {
@@ -144,7 +149,7 @@ static size_t _fs_read_file(fs_node_t* node, uint8_t* buffer, size_t off, size_t
 		return 0;
 	file_info_t* file = (file_info_t*)node->data;
 
-	printf("Reading len=%d\n", file->length);
+	//printf("Reading len=%d\n", file->length);
 
 	if (off >= file->length)
 		return 0;
@@ -446,7 +451,7 @@ static size_t _fs_write_file(fs_node_t* node, const uint8_t* buffer, size_t file
 			{
 				ASSERT(false);
 			}
-			printf("Writing sector offset %d %c %c\n", file->file_data_address, file->file_data_sector[0], file->file_data_sector[1]);
+			//printf("Writing sector offset %d %c %c\n", file->file_data_address, file->file_data_sector[0], file->file_data_sector[1]);
 
 			// Increase total read count
 			bytes_written += copy_count;
@@ -469,7 +474,7 @@ static size_t _fs_write_file(fs_node_t* node, const uint8_t* buffer, size_t file
 		// We are changing the file count and this
 		// will need to be writen back at some point
 		//file->filelength_changed = 1;
-		//fatfs_update_file_length(fatfs, file->)
+		fatfs_update_file_length(fatfs, file->parent_cluster, node->name, file->length);
 	}
 
 #if FATFS_INC_TIME_DATE_SUPPORT
@@ -481,6 +486,11 @@ static size_t _fs_write_file(fs_node_t* node, const uint8_t* buffer, size_t file
 	return bytes_written;
 }
 
+static uint32_t _get_entry_start_cluster(struct fat_dir_entry* entry)
+{
+	return ((FAT_HTONS((uint32_t)entry->FstClusHI)) << 16) + FAT_HTONS(entry->FstClusLO);
+}
+
 static int32_t _fs_open_file(fs_node_t* parent, fs_node_t* node, uint32_t flags)
 {
 	ASSERT(fs_is_dir(parent) && !fs_is_dir(node));
@@ -488,23 +498,26 @@ static int32_t _fs_open_file(fs_node_t* parent, fs_node_t* node, uint32_t flags)
 	struct fatfs* fatfs = _get_fatfs(node);
 
 	if (node->data)
-		return -1; //open
+		return 0; //open
 
-	printf("FAT openeing %s\n", node->name);
+	//printf("FAT openeing %s\n", node->name);
 
 	struct fat_dir_entry sfEntry;
 	if (fatfs_get_file_entry(fatfs, dir->cluster, node->name, &sfEntry))
 	{
 		file_info_t* file = (file_info_t*)kmalloc(sizeof(file_info_t));
-		file->start_cluster = ((FAT_HTONS((uint32_t)sfEntry.FstClusHI)) << 16) + FAT_HTONS(sfEntry.FstClusLO);
+		file->start_cluster = _get_entry_start_cluster(&sfEntry);
 		file->length = FAT_HTONL(sfEntry.FileSize);
-		node->data = file;
-
+		file->parent_cluster = dir->cluster;
+		strcpy(file->sfn, sfEntry.Name); //save the short file name for faster lookup
+		
 		file->last_fat_lookup.index = 0xFFFFFFFF;
 		file->last_fat_lookup.cluster = 0xFFFFFFFF;
 
 		file->file_data_address = 0xFFFFFFFF;
 		file->file_data_dirty = 0;
+
+		node->data = file;
 		return 0;
 	}
 
@@ -513,13 +526,81 @@ static int32_t _fs_open_file(fs_node_t* parent, fs_node_t* node, uint32_t flags)
 
 static void _fs_close_file(fs_node_t* node)
 {
-	printf("Closing file %s\n", node->name);
+	//printf("Closing file %s\n", node->name);
 	if (!node->data)
 		return;
 
 	file_info_t* file = (file_info_t*)node->data;
 	kfree(file);
 	node->data = NULL;
+}
+
+static bool _fs_remove(fs_node_t* parent, fs_node_t* node)
+{
+	ASSERT(node);
+	ASSERT(parent);
+	ASSERT(parent->data);
+	ASSERT(fs_is_dir(parent));
+	struct fatfs* fatfs = _get_fatfs(node);
+	dir_info_t* dir = (dir_info_t*)parent->data;
+
+	printf("Removing dir %s\n", node->name);
+
+	struct fat_dir_entry sfEntry;
+	if (fatfs_get_file_entry(fatfs, dir->cluster, node->name, &sfEntry))
+	{
+		uint32_t start_cluster = _get_entry_start_cluster(&sfEntry);
+		if (fatfs_free_cluster_chain(fatfs, start_cluster))
+		{
+			if (fatfs_mark_file_deleted(fatfs, dir->cluster, sfEntry.Name))
+			{
+				list_delete(&node->list);
+				return true;
+			}
+		}
+	}
+
+/*
+	if (fs_is_dir(node))
+	{
+		printf("Removing dir %s\n", node->name);
+
+		struct fat_dir_entry sfEntry;
+		if (fatfs_get_file_entry(fatfs, dir->cluster, node->name, &sfEntry))
+		{
+			if (fatfs_mark_file_deleted(fatfs, dir->cluster, sfEntry.Name))
+			{
+				list_delete(&node->list);
+				return true;
+			}
+		}		
+	}
+	else
+	{
+		if (!node->data)
+		{
+			_fs_open_file(parent, node, 0);
+		}
+
+		ASSERT(node->data);
+		file_info_t* file = (file_info_t*)node->data;
+		struct fatfs* fatfs = _get_fatfs(node);
+
+		// Delete allocated space
+		if (fatfs_free_cluster_chain(fatfs, file->start_cluster))
+		{
+			if (fatfs_mark_file_deleted(fatfs, file->parent_cluster, file->sfn))
+			{
+				bochs_dbg();
+				list_delete(&node->list);
+				// Close the file handle (this should not write anything to the file
+				// as we have not changed the file since opening it!)
+				_fs_close_file(node);
+				return true;
+			}
+		}
+	}*/
+	return false;
 }
 
 static void _populate_dir_children(fs_node_t* dir_node)
@@ -541,29 +622,22 @@ static void _populate_dir_children(fs_node_t* dir_node)
 		fs_node_t* entry = NULL;
 		if (dirent.is_dir)
 		{
-			printf("FAT Populate Adding DIR %s \n", dirent.filename);
-
+		//	printf("FAT Populate Adding DIR %s \n", dirent.filename);
 			entry = _create_dir_node(dirent.filename, dirent.cluster);
-			list_add(&entry->list, &info->children);
 		}
 		else
 		{
-			printf("FAT Populate Adding FILE %s \n", dirent.filename);
-
-			entry = fs_create_node(dirent.filename);
-			entry->len = dirent.size;
-			entry->read = _fs_read_file;
-			entry->open = _fs_open_file;
-			entry->write = _fs_write_file;
-			entry->close = _fs_close_file;
-			list_add(&entry->list, &info->children);
+		//	printf("FAT Populate Adding FILE %s \n", dirent.filename);
+			entry = _create_file_node(dirent.filename, dirent.size);
+			
 		}
+		list_add(&entry->list, &info->children);
 	}
 }
 
 static uint32_t _fs_read_dir(fs_node_t* node, fs_read_dir_cb_fn_t cb, void* data)
 {
-	printf("FAT32 read dir %s\n", node->name);
+//	printf("FAT32 read dir %s\n", node->name);
 	dir_info_t* dir = (dir_info_t*)node->data;
 
 	if (list_empty(&dir->children))
@@ -581,7 +655,7 @@ static uint32_t _fs_read_dir(fs_node_t* node, fs_read_dir_cb_fn_t cb, void* data
 
 static fs_node_t* _fs_find_child(fs_node_t* node, const char* name)
 {
-	printf("FAT32 find %s in %s\n", name, node->name);
+	//printf("FAT32 find %s in %s\n", name, node->name);
 	dir_info_t* dir = (dir_info_t*)node->data;
 	if (list_empty(&dir->children))
 		_populate_dir_children(node);
@@ -593,6 +667,18 @@ static fs_node_t* _fs_find_child(fs_node_t* node, const char* name)
 	return NULL;
 }
 
+fs_node_t* _create_file_node(const char* name, uint32_t length)
+{
+	fs_node_t* node = fs_create_node(name);
+	node->len = length;
+	node->read = _fs_read_file;
+	node->open = _fs_open_file;
+	node->write = _fs_write_file;
+	node->close = _fs_close_file;
+	node->remove = _fs_remove;
+	return node;
+}
+
 fs_node_t* _create_dir_node(const char* name, uint32_t cluster)
 {
 	fs_node_t* node = fs_create_node(name);
@@ -600,6 +686,7 @@ fs_node_t* _create_dir_node(const char* name, uint32_t cluster)
 	node->flags |= FS_DIR;
 	node->read_dir = _fs_read_dir;
 	node->find_child = _fs_find_child;
+	node->remove = _fs_remove;
 	dir_info_t* dir = (dir_info_t*)kmalloc(sizeof(dir_info_t));
 	dir->cluster = cluster;
 	INIT_LIST_HEAD(&dir->children);
@@ -618,7 +705,7 @@ static int _disk_read(unsigned long sector, unsigned char* buffer, unsigned long
 
 static int _disk_write(unsigned long sector, unsigned char* buffer, unsigned long sector_count)
 {
-	printf("Writing sector %d %c %c\n", sector, buffer[0], buffer[1]);
+	//printf("Writing sector %d %c %c\n", sector, buffer[0], buffer[1]);
 	return ide_write_sectors(_mounted_partition->ide_dev, sector_count, _mounted_partition->part_lba + sector, buffer);
 }
 
@@ -647,7 +734,7 @@ void fatfs_mount_partition(uint8_t ide_controller, uint8_t drive, uint8_t part)
 	_mounted_partition->fat.disk_io.read_media = _disk_read;
 	_mounted_partition->fat.disk_io.write_media = _disk_write;
 
-	printf("Mounting partition %d lba= 0x%x\n", part, _mounted_partition->part_lba);
+	//printf("Mounting partition %d lba= 0x%x\n", part, _mounted_partition->part_lba);
 
 	int r = fatfs_init(&_mounted_partition->fat);
 	if (r != FAT_INIT_OK)

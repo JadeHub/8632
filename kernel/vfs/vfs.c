@@ -15,7 +15,41 @@ static inline bool _is_dir(const fs_node_t* n)
 #include <stdio.h>
 #include <kernel/tasks/sched.h>
 
-static fs_node_t* _get_node(fs_node_t* n, char* tmp, fs_node_t** parent)
+static fs_node_t* _get_node(fs_node_t* n, char* path, fs_node_t** parent)
+{
+	//printf("tmp = 0x%08x proc = 0x%08x\n", path, sched_cur_thread()->process);
+	//char path1[FS_MAX_PATH];
+	//strcpy(path1, path);
+	//printf("Searching '%s'\n", path);
+	ASSERT(n);
+	char* sep = strchr(path, '/');
+	if (sep)
+	{
+		//Given "blah/blah2/file"
+		*sep = '\0';
+		sep++;
+		//path = "blah"
+		//sep = "blah2/file"
+		//printf("Finding sub '%s' in '%s'\n", path, n->name);
+		fs_node_t* sub = fs_find_child(n, path);
+		//handle "blah/" case
+		if (*sep == '\0')
+		{
+			if (parent)
+				*parent = n;
+			return sub;
+		}
+		return sub ? _get_node(sub, sep, parent) : NULL;
+	}
+	//	printf("Finding '%s' in '%s'\n", path, n->name);
+	fs_node_t* child = fs_find_child(n, path);
+
+	if (child && parent)
+		*parent = n;
+	return child;
+}
+
+/*static fs_node_t* _get_node(fs_node_t* n, char* tmp, fs_node_t** parent)
 {
 	//printf("tmp = 0x%08x proc = 0x%08x\n", tmp, sched_cur_thread()->process);
 	char path[FS_MAX_PATH];
@@ -47,7 +81,7 @@ static fs_node_t* _get_node(fs_node_t* n, char* tmp, fs_node_t** parent)
 	if (child && parent)
 		*parent = n;
 	return child;
-}
+}*/
 
 int32_t fs_open(fs_node_t* parent, fs_node_t* n, uint32_t flags)
 {
@@ -105,19 +139,36 @@ fs_node_t* fs_create_child(fs_node_t* n, const char* name, uint32_t flags)
 
 fs_node_t* fs_get_abs_path(const char* path, fs_node_t** parent)
 {
-	if (strlen(path) > FS_MAX_PATH - 1)
+	size_t path_len = strlen(path);
+	if (path_len > FS_MAX_PATH - 1)
 		return NULL;
-	char tmp[FS_MAX_PATH];
-	strcpy(tmp, path);
 
 	if (strcmp(path, "/") == 0)
-	//if (path[0] == '/' && path[1] == 0)
 		return fs_root();
+
+	char* tmp = (char*)kmalloc(strlen(path) + 1);
+	strcpy(tmp, path[0] == '/' ? path+1 : path); //skip any initial '/'
+	fs_node_t* result = _get_node(fs_root(), tmp, parent);
+	kfree(tmp);
+	return result;
+}
+
+/*fs_node_t* fs_get_abs_path2(const char* path, fs_node_t** parent)
+{
+	if (strlen(path) > FS_MAX_PATH - 1)
+		return NULL;
 	
+	//char tmp[FS_MAX_PATH];
+	//strcpy(tmp, path);
+	char* tmp = (char*)path;
+
+	if (strcmp(path, "/") == 0)
+		return fs_root();
+
 	fs_node_t* res = NULL;
 	if (tmp[0] == '/')
-		return _get_node(fs_root(), tmp + 1, parent);
+		return _get_node2(fs_root(), tmp + 1, parent);
 	else
-		return _get_node(fs_root(), tmp, parent);
-}
+		return _get_node2(fs_root(), tmp, parent);
+}*/
 

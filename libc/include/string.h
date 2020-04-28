@@ -9,6 +9,7 @@ __LIBC_BEGIN_H
 char* strcpy(char* dest, const char* source);
 char* strncpy(char* dest, const char* source, size_t len);
 char* strchr(const char* str, int ch);
+char* strrchr(const char* str, int ch);
 size_t strlen(const char* buff);
 int strcmp(const char* lhs, const char* rhs);
 int strncmp(const char* lhs, const char* rhs, size_t count);
