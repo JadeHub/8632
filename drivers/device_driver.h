@@ -28,7 +28,7 @@ typedef void (*dev_close_fs)(dev_device_t*);
 typedef struct dev_driver
 {
 	kname_t name;
-	kname_t device_subdir;
+	//kname_t device_subdir;
 	list_head_t list;
 	dev_write_fs write;
 	dev_read_fs read;

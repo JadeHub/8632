@@ -268,7 +268,7 @@ void con_dev_init()
 {
     memset(&_driver, 0, sizeof(dev_driver_t));
     kname_set("console_driver", &_driver.name);
-    kname_set("console", &_driver.device_subdir);
+    //kname_set("console", &_driver.device_subdir);
     kname_set("con1", &_console.device.name);
     _driver.read = &_read_con;
     _driver.write = &_write_con;

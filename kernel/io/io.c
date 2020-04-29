@@ -7,6 +7,8 @@
 #include <kernel/debug.h>
 #include <kernel/types/list.h>
 
+#include <sys/io_defs.h>
+
 #include <dirent.h>
 #include <stdio.h>
 #include <string.h>
@@ -88,6 +90,12 @@ static fd_t _find_free_fd(proc_io_data_t* p)
 	return INVALID_FD;
 }
 
+static void _release_fd(proc_io_data_t* p, fd_t fd)
+{
+	if(fd != INVALID_FD)
+		p->fds[fd]->node = NULL;
+}
+
 /*
 Find a file decriptor for fnode belonging to proc
 */
@@ -134,46 +142,90 @@ static bool _is_dir_empty(fs_node_t* node)
 	return fs_read_dir(node, _dir_empty_cb, NULL) == 0;
 }
 
+fd_t _create_file(const char* path, uint32_t flags)
+{
+	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	ASSERT(proc);
+
+	fd_t fd = INVALID_FD;
+	char* dir_name = (char*)kmalloc(strlen(path) + 1);
+	strcpy(dir_name, path);
+	char* file_name = io_path_split_leaf(dir_name);
+	if (!file_name)
+		goto _err_exit;
+	fd = _find_free_fd(proc);
+	if (!io_is_valid_fd(fd))
+		goto _err_exit;
+	fs_node_t* parent = fs_get_abs_path(dir_name, NULL);
+	if (!parent)
+		goto _err_exit;
+	fs_node_t * node = fs_create_child(parent, file_name);
+	if (!node)
+		goto _err_exit;
+
+	proc->fds[fd] = _create_file_desc(node, flags);
+	kfree(dir_name);
+	return fd;
+
+_err_exit:
+	kfree(dir_name);
+	_release_fd(proc, fd);
+	return INVALID_FD;
+}
+
+fd_t _open_file(fs_node_t* parent, fs_node_t* node, uint32_t flags)
+{
+	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	ASSERT(proc);
+	fd_t fd = _find_free_fd(proc);
+	if (io_is_valid_fd(fd) && fs_open(parent, node))
+	{
+		proc->fds[fd] = _create_file_desc(node, flags);
+		return fd;
+	}
+	_release_fd(proc, fd);
+	return INVALID_FD;
+}
+
 fd_t io_open(const char* path, uint32_t flags)
 {	
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	ASSERT(proc);
-	printf("Open p=0x%x\n", proc);
-	//bochs_dbg();
-	//Find the node
-	fs_node_t* parent;
-	fs_node_t* node = fs_get_abs_path(path, &parent);
-	printf("Open node=0x%x p=0x%x\n", node, _get_proc_data(sched_cur_proc()));
-	//bochs_dbg();
-	if (!node)
-		return INVALID_FD;
-	//already open?
-	fd_t fd = _find_fd(proc, node);
-	printf("Found FD %d\n", fd);
-	if (io_is_valid_fd(fd))
+	
+	if ((flags & OPEN_READ) || (flags & OPEN_WRITE))
 	{
-		printf("Already open 0x%x\n", fd);
-		//bochs_dbg();
-		return fd;
+		//Find the node
+		fs_node_t* parent;
+		fs_node_t* node = fs_get_abs_path(path, &parent);
+		if (!node)
+			return INVALID_FD;
+		
+		//already open?
+		fd_t fd = _find_fd(proc, node);
+		if (io_is_valid_fd(fd))
+		{
+			printf("Already open 0x%x\n", fd);
+			return fd;
+		}
+		return _open_file(parent, node, flags);
 	}
-	fd = _find_free_fd(proc);
-	printf("Open fd=%d\n", fd);
-	//bochs_dbg();
-	if (io_is_valid_fd(fd))
+	if ((flags & OPEN_WRITE) && (flags & OPEN_CREATE))
 	{
-		proc->fds[fd] = _create_file_desc(node, flags);
-		fs_open(parent, node, flags);
+		return _create_file(path, flags);
 	}
-	return fd;
+	return INVALID_FD;
 }
 
 void io_close(fd_t fd)
 {
+	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	ASSERT(proc);
 	proc_file_desc_t* file = _get_cur_proc_fd(fd);
 	if (!file)
 		return;
 	fs_close(file->node);
 	file->node = NULL;
+	_release_fd(proc, fd);
 }
 
 size_t io_read(fd_t fd, uint8_t* buff, size_t len)
@@ -392,4 +444,21 @@ bool io_dup_fd(fd_t source, process_t* dest_p, fd_t dest)
 	}
 	dest_data->fds[dest] = _create_file_desc(desc->node, desc->flags);
 	return true;
+}
+
+/*
+given blah/blah/file
+	change path to blah/blah
+	return file
+
+given blah/blah/
+	return NULL
+*/
+char* io_path_split_leaf(char* path)
+{
+	char* pos = strrchr(path, FS_SEP_CHAR);
+	if (pos == NULL || *(pos+1) == '\0')
+		return NULL;
+	*pos = '\0';
+	return pos++;
 }

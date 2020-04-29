@@ -165,10 +165,16 @@ void ramfs_init(uint8_t* data, uint32_t len)
 	_rd.len = len;
 	_rd.files = *(uint32_t*)_rd.data;
 	_rd.headers = (header_t*)(_rd.data + sizeof(uint32_t));
-		
+	
+	printf("1\n");
+
 	_rd.root_node = _create_dir_node("initrd");
+
+	printf("2\n");
 	
 	fs_install_root_fs(_rd.root_node);
+
+	printf("3\n");
 	char buff[256];
 	header_t* hdr = _rd.headers;
 	for (int i = 0; i < _rd.files; i++, hdr++)
@@ -176,9 +182,8 @@ void ramfs_init(uint8_t* data, uint32_t len)
 		//_add_file_index will modify the path
 		strcpy(buff, hdr->path);
 		_add_file_index(_rd.root_node, buff, hdr->start, hdr->len);
+		printf("4\n");
 	}
-	//remove the directory modificantion fns as we're read only
-	//fs_walk_dir(_rd.root_node, &_remove_dir_fns_cb, 0);
 }
 
 fs_node_t* ramfs_root()

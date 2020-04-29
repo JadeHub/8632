@@ -9,7 +9,7 @@
 struct fs_node;
 
 //file io
-typedef int32_t (*fs_open_fn_t)(struct fs_node* parent, struct fs_node*, uint32_t flags);
+typedef bool (*fs_open_fn_t)(struct fs_node* parent, struct fs_node*);
 typedef void (*fs_close_fn_t)(struct fs_node*);
 typedef size_t (*fs_read_fn_t)(struct fs_node*, uint8_t* buff, size_t off, size_t sz);
 typedef size_t (*fs_write_fn_t)(struct fs_node*, const uint8_t* buff, size_t off, size_t sz);
@@ -19,7 +19,7 @@ typedef bool (*fs_remove_fn_t)(struct fs_node*, struct fs_node*);
 typedef bool(*fs_read_dir_cb_fn_t)(struct fs_node* parent, struct fs_node* child, void*);
 typedef uint32_t (*fs_read_dir_fn_t)(struct fs_node*, fs_read_dir_cb_fn_t, void*);
 typedef struct fs_node* (*fs_find_child_fn_t)(struct fs_node*, const char* name); //find a child by name
-typedef struct fs_node* (*fs_create_child_fn_t)(struct fs_node*, const char* name, uint32_t flags);
+typedef struct fs_node* (*fs_create_child_fn_t)(struct fs_node*, const char* name, uint32_t node_flags);
 
 typedef struct fs_node
 {

@@ -46,3 +46,5 @@ struct dirent;
 struct DIR* io_opendir(const char*);
 void io_closedir(struct DIR*);
 bool io_readdir(struct DIR*, struct dirent*);
+
+char* io_path_split_leaf(char* path);

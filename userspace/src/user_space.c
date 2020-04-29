@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <sys/syscall.h>
 #include <sys/signals.h>
+#include <sys/io_defs.h>
 
 void test_io()
 {
@@ -144,11 +145,11 @@ int main(int argc, char* argv[])
 
 	//sys_reg_sig_handler(1, cb);
 
-	uint32_t fd = sys_open("fatfs/initrd/bin/test.txt", 0);
+	uint32_t fd = sys_open("fatfs/initrd/bin/test.txt", OPEN_READ);
 
 	if (fd == 0xffffffff)
 	{
-		printf("Failed to open file");
+		printf("Failed to open file\n");
 	}
 	else
 	{
@@ -159,7 +160,8 @@ int main(int argc, char* argv[])
 		memset(buff, 0, l);
 		size_t s = sys_read(fd, buff, l-1);
 		//size_t s = 12;
-		printf("Read %d bytes\n", s);
+		buff[l - 1] = '\0';
+		printf("Read %d bytes %s\n", s, buff);
 		
 		//printf("%d 0x%x\n", buff[2000], buff[2000]);
 		sys_close(fd);

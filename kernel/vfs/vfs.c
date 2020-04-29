@@ -36,10 +36,10 @@ static fs_node_t* _get_node(fs_node_t* n, char* path, fs_node_t** parent)
 	return child;
 }
 
-int32_t fs_open(fs_node_t* parent, fs_node_t* n, uint32_t flags)
+int32_t fs_open(fs_node_t* parent, fs_node_t* n)
 {
 	if (n->open)
-		return (*n->open)(parent,n, flags);
+		return (*n->open)(parent,n);
 	return 0;
 }
 
@@ -83,10 +83,10 @@ fs_node_t* fs_find_child(fs_node_t* n, const char* name)
 	return NULL;
 }
 
-fs_node_t* fs_create_child(fs_node_t* n, const char* name, uint32_t flags)
+fs_node_t* fs_create_child(fs_node_t* n, const char* name, uint32_t node_flags)
 {
 	if (fs_is_dir(n) && n->create_child)
-		return (*n->create_child)(n, name, flags);
+		return (*n->create_child)(n, name, node_flags);
 	return NULL;
 }
 

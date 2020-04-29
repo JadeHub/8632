@@ -491,16 +491,16 @@ static uint32_t _get_entry_start_cluster(struct fat_dir_entry* entry)
 	return ((FAT_HTONS((uint32_t)entry->FstClusHI)) << 16) + FAT_HTONS(entry->FstClusLO);
 }
 
-static int32_t _fs_open_file(fs_node_t* parent, fs_node_t* node, uint32_t flags)
+static bool _fs_open_file(fs_node_t* parent, fs_node_t* node)
 {
 	ASSERT(fs_is_dir(parent) && !fs_is_dir(node));
 	dir_info_t* dir = (dir_info_t*)parent->data;
 	struct fatfs* fatfs = _get_fatfs(node);
 
 	if (node->data)
-		return 0; //open
+		return true; //open
 
-	//printf("FAT openeing %s\n", node->name);
+	printf("FAT openeing %s\n", node->name);
 
 	struct fat_dir_entry sfEntry;
 	if (fatfs_get_file_entry(fatfs, dir->cluster, node->name, &sfEntry))
@@ -518,10 +518,9 @@ static int32_t _fs_open_file(fs_node_t* parent, fs_node_t* node, uint32_t flags)
 		file->file_data_dirty = 0;
 
 		node->data = file;
-		return 0;
+		return true;
 	}
-
-	return -1;
+	return false;
 }
 
 static void _fs_close_file(fs_node_t* node)
@@ -544,7 +543,7 @@ static bool _fs_remove(fs_node_t* parent, fs_node_t* node)
 	struct fatfs* fatfs = _get_fatfs(node);
 	dir_info_t* dir = (dir_info_t*)parent->data;
 
-	printf("Removing dir %s\n", node->name);
+	printf("Removing %s\n", node->name);
 
 	struct fat_dir_entry sfEntry;
 	if (fatfs_get_file_entry(fatfs, dir->cluster, node->name, &sfEntry))
@@ -559,47 +558,6 @@ static bool _fs_remove(fs_node_t* parent, fs_node_t* node)
 			}
 		}
 	}
-
-/*
-	if (fs_is_dir(node))
-	{
-		printf("Removing dir %s\n", node->name);
-
-		struct fat_dir_entry sfEntry;
-		if (fatfs_get_file_entry(fatfs, dir->cluster, node->name, &sfEntry))
-		{
-			if (fatfs_mark_file_deleted(fatfs, dir->cluster, sfEntry.Name))
-			{
-				list_delete(&node->list);
-				return true;
-			}
-		}		
-	}
-	else
-	{
-		if (!node->data)
-		{
-			_fs_open_file(parent, node, 0);
-		}
-
-		ASSERT(node->data);
-		file_info_t* file = (file_info_t*)node->data;
-		struct fatfs* fatfs = _get_fatfs(node);
-
-		// Delete allocated space
-		if (fatfs_free_cluster_chain(fatfs, file->start_cluster))
-		{
-			if (fatfs_mark_file_deleted(fatfs, file->parent_cluster, file->sfn))
-			{
-				bochs_dbg();
-				list_delete(&node->list);
-				// Close the file handle (this should not write anything to the file
-				// as we have not changed the file since opening it!)
-				_fs_close_file(node);
-				return true;
-			}
-		}
-	}*/
 	return false;
 }
 
@@ -667,6 +625,20 @@ static fs_node_t* _fs_find_child(fs_node_t* node, const char* name)
 	return NULL;
 }
 
+static fs_node_t* _fs_create_file(fs_node_t* parent, const char* name)
+{
+	return NULL;
+}
+
+static fs_node_t* _fs_create_child(fs_node_t* parent, const char* name, uint32_t flags)
+{
+	if (flags & FS_FILE)
+	{
+		return _create_file(parent, name);
+	}
+	return NULL;
+}
+
 fs_node_t* _create_file_node(const char* name, uint32_t length)
 {
 	fs_node_t* node = fs_create_node(name);
@@ -686,7 +658,8 @@ fs_node_t* _create_dir_node(const char* name, uint32_t cluster)
 	node->flags |= FS_DIR;
 	node->read_dir = _fs_read_dir;
 	node->find_child = _fs_find_child;
-	node->remove = _fs_remove;
+	node->create_child = _fs_create_child;
+	node->remove = _fs_remove;	
 	dir_info_t* dir = (dir_info_t*)kmalloc(sizeof(dir_info_t));
 	dir->cluster = cluster;
 	INIT_LIST_HEAD(&dir->children);
