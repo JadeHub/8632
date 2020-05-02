@@ -9,15 +9,28 @@
 #include <kernel/time.h>
 #include <kernel/io/io.h>
 #include <kernel/signals/signal.h>
-#include <dirent.h>
+#include <kernel/tasks/sched.h>
+#include <kernel/fault.h>
 
+#include <dirent.h>
 #include <stdio.h>
 
-static uint32_t syscall_alloc(isr_state_t* regs, heap_t* h, uint32_t size)
+static uint32_t syscall_alloc(isr_state_t* regs, uint32_t size)
 {
-	uint32_t ret = (uint32_t)heap_alloc(size, 0, h);
-	bochs_dbg();
+    process_t* proc = sched_cur_proc();
+    ASSERT(proc);
+
+	uint32_t ret = (uint32_t)heap_alloc(size, 0, proc->heap);
+	
 	return ret;
+}
+
+static void _syscall_free(isr_state_t* regs, void* addr)
+{
+    process_t* proc = sched_cur_proc();
+    ASSERT(proc);
+
+    heap_free(addr, proc->heap);
 }
 
 static void _syscall_sleep_ms(isr_state_t* regs, uint32_t ms)
@@ -116,11 +129,6 @@ static int _syscall_remove(isr_state_t* regs, const char* path)
     return io_remove(path);
 }
 
-static int _syscall_rmdir(isr_state_t* regs, const char* path)
-{
-    return -1;
-}
-
 static void* syscalls[20] =
 {
 	&syscall_alloc,
@@ -142,7 +150,7 @@ static void* syscalls[20] =
     &_syscall_fflush,
     &_syscall_mkdir,
     &_syscall_remove,
-    &_syscall_rmdir
+    &_syscall_free
 };
 
 void syscall_handler(isr_state_t* regs)

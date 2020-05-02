@@ -12,6 +12,7 @@
 __LIBC_BEGIN_H
 
 void* sys_alloc(size_t);
+void sys_free(void*);
 void sys_print_str(const char*, uint32_t);
 void sys_exit(int32_t);
 uint32_t sys_open(const char*, uint32_t);

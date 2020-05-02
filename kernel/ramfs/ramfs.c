@@ -37,41 +37,35 @@ typedef struct
 static uint32_t _fs_read_dir(fs_node_t* node, fs_read_dir_cb_fn_t cb, void* data)
 {
 	dir_t* dir = (dir_t*)node->data;
-	//printf("Enumerating %s\n", node->name);
 	fs_node_t* child;
 	uint32_t count = 0;
 	list_for_each_entry(child, &dir->children, list)
 	{
-		//printf("Enum %s\n", child->name);
 		count++;
 		if (!cb(node, child, data))
 			break;
 	}
-	//printf("Finished enum\n");
 	return count;
 }
 
 static fs_node_t* _fs_find_child(fs_node_t* node, const char* name)
 {
 	dir_t* dir = (dir_t*)node->data;
-	//printf("Searching for %s in %s\n", name, node->name);
 	fs_node_t* child;
 	list_for_each_entry(child, &dir->children, list)
-	{
-		//printf("Checking %s\n", child->name);
 		if (strcmp(name, child->name) == 0)
-		{
-		//	printf("Found\n");
 			return child;
-		}
-	}
-//	printf("Not found\n");
 	return NULL;
 }
 
 static inline uint32_t _min(uint32_t a, uint32_t b)
 {
 	return a < b ? a : b;
+}
+
+static bool _open_file(fs_node_t* parent, fs_node_t* node)
+{
+	return true;
 }
 
 static size_t _read_file(struct fs_node* f, uint8_t* buff, size_t off, size_t sz)
@@ -145,12 +139,8 @@ static fs_node_t* _add_file_index(fs_node_t* parent, char* path, uint32_t offset
 		file->inode = _next_inode++;
 		file->data = (void*)offset;
 		file->len = len;
-		file->read = &_read_file;
-		/*if(fs_add_child_node(parent, file) != file)
-		{
-			fs_destroy_node(file);
-			file = NULL;
-		}*/
+		file->read = _read_file;
+		file->open = _open_file;
 		dir_t* data = (dir_t*)parent->data;
 		list_add(&file->list, &data->children);
 		return file;

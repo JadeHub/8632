@@ -24,6 +24,9 @@ typedef struct console
     uint8_t cursor_x;
     uint8_t cursor_y;
 
+    dsp_color fg_colour;
+    dsp_color bk_colour;
+
     //input buffer for kb isr
     line_buff_t line_buff;
 
@@ -200,6 +203,16 @@ static dsp_color _translate_bk_colour(uint8_t c)
     return _translate_fg_colour(c - 10);
 }
 
+static void _set_text_attribs()
+{
+    dsp_set_text_attr(_console.fg_colour, _console.bk_colour);
+}
+
+/*
+eg [91;40m  //FG;BG
+eg [91m     //FG
+eg [0m      //Reset
+*/
 static bool _process_sgr_esc(char* str)
 {
     size_t len = strlen(str);
@@ -215,10 +228,26 @@ static bool _process_sgr_esc(char* str)
             int back = atoi(sep+1);
             *sep = '\0';
             int fore = atoi(str);
-            dsp_set_text_attr(_translate_fg_colour(fore), _translate_bk_colour(back));
+            _console.fg_colour = _translate_fg_colour(fore);
+            _console.bk_colour = _translate_bk_colour(back);
+            _set_text_attribs();
             return true;
         }
-
+        else if(strlen(str) == 0 || strcmp("0", str) == 0)
+        {
+            //reset
+            _console.bk_colour = BLACK;
+            _console.fg_colour = CYAN;
+            _set_text_attribs();
+            return true;
+        }
+        else
+        {
+            int fore = atoi(str);
+            _console.fg_colour = _translate_fg_colour(fore);
+            _set_text_attribs();
+            return true;
+        }
     }
     return false;
 }
@@ -260,7 +289,9 @@ void con_init()
     _console.input_buff = cbuff8_create(_input_buff, 1024);
     dsp_clear_screen();
     dsp_set_cursor(_console.cursor_x, _console.cursor_y);
-    dsp_set_text_attr(LIGHT_CYAN, BLACK);
+    _console.bk_colour = BLACK;
+    _console.fg_colour = CYAN;
+    _set_text_attribs();
     con_clear();
 }
 

@@ -500,7 +500,7 @@ static bool _fs_open_file(fs_node_t* parent, fs_node_t* node)
 	if (node->data)
 		return true; //open
 
-	printf("FAT openeing %s\n", node->name);
+	//printf("FAT openeing %s\n", node->name);
 
 	struct fat_dir_entry sfEntry;
 	if (fatfs_get_file_entry(fatfs, dir->cluster, node->name, &sfEntry))
@@ -543,7 +543,7 @@ static bool _fs_remove(fs_node_t* parent, fs_node_t* node)
 	struct fatfs* fatfs = _get_fatfs(node);
 	dir_info_t* dir = (dir_info_t*)parent->data;
 
-	printf("Removing %s\n", node->name);
+	//printf("Removing %s\n", node->name);
 
 	struct fat_dir_entry sfEntry;
 	if (fatfs_get_file_entry(fatfs, dir->cluster, node->name, &sfEntry))
@@ -634,7 +634,7 @@ static fs_node_t* _fs_create_child(fs_node_t* parent, const char* name, uint32_t
 {
 	if (flags & FS_FILE)
 	{
-		return _create_file(parent, name);
+		return _fs_create_file(parent, name);
 	}
 	return NULL;
 }

@@ -136,14 +136,16 @@ static process_t* _proc_new_elf_proc(const char* name, uint8_t* data, uint32_t l
 
 uint32_t proc_start_user_proc(const char* path, const char* args[], uint32_t fds[3])
 {
-	fs_node_t* fnode = fs_get_abs_path(path, NULL);
-	if (fnode && fnode->len > 0)
+	fs_node_t* parent;
+	fs_node_t* node = fs_get_abs_path(path, &parent);
+	if (node && parent && node->len > 0 && fs_open(parent, node))
 	{
-		uint8_t* exe_buff = (uint8_t*)kmalloc(fnode->len);
+		uint8_t* exe_buff = (uint8_t*)kmalloc(node->len);
 		ASSERT(exe_buff);
-		if (fs_read(fnode, exe_buff, 0, fnode->len) == fnode->len)
+		if (fs_read(node, exe_buff, 0, node->len) == node->len)
 		{
-			process_t* proc = _proc_new_elf_proc(args[0], exe_buff, fnode->len);
+			fs_close(node);
+			process_t* proc = _proc_new_elf_proc(args[0], exe_buff, node->len);
 			kfree(exe_buff);
 			if (!proc) return 0;
 
@@ -159,6 +161,7 @@ uint32_t proc_start_user_proc(const char* path, const char* args[], uint32_t fds
 			return proc->id;
 		}
 	}
+	printf("Exec no file %s 0x%x\n", path, node);
 	return 0;
 }
 

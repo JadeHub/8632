@@ -1,3 +1,4 @@
+ktest/bin/ktest
 shell/shell
 userspace/bin/*
 sysroot

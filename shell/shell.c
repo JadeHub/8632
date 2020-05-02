@@ -91,7 +91,7 @@ static bool _process_cmd(char* cmd)
 		fds[0] = 0xffffffff;
 		fds[1] = 0xffffffff;
 		fds[2] = 0xffffffff;
-		uint32_t pid = sys_start_proc("/initrd/bin/user_space", p.params, fds);
+		uint32_t pid = sys_start_proc("/fatfs/ktest", p.params, fds);
 		if (pid == 0)
 		{
 			printf("Failed to exec\n");

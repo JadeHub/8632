@@ -14,5 +14,8 @@ void free(void* ptr);
 int atexit(void (*)(void) );
 char* getenv(const char* p);
 void exit(int exit_code);
+int abs(int);
+long labs(long);
+long long llabs(long long);
 
 __LIBC_END_H

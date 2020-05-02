@@ -1,6 +1,7 @@
-cd userspace
+cd ktest
 make -j
-cp bin/* ../sysroot/initrd/bin/
+sudo cp bin/ktest ../fat_image/
+sync
 cd ..
 
 cd shell
