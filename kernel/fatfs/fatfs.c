@@ -9,6 +9,7 @@
 #include <drivers/ide/ide.h>
 #include <drivers/fat/fat_access.h>
 #include <drivers/fat/fat_table.h>
+#include <drivers/fat/fat_write.h>
 
 #include <sys/io_defs.h>
 #include <stdint.h>
@@ -40,7 +41,7 @@ typedef struct cluster_lookup
 typedef struct file_info
 {
 	uint32_t start_cluster;
-	uint32_t length;
+	//uint32_t length;
 	uint32_t parent_cluster;
 	uint8 sfn[11];
 
@@ -151,11 +152,11 @@ static size_t _fs_read_file(fs_node_t* node, uint8_t* buffer, size_t off, size_t
 
 	//printf("Reading len=%d\n", file->length);
 
-	if (off >= file->length)
+	if (off >= node->len)
 		return 0;
 
-	if (off + count > file->length)
-		count = file->length - off;
+	if (off + count > node->len)
+		count = node->len - off;
 
 	uint32_t sector;
 	uint32_t offset;
@@ -227,7 +228,7 @@ static size_t _fs_read_file(fs_node_t* node, uint8_t* buffer, size_t off, size_t
 	return bytes_read;
 }
 
-static int _add_free_space(struct fatfs* fs, uint32_t* startCluster, uint32_t clusters)
+/*static int _add_free_space(struct fatfs* fs, uint32_t* startCluster, uint32_t clusters)
 {
 	uint32_t i;
 	uint32_t nextcluster;
@@ -258,7 +259,7 @@ static int _add_free_space(struct fatfs* fs, uint32_t* startCluster, uint32_t cl
 	}
 
 	return 1;
-}
+}*/
 
 static uint32_t _write_sectors(struct fatfs* fatfs, file_info_t* file, uint32_t offset, uint8_t* buf, uint32_t count)
 {
@@ -325,7 +326,8 @@ static uint32_t _write_sectors(struct fatfs* fatfs, file_info_t* file, uint32_t 
 		if (cluster == FAT32_LAST_CLUSTER)
 		{
 			// Add some more cluster(s) to the last good cluster chain
-			if (!_add_free_space(fatfs, &last_cluster, (write_count + fatfs->sectors_per_cluster - 1) / fatfs->sectors_per_cluster))
+			//if (!_add_free_space(fatfs, &last_cluster, (write_count + fatfs->sectors_per_cluster - 1) / fatfs->sectors_per_cluster))
+			if (!fatfs_add_free_space(fatfs, &last_cluster, (write_count + fatfs->sectors_per_cluster - 1) / fatfs->sectors_per_cluster))
 				return 0;
 
 			cluster = last_cluster;
@@ -466,15 +468,17 @@ static size_t _fs_write_file(fs_node_t* node, const uint8_t* buffer, size_t file
 	}
 
 	// Write increased extent of the file?
-	if (file_off > file->length)
+	if (file_off > node->len)
 	{
 		// Increase file size to new point
-		file->length = file_off;
+		node->len = file_off;
 
 		// We are changing the file count and this
 		// will need to be writen back at some point
 		//file->filelength_changed = 1;
-		fatfs_update_file_length(fatfs, file->parent_cluster, node->name, file->length);
+		//printf("Updating length with purge %d\n", node->len);
+		fatfs_update_file_length(fatfs, file->parent_cluster, file->sfn, node->len);
+		fatfs_fat_purge(fatfs);
 	}
 
 #if FATFS_INC_TIME_DATE_SUPPORT
@@ -500,14 +504,15 @@ static bool _fs_open_file(fs_node_t* parent, fs_node_t* node)
 	if (node->data)
 		return true; //open
 
-	//printf("FAT openeing %s\n", node->name);
+	printf("FAT openeing %s\n", node->name);
 
 	struct fat_dir_entry sfEntry;
 	if (fatfs_get_file_entry(fatfs, dir->cluster, node->name, &sfEntry))
 	{
 		file_info_t* file = (file_info_t*)kmalloc(sizeof(file_info_t));
 		file->start_cluster = _get_entry_start_cluster(&sfEntry);
-		file->length = FAT_HTONL(sfEntry.FileSize);
+		//file->length = FAT_HTONL(sfEntry.FileSize);
+		node->len = FAT_HTONL(sfEntry.FileSize);
 		file->parent_cluster = dir->cluster;
 		strcpy(file->sfn, sfEntry.Name); //save the short file name for faster lookup
 		
@@ -625,9 +630,110 @@ static fs_node_t* _fs_find_child(fs_node_t* node, const char* name)
 	return NULL;
 }
 
+static bool _allocate_free_space(struct fatfs* fs, bool newFile, uint32_t* startCluster, uint32_t size)
+{
+	uint32_t clusterSize;
+	uint32_t clusterCount;
+	uint32_t nextcluster;
+
+	if (size == 0)
+		return 0;
+
+	// Set the next free cluster hint to unknown
+	if (fs->next_free_cluster != FAT32_LAST_CLUSTER)
+		fatfs_set_fs_info_next_free_cluster(fs, FAT32_LAST_CLUSTER);
+
+	// Work out size and clusters
+	clusterSize = fs->sectors_per_cluster * FAT_SECTOR_SIZE;
+	clusterCount = (size / clusterSize);
+
+	// If any left over
+	if (size - (clusterSize * clusterCount))
+		clusterCount++;
+
+	// Allocated first link in the chain if a new file
+	if (newFile)
+	{
+		if (!fatfs_find_blank_cluster(fs, fs->rootdir_first_cluster, &nextcluster))
+			return 0;
+
+		// If this is all that is needed then all done
+		if (clusterCount == 1)
+		{
+			fatfs_fat_set_cluster(fs, nextcluster, FAT32_LAST_CLUSTER);
+			*startCluster = nextcluster;
+			return 1;
+		}
+	}
+	// Allocate from end of current chain (startCluster is end of chain)
+	else
+		nextcluster = *startCluster;
+
+	if (!fatfs_add_free_space(fs, &nextcluster, clusterCount))
+		return 0;
+
+	return 1;
+}
+
 static fs_node_t* _fs_create_file(fs_node_t* parent, const char* name)
 {
-	return NULL;
+	dir_info_t* dir = (dir_info_t*)parent->data;
+	struct fatfs* fatfs = _get_fatfs(parent);
+	struct fat_dir_entry sfEntry;
+
+	printf("Fatfs create %s in %s\n", name, parent->name);
+
+	// Check if same filename exists in directory
+	if (fatfs_get_file_entry(fatfs, dir->cluster, (char*)name, &sfEntry) == 1)
+	{
+		printf("Fatfs create exists\n");
+		return NULL;
+	}
+
+	// Generate a short filename & tail
+	char short_filename[FAT_SFN_SIZE_FULL];
+	fatfs_lfn_create_sfn(short_filename, (char*)name);
+	int tailNum = 0;
+	while (fatfs_sfn_exists(fatfs, dir->cluster, short_filename) && tailNum++ < 9999)
+	{
+		char tmp[FAT_SFN_SIZE_FULL];
+		fatfs_lfn_create_sfn(tmp, (char*)name);
+		fatfs_lfn_generate_tail(short_filename, tmp, tailNum);
+	}
+	// We reached the max number of duplicate short file names (unlikely!)
+	if (tailNum == 9999)
+	{
+		return NULL;
+	}
+
+	printf("Fatfs create sfn=%s\n", short_filename);
+
+	// Allocate a single cluster
+	uint32_t start_cluster = 0;
+	if (!_allocate_free_space(fatfs, true, &start_cluster, 1))
+	{
+		return NULL;
+	}
+
+	if (!fatfs_add_file_entry(fatfs, dir->cluster, (char*)name, short_filename, start_cluster, 0, 0))
+	{
+		// Delete allocated space
+		fatfs_free_cluster_chain(fatfs, start_cluster);
+		return NULL;
+	}
+
+	fs_node_t* node = _create_file_node(name, 0);
+	ASSERT(node);
+	
+	if (!_fs_open_file(parent, node))
+	{
+		fatfs_free_cluster_chain(fatfs, start_cluster);
+		fatfs_mark_file_deleted(fatfs, dir->cluster, (char*)name);
+		return NULL;
+	}
+	fatfs_fat_purge(fatfs);
+	list_add(&node->list, &dir->children);
+	return node;
 }
 
 static fs_node_t* _fs_create_child(fs_node_t* parent, const char* name, uint32_t flags)

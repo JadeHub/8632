@@ -1,6 +1,6 @@
 cd ktest
 make -j
-sudo cp bin/ktest ../fat_image/
+sudo cp bin/ktest ../fimg/
 sync
 cd ..
 

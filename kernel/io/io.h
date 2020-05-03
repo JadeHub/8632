@@ -1,12 +1,11 @@
 #pragma once
 
+#include <sys/io_defs.h>
 #include <kernel/tasks/sched.h>
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
-
-#define INVALID_FD 0xFFFFFFFF
 
 //open flags
 #define IO_OPEN_R	0x01

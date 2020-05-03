@@ -159,7 +159,7 @@ fd_t _create_file(const char* path, uint32_t flags)
 	fs_node_t* parent = fs_get_abs_path(dir_name, NULL);
 	if (!parent)
 		goto _err_exit;
-	fs_node_t * node = fs_create_child(parent, file_name);
+	fs_node_t * node = fs_create_child(parent, file_name, FS_FILE);
 	if (!node)
 		goto _err_exit;
 
@@ -189,16 +189,26 @@ fd_t _open_file(fs_node_t* parent, fs_node_t* node, uint32_t flags)
 
 fd_t io_open(const char* path, uint32_t flags)
 {	
+	/*printf("Open\n");
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	ASSERT(proc);
-	
+
 	if ((flags & OPEN_READ) || (flags & OPEN_WRITE))
 	{
+		printf("Opening\n");
 		//Find the node
 		fs_node_t* parent;
 		fs_node_t* node = fs_get_abs_path(path, &parent);
 		if (!node)
+		{
+			printf("no node\n");
+			if(flags & OPEN_CREATE)
+			{
+				printf("Creating\n");
+				return _create_file(path, flags);
+			}
 			return INVALID_FD;
+		}
 		
 		//already open?
 		fd_t fd = _find_fd(proc, node);
@@ -207,17 +217,50 @@ fd_t io_open(const char* path, uint32_t flags)
 			printf("Already open 0x%x\n", fd);
 			return fd;
 		}
+		printf("calling open\n");
 		return _open_file(parent, node, flags);
 	}
-	if ((flags & OPEN_WRITE) && (flags & OPEN_CREATE))
+	return INVALID_FD;*/
+	printf("Open\n");
+	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	ASSERT(proc);
+	fd_t fd = INVALID_FD;
+
+	//read
+	if (flags & OPEN_READ)
 	{
-		return _create_file(path, flags);
+		printf("Opening read\n");
+		//Find the node
+		fs_node_t* parent;
+		fs_node_t* node = fs_get_abs_path(path, &parent);
+		if (node)
+			fd = _open_file(parent, node, flags);
 	}
-	return INVALID_FD;
+
+	//create
+	if (fd == INVALID_FD && (flags & OPEN_CREATE))
+	{
+		fd = _create_file(path, flags);
+	}
+
+	//write existing
+	if (fd == INVALID_FD && (flags & (OPEN_WRITE | OPEN_APPEND)))
+	{
+		printf("Opening write append\n");
+		//Find the node
+		fs_node_t* parent;
+		fs_node_t* node = fs_get_abs_path(path, &parent);
+		if (node)
+			fd = _open_file(parent, node, flags);
+	}
+	return fd;
 }
 
 void io_close(fd_t fd)
 {
+	if (fd == INVALID_FD)
+		return;
+
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	ASSERT(proc);
 	proc_file_desc_t* file = _get_cur_proc_fd(fd);
@@ -460,5 +503,5 @@ char* io_path_split_leaf(char* path)
 	if (pos == NULL || *(pos+1) == '\0')
 		return NULL;
 	*pos = '\0';
-	return pos++;
+	return pos+1;
 }

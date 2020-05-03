@@ -9,4 +9,6 @@ __LIBC_BEGIN_H
 #define OPEN_CREATE 4
 #define OPEN_APPEND 8
 
+#define INVALID_FD 0xFFFFFFFF
+
 __LIBC_END_H

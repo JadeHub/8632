@@ -2,8 +2,6 @@
 
 #include <stdlib.h>
 
-
-
 void alloc_free()
 {
 	size_t sz = 20;

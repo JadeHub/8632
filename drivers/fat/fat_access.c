@@ -661,7 +661,6 @@ int fatfs_update_file_length(struct fatfs *fs, uint32 Cluster, char *shortname, 
                         // Update access / modify time & date
                         fatfs_update_timestamps(directoryEntry, 0, 1, 1);
 #endif
-
                         // Update sfn entry
                         memcpy((uint8*)(fs->currentsector.sector+recordoffset), (uint8*)directoryEntry, sizeof(struct fat_dir_entry));
 
@@ -679,7 +678,6 @@ int fatfs_update_file_length(struct fatfs *fs, uint32 Cluster, char *shortname, 
 }
 #endif
 
-#include <kernel/debug.h>
 int fatfs_mark_file_deleted2(struct fatfs* fs, uint32 Cluster, char* shortname)
 {
     uint8 item = 0;
@@ -752,15 +750,6 @@ int fatfs_mark_file_deleted(struct fatfs *fs, uint32 Cluster, char *shortname)
 #endif
                 if (fatfs_entry_sfn_only(directoryEntry) )
                 {
-                  /*  if (directoryEntry->Name[0] == 't' &&
-                        directoryEntry->Name[1] == 'e' &&
-                        directoryEntry->Name[2] == 's' &&
-                        directoryEntry->Name[3] == 't')
-                    {
-                        printf("DIR TEST %s\n", directoryEntry->Name);
-                    }*/
-                    printf("DIR %s == %s\n", directoryEntry->Name, shortname);
-
                     if (strncmp((const char *)directoryEntry->Name, shortname, 11)==0)
                     {
                         // Mark as deleted
