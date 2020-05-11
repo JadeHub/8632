@@ -119,7 +119,7 @@ static void _syscall_sig_handler_return(isr_state_t* regs)
     sig_return(sched_cur_proc(), regs);
 }
 
-static bool _syscall_sig_send_signal(uint32_t pid, uint32_t sig)
+static bool _syscall_sig_send_signal(isr_state_t* regs, uint32_t pid, uint32_t sig)
 {
     return sig_queue_signal(proc_get_pid(pid), sig);
 }
@@ -129,7 +129,12 @@ static int _syscall_remove(isr_state_t* regs, const char* path)
     return io_remove(path);
 }
 
-static void* syscalls[20] =
+static void _syscall_break(isr_state_t* regs)
+{
+    bochs_dbg();
+}
+
+static void* syscalls[21] =
 {
 	&syscall_alloc,
 	&_syscall_sleep_ms,
@@ -150,7 +155,8 @@ static void* syscalls[20] =
     &_syscall_fflush,
     &_syscall_mkdir,
     &_syscall_remove,
-    &_syscall_free
+    &_syscall_free,
+    & _syscall_break
 };
 
 void syscall_handler(isr_state_t* regs)

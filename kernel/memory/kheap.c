@@ -7,10 +7,9 @@
 #include <kernel/debug.h>
 #include <kernel/utils.h>
 
-// end is defined in the linker script.
+// kend is defined in the linker script.
 extern uint32_t kend;
 uint32_t placement_address = (uint32_t)&kend;
-extern page_directory_t *kernel_directory;
 heap_t *kheap=0;
 
 uint32_t kmalloc_int(uint32_t sz, int align, uint32_t *phys)
@@ -20,14 +19,13 @@ uint32_t kmalloc_int(uint32_t sz, int align, uint32_t *phys)
         void *addr = heap_alloc(sz, (uint8_t)align, kheap);
         if (phys != 0)
         {
-            page_t *page = get_page((uint32_t)addr, 0, kernel_directory);
-            *phys = page->frame*0x1000 + ((uint32_t)addr&0xFFF);
+            *phys = vmm_get_phys_addr(vmm_get_kdir(), (uint32_t)addr);
         }
         return (uint32_t)addr;
     }
     else
     {
-        if (align == 1 && (placement_address & 0xFFFFF000) )
+        if (align == 1 && (placement_address & 0x00000FFF) )
         {
             // Align the placement address;
             placement_address &= 0xFFFFF000;
@@ -77,7 +75,7 @@ static void expand(uint32_t new_size, heap_t *heap)
     ASSERT(new_size > heap->end_address - heap->start_address);
 
     // Get the nearest following page boundary.
-    if (new_size&0xFFFFF000 != 0)
+    if (new_size&0x00000FFF != 0)
     {
         new_size &= 0xFFFFF000;
         new_size += 0x1000;
@@ -89,11 +87,17 @@ static void expand(uint32_t new_size, heap_t *heap)
     // This should always be on a page boundary.
     uint32_t old_size = heap->end_address-heap->start_address;
 
+    printf("expanding from 0x%x to 0x%x\n", old_size, new_size);
+    bochs_dbg();
+
     uint32_t i = old_size;
     while (i < new_size)
     {
-        alloc_frame( get_page(heap->start_address+i, 1, heap->page_dir),
-                     (heap->supervisor)?1:0, (heap->readonly)?0:1);
+        /*alloc_frame( get_page(heap->start_address+i, 1, heap->page_dir),
+                     (heap->supervisor)?1:0, (heap->readonly)?0:1);*/
+
+        vmm_map_page(heap->page_dir, heap->start_address + i, heap->supervisor, 1);
+
         i += 0x1000 /* page size */;
     }
     heap->end_address = heap->start_address+new_size;
@@ -105,9 +109,9 @@ static uint32_t contract(uint32_t new_size, heap_t *heap)
     ASSERT(new_size < heap->end_address-heap->start_address);
 
     // Get the nearest following page boundary.
-    if (new_size&0x1000)
+    if (new_size & 0x00000FFF != 0)
     {
-        new_size &= 0x1000;
+        new_size &= 0xFFFFF000;
         new_size += 0x1000;
     }
 
@@ -117,9 +121,18 @@ static uint32_t contract(uint32_t new_size, heap_t *heap)
 
     uint32_t old_size = heap->end_address-heap->start_address;
     uint32_t i = old_size - 0x1000;
+
+    printf("Contracting %d to %d\n", old_size, new_size);
     while (new_size < i)
     {
-        free_frame(get_page(heap->start_address+i, 0, heap->page_dir));
+       // dbg_dump_current_stack();
+        printf("contract unmapping 0x%x\n", heap->start_address + i);
+       // bochs_dbg();
+        vmm_unmap_page(heap->page_dir, heap->start_address + i);
+        //page_t* p = get_page(heap->start_address + i, 0, heap->page_dir);
+        //ASSERT(p->present);
+        //free_frame(p);
+
         i -= 0x1000;
     }
 
@@ -140,7 +153,7 @@ static int32_t find_smallest_hole(uint32_t size, uint8_t page_align, heap_t *hea
             // Page-align the starting point of this header.
             uint32_t location = (uint32_t)header;
             int32_t offset = 0;
-            if ((location+sizeof(header_t) & 0xFFFFF000) != 0)
+            if ((location+sizeof(header_t) & 0x00000FFF) != 0)
                 offset = 0x1000 /* page size */  - (location+sizeof(header_t))%0x1000;
             int32_t hole_size = (int32_t)header->size - offset;
             // Can we fit now?
@@ -182,7 +195,7 @@ heap_t* heap_create(page_directory_t* page_dir, uint32_t start, uint32_t end_add
     start += sizeof(type_t)*HEAP_INDEX_SIZE;
 
     // Make sure the start address is page-aligned.
-    if (start & 0xFFFFF000 != 0)
+    if (start & 0x00000FFF != 0)
     {
         start &= 0xFFFFF000;
         start += 0x1000;
@@ -277,7 +290,7 @@ void* heap_alloc(uint32_t size, uint8_t page_align, heap_t *heap)
     }
 
     // If we need to page-align the data, do it now and make a new hole in front of our block.
-    if (page_align && orig_hole_pos&0xFFFFF000)
+    if (page_align && orig_hole_pos&0x00000FFF)
     {
         uint32_t new_location   = orig_hole_pos + 0x1000 /* page size */ - (orig_hole_pos&0xFFF) - sizeof(header_t);
         header_t *hole_header = (header_t *)orig_hole_pos;
@@ -330,6 +343,8 @@ void* heap_alloc(uint32_t size, uint8_t page_align, heap_t *heap)
 
 void heap_free(void *p, heap_t *heap)
 {
+    //return;
+
     // Exit gracefully for null pointers.
     if (p == 0)
         return;

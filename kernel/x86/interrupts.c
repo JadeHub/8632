@@ -1,6 +1,7 @@
 #include "interrupts.h"
 #include "isr.h"
 
+#include <kernel/fault.h>
 #include <kernel/utils.h>
 #include <kernel/signals/signal.h>
 
@@ -128,8 +129,15 @@ void idt_register_handler(uint8_t n, isr_callback_t handler)
     isr_handlers[n] = handler;
 }
 
+isr_state_t* __test_regs = NULL;
+
+extern int __test;
+
 void isr_handler(isr_state_t* regs)
 {
+	uint32_t v = *(uint32_t*)regs->eip;
+
+	__test_regs = regs;
 	if (_is_irq(regs->int_no))
 	{
 		//handle spurious irqs https://wiki.osdev.org/8259_PIC#Spurious_IRQs
@@ -142,4 +150,10 @@ void isr_handler(isr_state_t* regs)
 		isr_handlers[regs->int_no](regs);
 	}
 	sig_handle_pending(regs);
+
+//	if (__test > 1)
+	{
+		ASSERT(v == *(uint32_t*)regs->eip);
+	//	bochs_dbg();
+	}
 }

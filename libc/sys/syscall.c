@@ -21,6 +21,7 @@
 #define SYSCALL_MKDIR 18
 #define SYSCALL_REMOVE 19
 #define SYSCALL_FREE 20
+#define SYSCALL_BREAK 21
 
 extern uint32_t perform_syscall(uint32_t id, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4, uint32_t p5);
 
@@ -148,4 +149,9 @@ bool sys_send_signal(uint32_t pid, uint32_t sig)
 int sys_remove(const char* path)
 {
 	return SYSCALL1(SYSCALL_REMOVE, path);
+}
+
+void sys_break()
+{
+	SYSCALL0(SYSCALL_BREAK);
 }

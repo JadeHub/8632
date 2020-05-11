@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct page
 {
@@ -38,14 +39,13 @@ typedef struct page_directory
     uint32_t physicalAddr;
 } page_directory_t;
 
-extern page_directory_t* kernel_directory;
+#define VMM_PAGE_SIZE 0x1000
 
-page_directory_t* paging_init();
-void page_dir_destroy_directory(page_directory_t*);
-
-void switch_page_directory(page_directory_t *new);
-page_directory_t *clone_directory(page_directory_t *src);
-uint32_t alloc_pages(page_directory_t* pages, uint32_t start, uint32_t end);
-
-page_t *get_page(uint32_t address, int make, page_directory_t *dir);
-
+void vmm_init();
+void vmm_map_page(page_directory_t* dir, uint32_t vaddr, bool kernel, bool writeable);
+void vmm_unmap_page(page_directory_t* dir, uint32_t vaddr);
+uint32_t vmm_get_phys_addr(page_directory_t* dir, uint32_t vaddr);
+page_directory_t* vmm_get_kdir();
+page_directory_t* vmm_clone_dir(page_directory_t* src);
+void vmm_destroy_dir(page_directory_t*);
+void vmm_switch_dir(page_directory_t* new);

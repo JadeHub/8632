@@ -78,12 +78,18 @@ static bool _is_valid_header(const elf_hdr_t* hdr)
 
 static void _load_elf_data(page_directory_t* pages, const uint8_t* src, elf_phdr_t* phdr)
 {
-	alloc_pages(pages, phdr->vaddr, phdr->vaddr + phdr->memsz);
+	ASSERT(phdr->memsz >= phdr->filesz);
+
+	//printf("Loading elf data at 0x%08x len 0x%08x\n", phdr->vaddr, phdr->memsz);
+	for (uint32_t addr = phdr->vaddr; addr < (phdr->vaddr + phdr->memsz); addr += VMM_PAGE_SIZE)
+		vmm_map_page(pages, addr, 0, 1);
+	//alloc_pages(pages, phdr->vaddr, phdr->vaddr + phdr->memsz);
+
 	memcpy((void*)phdr->vaddr, src + phdr->offset, phdr->filesz);
 	if (phdr->memsz > phdr->filesz)
 		memset((void*)(phdr->vaddr + phdr->filesz), 0, phdr->memsz - phdr->filesz);
-	
 }
+
 
 bool elf_load_raw_image(process_t* p, const char* name, const uint8_t* data, uint32_t sz)
 {
@@ -97,26 +103,20 @@ bool elf_load_raw_image(process_t* p, const char* name, const uint8_t* data, uin
 		printf("invalid %d %d %d %d\n", hdr->ident[0], hdr->ident[1], hdr->ident[2], hdr->ident[3]);
 		return 0;
 	}
-
+		
 	elf_phdr_t* phdr;
 	for (int i = 0; i < hdr->phnum; i++)
 	{
 		phdr = (elf_phdr_t*)(data + hdr->phoff + (i * hdr->phentsize));
 
-		phdr->memsz = 0x8000;
+		//phdr->memsz = 0x8000;
 		_load_elf_data(pages, data, phdr);
 		//printf("PHeader type 0x%x offset 0x%08x vaddr %08x mem sz %08x\n", phdr->type, phdr->offset, phdr->vaddr, phdr->memsz);
 		//printf("Section header 0x%x hdr 0x%x\n", hdr->shoff, hdr);
 	}
 
-	//elf_shdr_t* section = (elf_shdr_t*)((data + hdr->shoff) + hdr->shstrndx * hdr->shentsize);
-	//printf("josh %s\n", data+section->offset+section->name);
 	elf_load_symbol_data(name, data, data + hdr->shoff, hdr->shnum, hdr->shentsize, hdr->shstrndx);
-
-	//elf_hdr_t* hdr2 = (elf_hdr_t*)data;
 	p->elf_img = elf_load_symbol_data(name, data, data + hdr->shoff, hdr->shnum, hdr->shentsize, hdr->shstrndx);
-
-
 	p->entry = hdr->entry;
 	return true;
 _err_ret:

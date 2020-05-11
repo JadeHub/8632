@@ -221,7 +221,7 @@ fd_t io_open(const char* path, uint32_t flags)
 		return _open_file(parent, node, flags);
 	}
 	return INVALID_FD;*/
-	printf("Open\n");
+	//printf("Open\n");
 	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
 	ASSERT(proc);
 	fd_t fd = INVALID_FD;
@@ -229,7 +229,7 @@ fd_t io_open(const char* path, uint32_t flags)
 	//read
 	if (flags & OPEN_READ)
 	{
-		printf("Opening read\n");
+	//	printf("Opening read\n");
 		//Find the node
 		fs_node_t* parent;
 		fs_node_t* node = fs_get_abs_path(path, &parent);
@@ -246,7 +246,7 @@ fd_t io_open(const char* path, uint32_t flags)
 	//write existing
 	if (fd == INVALID_FD && (flags & (OPEN_WRITE | OPEN_APPEND)))
 	{
-		printf("Opening write append\n");
+		//printf("Opening write append\n");
 		//Find the node
 		fs_node_t* parent;
 		fs_node_t* node = fs_get_abs_path(path, &parent);
@@ -442,13 +442,24 @@ bool io_readdir(struct DIR* dir, struct dirent* ent)
 
 int io_mkdir(const char* path)
 {
-	/*char parent_path[FS_MAX_PATH];
-	char* slash = strrchr(path, FS_SEP_CHAR);
-	if(slash == NULL)
-		return -1;
-	char* name = slash + 1;
-	*/
+	fd_t fd = INVALID_FD;
+	char* dir_name = (char*)kmalloc(strlen(path) + 1);
+	strcpy(dir_name, path);
+	char* file_name = io_path_split_leaf(dir_name);
+	if (!file_name)
+		goto _err_exit;
+	
+	fs_node_t* parent = fs_get_abs_path(dir_name, NULL);
+	if (!parent)
+		goto _err_exit;
+	fs_node_t* node = fs_create_child(parent, file_name, FS_DIR);
+	if (!node)
+		goto _err_exit;
+	kfree(dir_name);
+	return 0;
+_err_exit:
 
+	kfree(dir_name);
 	return -1;
 }
 

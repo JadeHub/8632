@@ -504,7 +504,7 @@ static bool _fs_open_file(fs_node_t* parent, fs_node_t* node)
 	if (node->data)
 		return true; //open
 
-	printf("FAT openeing %s\n", node->name);
+	//printf("FAT openeing %s\n", node->name);
 
 	struct fat_dir_entry sfEntry;
 	if (fatfs_get_file_entry(fatfs, dir->cluster, node->name, &sfEntry))
@@ -675,13 +675,75 @@ static bool _allocate_free_space(struct fatfs* fs, bool newFile, uint32_t* start
 	return 1;
 }
 
+static fs_node_t* _fs_create_dir(fs_node_t* parent, const char* name)
+{
+	dir_info_t* pdir = (dir_info_t*)parent->data;
+	struct fatfs* fatfs = _get_fatfs(parent);
+	struct fat_dir_entry sfEntry;
+
+	// Check if same filename exists in directory
+	if (fatfs_get_file_entry(fatfs, pdir->cluster, (char*)name, &sfEntry) == 1)
+	{
+		printf("Fatfs create dir exists\n");
+		return NULL;
+	}
+
+	uint32_t start_cluster = 0;
+	// Create the file space for the folder (at least one clusters worth!)
+	if (!fatfs_allocate_free_space(fatfs, 1, &start_cluster, 1))
+	{
+		return NULL;
+	}
+
+	// Erase new directory cluster
+	uint8_t sector_data[FAT_SECTOR_SIZE];
+	memset(sector_data, 0, FAT_SECTOR_SIZE);
+	for (uint32_t i = 0; i < fatfs->sectors_per_cluster; i++)
+	{
+		if (!fatfs_write_sector(fatfs, start_cluster, i, sector_data))
+		{
+			return 0;
+		}
+	}
+
+	// Generate a short filename & tail
+	char short_filename[FAT_SFN_SIZE_FULL];
+	fatfs_lfn_create_sfn(short_filename, (char*)name);
+	int tailNum = 0;
+	while (fatfs_sfn_exists(fatfs, pdir->cluster, short_filename) && tailNum++ < 9999)
+	{
+		char tmp[FAT_SFN_SIZE_FULL];
+		fatfs_lfn_create_sfn(tmp, (char*)name);
+		fatfs_lfn_generate_tail(short_filename, tmp, tailNum);
+	}
+	// We reached the max number of duplicate short file names (unlikely!)
+	if (tailNum == 9999)
+	{
+		return NULL;
+	}
+
+	// Add file to disk
+	if (!fatfs_add_file_entry(fatfs, pdir->cluster, (char*)name, (char*)short_filename, start_cluster, 0, 1))
+	{
+		// Delete allocated space
+		fatfs_free_cluster_chain(fatfs, start_cluster);
+		return NULL;
+	}
+
+	fatfs_fat_purge(fatfs);
+
+	fs_node_t* node = _create_dir_node(name, start_cluster);
+	list_add(&node->list, &pdir->children);
+	return node;
+}
+
 static fs_node_t* _fs_create_file(fs_node_t* parent, const char* name)
 {
 	dir_info_t* dir = (dir_info_t*)parent->data;
 	struct fatfs* fatfs = _get_fatfs(parent);
 	struct fat_dir_entry sfEntry;
 
-	printf("Fatfs create %s in %s\n", name, parent->name);
+	//printf("Fatfs create %s in %s\n", name, parent->name);
 
 	// Check if same filename exists in directory
 	if (fatfs_get_file_entry(fatfs, dir->cluster, (char*)name, &sfEntry) == 1)
@@ -706,7 +768,7 @@ static fs_node_t* _fs_create_file(fs_node_t* parent, const char* name)
 		return NULL;
 	}
 
-	printf("Fatfs create sfn=%s\n", short_filename);
+	//printf("Fatfs create sfn=%s\n", short_filename);
 
 	// Allocate a single cluster
 	uint32_t start_cluster = 0;
@@ -741,6 +803,10 @@ static fs_node_t* _fs_create_child(fs_node_t* parent, const char* name, uint32_t
 	if (flags & FS_FILE)
 	{
 		return _fs_create_file(parent, name);
+	}
+	else if (flags & FS_DIR)
+	{
+		return _fs_create_dir(parent, name);
 	}
 	return NULL;
 }

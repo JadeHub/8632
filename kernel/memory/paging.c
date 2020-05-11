@@ -10,16 +10,17 @@
 #include <stdio.h>
 
 extern void enable_paging();
+extern void copy_page_physical(uint32_t, uint32_t);
 
-page_directory_t* kernel_directory = 0;
+#define INVALID_FRAME 0xFFFFF;
+#define IS_PAGE_BOUNDRY(x) (x % VMM_PAGE_SIZE == 0)
+#define PAGE_FROM_VADDR(v) (v / VMM_PAGE_SIZE)
+#define TABLE_FROM_PAGE(p) (p / 1024)
+
+static page_directory_t* _kpage_dir = NULL;
+extern uint32_t placement_address;
 
 extern heap_t *kheap;
-
-
-static void _stack_unwind_cb(const char* name, uint32_t addr, uint32_t sz, uint32_t ebp, uint32_t ip)
-{
-    printf("0x%08x %-30s at: 0x%08x to 0x%08x ebp: 0x%08x\n", ip, name, addr, addr + sz, ebp);
-}
 
 static void page_fault(isr_state_t* regs)
 {
@@ -46,9 +47,6 @@ static void page_fault(isr_state_t* regs)
   //  KPANIC("Page fault");
     for (;;);
 }
-
-
-extern void copy_page_physical(uint32_t, uint32_t);
 
 static page_table_t* _clone_table(page_table_t *src, uint32_t *physAddr)
 {
@@ -79,12 +77,13 @@ static page_table_t* _clone_table(page_table_t *src, uint32_t *physAddr)
     return table;
 }
 
-void page_dir_destroy_directory(page_directory_t* dir)
+void vmm_destroy_dir(page_directory_t* dir)
 {
+    ASSERT(dir && dir != _kpage_dir);
     kfree(dir);
 }
 
-page_directory_t* clone_directory(page_directory_t *src)
+page_directory_t* vmm_clone_dir(page_directory_t *src)
 {
     uint32_t phys;
     // Make a new page directory and obtain its physical address.
@@ -105,7 +104,7 @@ page_directory_t* clone_directory(page_directory_t *src)
         if (!src->tables[i])
             continue;
 
-        if (kernel_directory->tables[i] == src->tables[i])
+        if (_kpage_dir->tables[i] == src->tables[i])
         {
             // It's in the kernel, so just use the same pointer.
             dir->tables[i] = src->tables[i];
@@ -122,85 +121,110 @@ page_directory_t* clone_directory(page_directory_t *src)
     return dir;
 }
 
-extern uint32_t placement_address;
-
-page_directory_t* paging_init()
+static page_t* _create_page_table(page_directory_t* dir, uint32_t vaddr)
 {
-    //printf("Placement max 1 0x%08x\n", placement_address);
-    uint32_t phys;
-    kernel_directory = (page_directory_t*)kmalloc_a(sizeof(page_directory_t));
-    memset(kernel_directory, 0, sizeof(page_directory_t));
-    kernel_directory->physicalAddr = (uint32_t)kernel_directory->tablesPhysical;
+    ASSERT(IS_PAGE_BOUNDRY(vaddr));
+    uint32_t page_idx = PAGE_FROM_VADDR(vaddr);
+    uint32_t table_idx = TABLE_FROM_PAGE(page_idx);
 
-    // Map some pages in the kernel heap area.
-    // Here we call get_page but not alloc_frame. This causes page_table_t's 
-    // to be created where necessary. We can't allocate frames yet because they
-    // they need to be identity mapped first below, and yet we can't increase
-    // placement_address between identity mapping and enabling the heap!
-    int i = 0;
-    for (i = KHEAP_START; i < KHEAP_START+KHEAP_INITIAL_SIZE; i += 0x1000)
-        get_page(i, 1, kernel_directory);
-
-    //printf("Placement max 2 0x%08x\n", placement_address);
-
-    //Map the first megabyte for use by the kernel
-    for(i=0; i< 0x100000; i += 0x1000)
+    if (!dir->tables[table_idx])
     {
-        // Kernel code is readable but not writeable from userspace.
-        alloc_frame(get_page(i, 1, kernel_directory), 0, 0);
+        //make a new page table
+        uint32_t phys_addr;
+        dir->tables[table_idx] = (page_table_t*)kmalloc_ap(sizeof(page_table_t), &phys_addr);
+        memset(dir->tables[table_idx], 0, 0x1000);
+        for (uint32_t i = 0; i < 1024; i++)
+            dir->tables[table_idx]->pages[i].frame = INVALID_FRAME;
+
+        dir->tablesPhysical[table_idx] = phys_addr | 0x07; // PRESENT, RW, US. //todo ?
     }
-    idt_register_handler(ISR14, &page_fault);
-
-    //printf("Placement max 3 0x%08x\n", placement_address);
-    // Now allocate those pages we mapped earlier.
-    for (i = KHEAP_START; i < KHEAP_START+KHEAP_INITIAL_SIZE; i += 0x1000)
-        alloc_frame( get_page(i, 1, kernel_directory), 0, 0);
-
-    //printf("Placement max 4 0x%08x\n", placement_address);
-
-    switch_page_directory(kernel_directory);
-	enable_paging();
-    // Initialise the kernel heap.
-    kheap = heap_create(kernel_directory, KHEAP_START, KHEAP_START+KHEAP_INITIAL_SIZE, 0xCFFFF000, 0, 0);
-    switch_page_directory(kernel_directory);
-    printf("Placement max 5 0x%08x\n", placement_address);
-	return kernel_directory;
+    return &dir->tables[table_idx]->pages[page_idx % 1024];
 }
 
-void switch_page_directory(page_directory_t *dir)
+page_t* vmm_get_page(page_directory_t* dir, uint32_t vaddr)
+{
+    uint32_t page = PAGE_FROM_VADDR(vaddr);
+    uint32_t table = TABLE_FROM_PAGE(page);
+    if (dir->tables[table])
+        return &dir->tables[table]->pages[page % 1024];
+    return NULL;
+}
+
+void vmm_unmap_page(page_directory_t* dir, uint32_t vaddr)
+{
+    ASSERT(IS_PAGE_BOUNDRY(vaddr));
+    page_t* page = vmm_get_page(dir, vaddr);
+    ASSERT(page && page->present);
+
+    pmm_free_frame(page->frame);
+    page->frame = INVALID_FRAME;
+    page->present = 0;
+}
+
+void vmm_map_page(page_directory_t* dir, uint32_t vaddr, bool kernel, bool writeable)
+{
+    ASSERT(IS_PAGE_BOUNDRY(vaddr));
+    uint32_t page_idx = PAGE_FROM_VADDR(vaddr);
+    uint32_t table_idx = TABLE_FROM_PAGE(page_idx);
+    if (!dir->tables[table_idx])
+    {
+        _create_page_table(dir, vaddr);
+    }
+    page_t* page = &dir->tables[table_idx]->pages[page_idx % 1024];
+    ASSERT(!page->present);
+    page->present = 1;
+    page->rw = writeable ? 1 : 0;
+    page->user = kernel ? 0 : 1;
+    page->frame = pmm_alloc_frame();
+}
+
+void vmm_map_pages(page_directory_t* dir, uint32_t vaddr, uint32_t count, bool kernel, bool writeable)
+{
+    for (uint32_t i = 0; i < count; i++, vaddr += VMM_PAGE_SIZE)
+    {
+        vmm_map_page(dir, vaddr, kernel, writeable);
+    }
+}
+
+uint32_t vmm_get_phys_addr(page_directory_t* dir, uint32_t vaddr)
+{
+    page_t* page = vmm_get_page(dir, vaddr);
+    if (page && page->present)
+        return page->frame * FRAME_SIZE + (vaddr & 0x00000FFF);
+    return 0xFFFFFFFF;
+}
+
+page_directory_t* vmm_get_kdir()
+{
+    return _kpage_dir;
+}
+
+void vmm_switch_dir(page_directory_t* dir)
 {
     asm volatile("mov %0, %%cr3":: "r"(dir->physicalAddr));
 }
 
-page_t *get_page(uint32_t address, int make, page_directory_t *dir)
+void vmm_init()
 {
-    // Turn the address into an index.
-    address /= 0x1000;
-    uint32_t table_idx = address / 1024;
+    uint32_t phys;
+    _kpage_dir = (page_directory_t*)kmalloc_a(sizeof(page_directory_t));
+    memset(_kpage_dir, 0, sizeof(page_directory_t));
+    _kpage_dir->physicalAddr = (uint32_t)_kpage_dir->tablesPhysical;
 
-    if (dir->tables[table_idx]) 
+    idt_register_handler(ISR14, &page_fault);
+
+    //Map the first megabyte for use by the kernel
+    for (uint32_t addr = 0; addr < 0x100000; addr += VMM_PAGE_SIZE)
     {
-        return &dir->tables[table_idx]->pages[address%1024];
+        // Kernel code is readable but not writeable from userspace.
+        vmm_map_page(_kpage_dir, addr, false, false);
     }
-    else if(make)
-    {
-        uint32_t tmp;
-        dir->tables[table_idx] = (page_table_t*)kmalloc_ap(sizeof(page_table_t), &tmp);
-		memset(dir->tables[table_idx], 0, 0x1000);
-        dir->tablesPhysical[table_idx] = tmp | 0x07; // PRESENT, RW, US.
-        return &dir->tables[table_idx]->pages[address%1024];
-    }
-    return 0;
-}
+    
+    vmm_switch_dir(_kpage_dir);
+    enable_paging();
 
-uint32_t alloc_pages(page_directory_t* pages, uint32_t start, uint32_t end)
-{
-	uint32_t addr = start;
-
-	while (addr < end)
-	{
-		alloc_frame(get_page(addr, 1, pages), 0, 1);
-		addr += 0x1000;
-	}
-	return start;
+    // Initialise the kernel heap.
+    for (uint32_t addr = KHEAP_START; addr < KHEAP_START + KHEAP_INITIAL_SIZE; addr += VMM_PAGE_SIZE)
+        vmm_map_page(_kpage_dir, addr, false, false);
+    kheap = heap_create(_kpage_dir, KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, KHEAP_START + KHEAP_INITIAL_SIZE*2, 0, 0);
 }

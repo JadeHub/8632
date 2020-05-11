@@ -33,5 +33,6 @@ uint32_t sys_wait_pid(uint32_t);
 void sys_reg_sig_handler(int, sig_handler_t);
 void sys_sig_handler_return();
 bool sys_send_signal(uint32_t pid, uint32_t sig);
+void sys_break();
 
 __LIBC_END_H

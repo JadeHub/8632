@@ -99,9 +99,11 @@ static thread_t* _create_thread(uint32_t entry, bool kernel_mode)
 	return t;
 }
 
+int __test = 1;
+
 static process_t* _proc_new_elf_proc(const char* name, uint8_t* data, uint32_t len)
 {
-	page_directory_t* cur_page_dir = sched_cur_proc() ? sched_cur_proc()->pages : kernel_directory;
+	page_directory_t* cur_page_dir = sched_cur_proc() ? sched_cur_proc()->pages : vmm_get_kdir();
 	ASSERT(cur_page_dir);
 
 	process_t* proc = (process_t*)kmalloc(sizeof(process_t));
@@ -110,12 +112,13 @@ static process_t* _proc_new_elf_proc(const char* name, uint8_t* data, uint32_t l
 	sprintf(proc->name, "user proc %s", name);
 	//printf("New proc %s\n", proc->name);
 
-	proc->pages = clone_directory(kernel_directory);
-	switch_page_directory(proc->pages);
+	proc->pages = vmm_clone_dir(vmm_get_kdir());
+	vmm_switch_dir(proc->pages);
 
 	if (!elf_load_raw_image(proc, name, data, len))
-	{
-		page_dir_destroy_directory(proc->pages);
+	{		
+		vmm_switch_dir(cur_page_dir);
+		vmm_destroy_dir(proc->pages);
 		kfree(proc);
 		return NULL;
 	}
@@ -123,21 +126,26 @@ static process_t* _proc_new_elf_proc(const char* name, uint8_t* data, uint32_t l
 	//heap at 0x00700000
 	uint32_t start = 0x00700000;
 	uint32_t end = start + 0x100000;
-	alloc_pages(proc->pages, start, end);
+	//alloc_pages(proc->pages, start, end);
+
+	for (uint32_t addr = start; addr < end; addr += VMM_PAGE_SIZE)
+		vmm_map_page(proc->pages, addr, 0, 1);
+
+
 	proc->heap = heap_create(proc->pages, start, end, end, 0, 0);
 
-	switch_page_directory(cur_page_dir);
-
+	vmm_switch_dir(cur_page_dir);
+	
 	proc->main_thread = _create_thread(proc->entry, false);
 	proc->main_thread->process = proc;
 	return proc;
 }
 
-
 uint32_t proc_start_user_proc(const char* path, const char* args[], uint32_t fds[3])
 {
 	fs_node_t* parent;
 	fs_node_t* node = fs_get_abs_path(path, &parent);
+
 	if (node && parent && node->len > 0 && fs_open(parent, node))
 	{
 		uint8_t* exe_buff = (uint8_t*)kmalloc(node->len);
@@ -145,19 +153,19 @@ uint32_t proc_start_user_proc(const char* path, const char* args[], uint32_t fds
 		if (fs_read(node, exe_buff, 0, node->len) == node->len)
 		{
 			fs_close(node);
+			
 			process_t* proc = _proc_new_elf_proc(args[0], exe_buff, node->len);
 			kfree(exe_buff);
 			if (!proc) return 0;
 
 			io_proc_start(proc, fds);
-
 			process_t* tmp = _kproc;
 			while (tmp->next)
 				tmp = tmp->next;
 			tmp->next = proc;
 
 			//schedule the main thread
-			sched_task(proc->main_thread);		
+			sched_task(proc->main_thread);
 			return proc->id;
 		}
 	}

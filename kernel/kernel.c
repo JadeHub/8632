@@ -74,37 +74,23 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	gdt_init();
 	idt_init();
 	fault_init();
-	
 	serial_init();
 	timer_init(1000, &ktimer_cb);
 	phys_mem_init();
-	
-	page_directory_t* kpages = paging_init();
-
-	
-
+	pmm_init(16);
+	vmm_init();
 	io_init();
-
-	printf("proc\n");
-	proc_init(kpages, esp, k_image);
+	proc_init(vmm_get_kdir(), esp, k_image);
 	sched_init(proc_kernel_proc());
-	printf("fs\n");
 	fs_init();
-	printf("ramfs\n");
 	ramfs_init(ram_disk_buff, ram_disk_len);
-	//bochs_dbg();
-	printf("devfs\n");
 	devfs_init();
-	printf("kb\n");
 	kb_init();
 	con_dev_init();
 	syscall_init();
 	pci_init();
 	time_init();
-
 	fatfs_mount_partition(0, 0, 0);
-
-	
 
 	const char* args[2];
 	args[0] = "shell";

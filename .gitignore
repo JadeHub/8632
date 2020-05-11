@@ -1,3 +1,4 @@
+*.lock
 fimg
 ktest/bin/ktest
 shell/shell
