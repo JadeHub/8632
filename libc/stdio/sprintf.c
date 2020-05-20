@@ -24,7 +24,10 @@ int sprintf(char* buff, const char* format, ...)
 
 int vsnprintf(char* buff, size_t sz, const char* format, va_list args)
 {
-	return printf_helper(buff, sz, format, args);
+	int pos = printf_helper(buff, sz, format, args);
+	if (pos >= 0)
+		buff[pos] = '\0';
+	return pos;
 }
 
 int vsprintf(char* buff, const char* format, va_list args)

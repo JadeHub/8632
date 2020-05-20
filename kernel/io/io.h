@@ -8,9 +8,12 @@
 #include <stddef.h>
 
 //open flags
+/*
 #define IO_OPEN_R	0x01
 #define IO_OPEN_W	0x02
 #define IO_OPEN_RW	0x03
+#define IO_KFILE	0x04
+*/
 
 typedef uint32_t fd_t;
 
@@ -23,6 +26,7 @@ void io_seek(fd_t file, uint32_t offset, int origin);
 void io_flush(fd_t);
 int io_remove(const char* path);
 int io_mkdir(const char* path);
+bool io_exists(const char* path);
 
 /*
 Duplicate source fd from proc as dest fd for the current process

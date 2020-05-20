@@ -29,9 +29,7 @@ static void _set_frame(uint32_t frame_addr)
     uint32_t frame = frame_addr / 0x1000;
     uint32_t idx = INDEX_FROM_BIT(frame);
     uint32_t off = OFFSET_FROM_BIT(frame);
-    _frames[idx] |= (0x1 << off);
-
-    
+    _frames[idx] |= (0x1 << off);    
 }
 
 static void _clear_frame(uint32_t frame_addr)

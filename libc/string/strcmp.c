@@ -1,5 +1,7 @@
 #include <string.h>
 
+#include <stdio.h>
+
 int strcmp(const char* s1, const char* s2)
 {
     while (*s1 && (*s1 == *s2))
@@ -12,12 +14,13 @@ int strcmp(const char* s1, const char* s2)
 
 int strncmp(const char* s1, const char* s2, size_t count)
 {
-    int i = 0;
-    while (*s1 && (*s1 == *s2) && i < count)
+    while (*s1 && (*s1 == *s2) && count > 0)
     {
         s1++;
         s2++;
-        i++;
+        count--;
     }
+    if (!count)
+        return 0;
     return *(const unsigned char*)s1 - *(const unsigned char*)s2;
 }

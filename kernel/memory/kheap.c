@@ -37,8 +37,6 @@ uint32_t kmalloc_int(uint32_t sz, int align, uint32_t *phys)
         }
         uint32_t tmp = placement_address;
         placement_address += sz;
-      //  dbg_dump_current_stack();
-     //   bochs_dbg();
         
         return tmp;
     }
@@ -46,6 +44,11 @@ uint32_t kmalloc_int(uint32_t sz, int align, uint32_t *phys)
 
 void kfree(void *p)
 {
+    if ((uint32_t)p <= placement_address)
+    {
+        //memory was not allocated from the heap
+        return;
+    }
     heap_free(p, kheap);
 }
 
@@ -126,7 +129,7 @@ static uint32_t contract(uint32_t new_size, heap_t *heap)
     while (new_size < i)
     {
        // dbg_dump_current_stack();
-        printf("contract unmapping 0x%x\n", heap->start_address + i);
+        //printf("contract unmapping 0x%x\n", heap->start_address + i);
        // bochs_dbg();
         vmm_unmap_page(heap->page_dir, heap->start_address + i);
         //page_t* p = get_page(heap->start_address + i, 0, heap->page_dir);

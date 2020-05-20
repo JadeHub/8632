@@ -1,5 +1,6 @@
 #include "fatfs.h"
 
+#include <kernel/klog.h>
 #include <kernel/vfs/vfs.h>
 #include <kernel/fault.h>
 #include <kernel/debug.h>
@@ -15,6 +16,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+
+static const char* _LM = "FATFS";
 
 typedef struct partition_fs
 {
@@ -504,7 +507,8 @@ static bool _fs_open_file(fs_node_t* parent, fs_node_t* node)
 	if (node->data)
 		return true; //open
 
-	//printf("FAT openeing %s\n", node->name);
+	KLOG(LL_INFO, "Opening file. name:%s parent:%s",
+		node->name, parent->name);
 
 	struct fat_dir_entry sfEntry;
 	if (fatfs_get_file_entry(fatfs, dir->cluster, node->name, &sfEntry))
@@ -525,12 +529,16 @@ static bool _fs_open_file(fs_node_t* parent, fs_node_t* node)
 		node->data = file;
 		return true;
 	}
+
+	KLOG(LL_INFO, "Failed to open file. name:%s parent:%s",
+		node->name, parent->name);
+
 	return false;
 }
 
 static void _fs_close_file(fs_node_t* node)
 {
-	//printf("Closing file %s\n", node->name);
+	KLOG(LL_INFO, "Closing file. name:%s", node->name);
 	if (!node->data)
 		return;
 
@@ -548,7 +556,9 @@ static bool _fs_remove(fs_node_t* parent, fs_node_t* node)
 	struct fatfs* fatfs = _get_fatfs(node);
 	dir_info_t* dir = (dir_info_t*)parent->data;
 
-	//printf("Removing %s\n", node->name);
+	KLOG(LL_INFO, "Removing %s. name:%s parent:%s",
+		(fs_is_dir(node) ? "dir" : "file"),
+		node->name, parent->name);
 
 	struct fat_dir_entry sfEntry;
 	if (fatfs_get_file_entry(fatfs, dir->cluster, node->name, &sfEntry))
@@ -563,6 +573,11 @@ static bool _fs_remove(fs_node_t* parent, fs_node_t* node)
 			}
 		}
 	}
+
+	KLOG(LL_INFO, "Failed to remove %s. name:%s parent:%s",
+		(fs_is_dir(node) ? "dir" : "file"),
+		node->name, parent->name);
+
 	return false;
 }
 
@@ -571,28 +586,21 @@ static void _populate_dir_children(fs_node_t* dir_node)
 	ASSERT(fs_is_dir(dir_node));
 	dir_info_t* info = (dir_info_t*)dir_node->data;
 
+	struct fs_dir_ent dirent;
 	struct fs_dir_list_status dirls;
 	struct fatfs* fatfs = _get_fatfs(dir_node);
 
-	//printf("FAT Populate 1 %s _cut_task==0x%x proc==0x%x id=%d\n", dir_node->name, sched_cur_thread(), sched_cur_thread()->process, sched_cur_thread()->process->id);
 	fatfs_list_directory_start(fatfs, &dirls, info->cluster);
-
-	//printf("FAT Populate 2 %s _cut_task==0x%x proc==0x%x id=%d\n", dir_node->name, sched_cur_thread(), sched_cur_thread()->process, sched_cur_thread()->process->id);
-
-	struct fs_dir_ent dirent;
 	while (fatfs_list_directory_next(fatfs, &dirls, &dirent))
 	{
 		fs_node_t* entry = NULL;
 		if (dirent.is_dir)
 		{
-		//	printf("FAT Populate Adding DIR %s \n", dirent.filename);
 			entry = _create_dir_node(dirent.filename, dirent.cluster);
 		}
 		else
 		{
-		//	printf("FAT Populate Adding FILE %s \n", dirent.filename);
 			entry = _create_file_node(dirent.filename, dirent.size);
-			
 		}
 		list_add(&entry->list, &info->children);
 	}
@@ -600,7 +608,6 @@ static void _populate_dir_children(fs_node_t* dir_node)
 
 static uint32_t _fs_read_dir(fs_node_t* node, fs_read_dir_cb_fn_t cb, void* data)
 {
-//	printf("FAT32 read dir %s\n", node->name);
 	dir_info_t* dir = (dir_info_t*)node->data;
 
 	if (list_empty(&dir->children))
@@ -618,7 +625,6 @@ static uint32_t _fs_read_dir(fs_node_t* node, fs_read_dir_cb_fn_t cb, void* data
 
 static fs_node_t* _fs_find_child(fs_node_t* node, const char* name)
 {
-	//printf("FAT32 find %s in %s\n", name, node->name);
 	dir_info_t* dir = (dir_info_t*)node->data;
 	if (list_empty(&dir->children))
 		_populate_dir_children(node);
@@ -684,7 +690,7 @@ static fs_node_t* _fs_create_dir(fs_node_t* parent, const char* name)
 	// Check if same filename exists in directory
 	if (fatfs_get_file_entry(fatfs, pdir->cluster, (char*)name, &sfEntry) == 1)
 	{
-		printf("Fatfs create dir exists\n");
+
 		return NULL;
 	}
 
@@ -748,7 +754,7 @@ static fs_node_t* _fs_create_file(fs_node_t* parent, const char* name)
 	// Check if same filename exists in directory
 	if (fatfs_get_file_entry(fatfs, dir->cluster, (char*)name, &sfEntry) == 1)
 	{
-		printf("Fatfs create exists\n");
+		//printf("Fatfs create exists\n");
 		return NULL;
 	}
 
@@ -768,7 +774,7 @@ static fs_node_t* _fs_create_file(fs_node_t* parent, const char* name)
 		return NULL;
 	}
 
-	//printf("Fatfs create sfn=%s\n", short_filename);
+	//printf("Fatfs create fn=%s sfn=%s\n", name, short_filename);
 
 	// Allocate a single cluster
 	uint32_t start_cluster = 0;
@@ -800,6 +806,7 @@ static fs_node_t* _fs_create_file(fs_node_t* parent, const char* name)
 
 static fs_node_t* _fs_create_child(fs_node_t* parent, const char* name, uint32_t flags)
 {
+	KLOG(LL_INFO, "Creating %s. name:%s parent:%s", (flags & FS_FILE ? "file" : "dir"), name, parent->name);
 	if (flags & FS_FILE)
 	{
 		return _fs_create_file(parent, name);
@@ -893,7 +900,7 @@ void fatfs_mount_partition(uint8_t ide_controller, uint8_t drive, uint8_t part)
 		_mounted_partition->fat.rootdir_first_cluster);
 	fs_install_root_fs(_mounted_partition->root_node);
 
-	printf("Mounting partition of type %s at offset 0x%x\n",
+	KLOG(LL_INFO, "Mounting partition. type:%s offset:0x%x",
 		_mounted_partition->fat.fat_type == FAT_TYPE_32 ? "fat32" : "fat16",
 		partition->lba);
 }

@@ -30,20 +30,6 @@ void panic_impl(const char* msg, const char* file, uint32_t line)
         ;
 }
 
-void klog_impl(const char* file, uint32_t line, KLOG_LEVEL level, const char* module, const char* format, ...)
-{
-    char buff[256];
-    va_list args;
-    va_start(args, format);
-    vsprintf(buff, format, args);
-    va_end(args);
-
-   // serial_printf(SERIAL_PORT_COM1, "[%s][%s] %s\n\r", module, level == LL_ERR ? "ERR" : "INFO", buff);
-  //  printf("LOG [%s][%s] %s\n\r", module, level == LL_ERR ? "ERR" : "INFO", buff);
-    if (level == LL_ERR)
-        bochs_dbg();
-}
-
 void fault_init()
 {
     idt_register_handler(ISR13, &gp_fault_handler);

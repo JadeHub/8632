@@ -18,11 +18,12 @@ kernel/fatfs/*.c \
 drivers/*.c \
 drivers/keyboard/*.c \
 drivers/console/*.c \
-drivers/ide/*.c \
+drivers/ata/*.c \
 drivers/pci/*.c \
+drivers/ide/*.c \
+drivers/fat/*.c \
 drivers/timer/*.c \
 drivers/serial/*.c \
-drivers/fat/*.c \
 drivers/cmos/*.c)
 
 HEADERS = $(wildcard \

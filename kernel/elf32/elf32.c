@@ -1,12 +1,15 @@
 #include "elf32.h"
 #include <kernel/memory/kmalloc.h>
 #include <kernel/fault.h>
+#include <kernel/klog.h>
 #include <kernel/utils.h>
 #include <kernel/memory/paging.h>
 #include <kernel/tasks/proc.h>
 
 #include <stddef.h>
 #include <stdio.h>
+
+static const char* _LM = "ELF";
 
 static inline const char* _get_tbl_name(const elf_section_t* tbl, uint32_t name)
 {
@@ -99,7 +102,7 @@ bool elf_load_raw_image(process_t* p, const char* name, const uint8_t* data, uin
 
 	if (!_is_valid_header(hdr) || hdr->type != ELF_TYPE_EXE || hdr->machine != ELF_MACH_I386)
 	{
-		KLOG(LL_ERR, "ELF", "failed to load Elf image %s\n", name);
+		KLOG(LL_ERR, "failed to load Elf image. name:%s\n", name);
 		printf("invalid %d %d %d %d\n", hdr->ident[0], hdr->ident[1], hdr->ident[2], hdr->ident[3]);
 		return 0;
 	}
@@ -120,7 +123,7 @@ bool elf_load_raw_image(process_t* p, const char* name, const uint8_t* data, uin
 	p->entry = hdr->entry;
 	return true;
 _err_ret:
-	KLOG(LL_ERR, "ELF", "error loading Elf image %s\n", name);
+	KLOG(LL_ERR, "error loading Elf image. name:%s\n", name);
 	return false;
 }
 

@@ -11,7 +11,6 @@ extern void exec_libc_tests();
 
 int main(int argc, char* argv[])
 {
-	//return 0;
 	exec_libc_tests();
 	exec_fatfs_tests();
 	exec_malloc_tests();

@@ -2,9 +2,11 @@
 
 #include <kernel/utils.h>
 #include <kernel/fault.h>
+#include <kernel/klog.h>
 
-#include <stdio.h>
 #include <stddef.h>
+
+static const char* _LM = "MBOOT";
 
 static elf_image_t* _kernel_elf = NULL;
 static const multiboot_data_t* _mb_data = NULL;
@@ -36,9 +38,7 @@ void mb_init(const multiboot_data_t* data)
 	for(int i=0; i<data->mod_count;i++)
 	{
 		module_data_t* mod = &data->modules[i];
-		printf("Loaded multiboot module %s 0x%08x 0x%08x 0x%x\n",
-			mod->name, mod->start, mod->end, mod->end - mod->start);
-		KLOG(LL_INFO, "BOOT", "Loaded multiboot module %s 0x%08x 0x%08x 0x%x\n",
+		KLOG(LL_INFO, "Loaded multiboot module %s 0x%08x 0x%08x 0x%x",
 				mod->name, mod->start, mod->end, mod->end - mod->start);
 	}
 }
@@ -58,10 +58,7 @@ module_data_t* mb_find_module(const char* name)
 	{
 		module_data_t* mod = &data->modules[i];
 		if(strcmp(mod->name, name) == 0)
-		{
-			//printf("Module %s at %08x\n", mod->name, mod->start);
 			return mod;
-		}
 	}
 	return NULL;
 }
@@ -71,14 +68,14 @@ uint32_t mb_copy_mod(const char* name, uint8_t* buff, uint32_t buff_len)
 	module_data_t* mod = mb_find_module(name);
 	if (!mod)
 	{
-		printf("Module %s not found\n", name);
+		KLOG(LL_ERR, "Module not found. name:%s", name);
 		return 0;
 	}
 
 	uint32_t len = mod->end - mod->start;
 	if (len > buff_len)
 	{
-		printf("Module length too long 0x%x > 0x%x\n", len, buff_len);
+		KLOG(LL_ERR, "Module length too long. name:%s len:0x%x buff_len:0x%x", name, len, buff_len);
 		return 0;
 	}
 	memcpy(buff, (void*)mod->start, len);

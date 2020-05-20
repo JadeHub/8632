@@ -109,6 +109,7 @@ static void _switch_task(uint64_t ms)
 void sched_init(process_t* kproc)
 {
 	_idle_task = kproc->main_thread;
+	_cur_task = _idle_task;
 }
 
 static bool _wake_sleepers(uint64_t ms_since_boot)

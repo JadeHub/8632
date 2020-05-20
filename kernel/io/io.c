@@ -15,6 +15,9 @@
 
 #define MAX_FD_CNT	64
 
+#define FD_KFLAG_MASK 0x80000000
+#define IS_KFILE(_fd) (_fd & FD_KFLAG_MASK)
+
 /*
 A file opened by a process
 */
@@ -70,10 +73,10 @@ Map of proc id to proc_io_data_t*
 */
 static hash_tbl_t* _proc_io;
 
-inline static uint32_t _cur_proc_id()
-{
-	return sched_cur_proc()->id;
-}
+/*
+Kernel owned file data
+*/
+static proc_io_data_t* _kfile_data = NULL;
 
 static proc_io_data_t* _get_proc_data(process_t* proc)
 {
@@ -108,9 +111,10 @@ static fd_t _find_fd(proc_io_data_t* proc, fs_node_t* fnode)
 	return INVALID_FD;
 }
 
-static proc_file_desc_t* _get_file_desc(process_t* proc, uint32_t fd)
+static proc_file_desc_t* _get_file_desc(uint32_t fd)
 {
-	proc_io_data_t* data = _get_proc_data(proc);
+	proc_io_data_t* data = IS_KFILE(fd) ? _kfile_data : _get_proc_data(sched_cur_proc());
+	fd = fd &= ~FD_KFLAG_MASK;
 	return data ? data->fds[fd] : NULL;
 }
 
@@ -124,13 +128,6 @@ static proc_file_desc_t* _create_file_desc(fs_node_t* node, uint32_t flags)
 	return desc;
 }
 
-static proc_file_desc_t* _get_cur_proc_fd(uint32_t fd)
-{
-	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
-	ASSERT(proc);
-	return proc->fds[fd];
-}
-
 bool _dir_empty_cb(struct fs_node* parent, struct fs_node* child, void* data)
 {
 	return false;
@@ -142,23 +139,28 @@ static bool _is_dir_empty(fs_node_t* node)
 	return fs_read_dir(node, _dir_empty_cb, NULL) == 0;
 }
 
-fd_t _create_file(const char* path, uint32_t flags)
+fd_t _create_file(proc_io_data_t* proc, const char* path, uint32_t flags)
 {
-	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
-	ASSERT(proc);
+	if (io_exists(path))
+	{
+		printf("File %s exists\n", path);
+		return INVALID_FD;
+	}
 
 	fd_t fd = INVALID_FD;
 	char* dir_name = (char*)kmalloc(strlen(path) + 1);
 	strcpy(dir_name, path);
 	char* file_name = io_path_split_leaf(dir_name);
 	if (!file_name)
-		goto _err_exit;
+		goto _err_exit;	
+
 	fd = _find_free_fd(proc);
 	if (!io_is_valid_fd(fd))
 		goto _err_exit;
 	fs_node_t* parent = fs_get_abs_path(dir_name, NULL);
 	if (!parent)
 		goto _err_exit;
+	printf("Creating child %s in %s\n", file_name, parent->name);
 	fs_node_t * node = fs_create_child(parent, file_name, FS_FILE);
 	if (!node)
 		goto _err_exit;
@@ -173,10 +175,8 @@ _err_exit:
 	return INVALID_FD;
 }
 
-fd_t _open_file(fs_node_t* parent, fs_node_t* node, uint32_t flags)
+fd_t _open_file(proc_io_data_t* proc, fs_node_t* parent, fs_node_t* node, uint32_t flags)
 {
-	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
-	ASSERT(proc);
 	fd_t fd = _find_free_fd(proc);
 	if (io_is_valid_fd(fd) && fs_open(parent, node))
 	{
@@ -187,72 +187,49 @@ fd_t _open_file(fs_node_t* parent, fs_node_t* node, uint32_t flags)
 	return INVALID_FD;
 }
 
+bool io_exists(const char* path)
+{
+	return fs_get_abs_path(path, NULL) != NULL;
+}
+
 fd_t io_open(const char* path, uint32_t flags)
-{	
-	/*printf("Open\n");
-	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+{
+	proc_io_data_t* proc = (flags & OPEN_KFILE) ? _kfile_data : _get_proc_data(sched_cur_proc());
 	ASSERT(proc);
 
-	if ((flags & OPEN_READ) || (flags & OPEN_WRITE))
-	{
-		printf("Opening\n");
-		//Find the node
-		fs_node_t* parent;
-		fs_node_t* node = fs_get_abs_path(path, &parent);
-		if (!node)
-		{
-			printf("no node\n");
-			if(flags & OPEN_CREATE)
-			{
-				printf("Creating\n");
-				return _create_file(path, flags);
-			}
-			return INVALID_FD;
-		}
-		
-		//already open?
-		fd_t fd = _find_fd(proc, node);
-		if (io_is_valid_fd(fd))
-		{
-			printf("Already open 0x%x\n", fd);
-			return fd;
-		}
-		printf("calling open\n");
-		return _open_file(parent, node, flags);
-	}
-	return INVALID_FD;*/
-	//printf("Open\n");
-	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
-	ASSERT(proc);
 	fd_t fd = INVALID_FD;
 
 	//read
 	if (flags & OPEN_READ)
 	{
-	//	printf("Opening read\n");
+		printf("Opening read\n");
 		//Find the node
 		fs_node_t* parent;
 		fs_node_t* node = fs_get_abs_path(path, &parent);
 		if (node)
-			fd = _open_file(parent, node, flags);
+			fd = _open_file(proc, parent, node, flags);
 	}
 
 	//create
 	if (fd == INVALID_FD && (flags & OPEN_CREATE))
 	{
-		fd = _create_file(path, flags);
+		fd = _create_file(proc, path, flags);
 	}
 
 	//write existing
 	if (fd == INVALID_FD && (flags & (OPEN_WRITE | OPEN_APPEND)))
 	{
-		//printf("Opening write append\n");
+		printf("Opening write append\n");
 		//Find the node
 		fs_node_t* parent;
 		fs_node_t* node = fs_get_abs_path(path, &parent);
 		if (node)
-			fd = _open_file(parent, node, flags);
+			fd = _open_file(proc, parent, node, flags);
 	}
+
+	if (fd != INVALID_FD && flags & OPEN_KFILE)
+		fd |= FD_KFLAG_MASK;
+
 	return fd;
 }
 
@@ -261,9 +238,10 @@ void io_close(fd_t fd)
 	if (fd == INVALID_FD)
 		return;
 
-	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	proc_io_data_t* proc = IS_KFILE(fd) ? _kfile_data : _get_proc_data(sched_cur_proc());
 	ASSERT(proc);
-	proc_file_desc_t* file = _get_cur_proc_fd(fd);
+	fd = fd &= ~FD_KFLAG_MASK;
+	proc_file_desc_t* file = proc->fds[fd];
 	if (!file)
 		return;
 	fs_close(file->node);
@@ -273,7 +251,7 @@ void io_close(fd_t fd)
 
 size_t io_read(fd_t fd, uint8_t* buff, size_t len)
 {
-	proc_file_desc_t* file = _get_cur_proc_fd(fd);
+	proc_file_desc_t* file = _get_file_desc(fd);
 	if (!file)
 		return 0;
 	size_t sz = fs_read(file->node, buff, file->offset, len);
@@ -283,10 +261,9 @@ size_t io_read(fd_t fd, uint8_t* buff, size_t len)
 
 size_t io_write(fd_t fd, const uint8_t* buff, size_t len)
 {
-	proc_file_desc_t* file = _get_cur_proc_fd(fd);
+	proc_file_desc_t* file = _get_file_desc(fd);
 	if (!file)
-		return 0;
-	
+		return 0;	
 	size_t sz = fs_write(file->node, buff, file->offset, len);
 	file->offset += sz;
 	return sz;
@@ -294,7 +271,7 @@ size_t io_write(fd_t fd, const uint8_t* buff, size_t len)
 
 void io_seek(fd_t fd, uint32_t offset, int origin)
 {
-	proc_file_desc_t* file = _get_cur_proc_fd(fd);
+	proc_file_desc_t* file = _get_file_desc(fd);
 	if (!file)
 		return;
 
@@ -305,43 +282,55 @@ void io_seek(fd_t fd, uint32_t offset, int origin)
 
 void io_flush(fd_t fd)
 {
-	proc_file_desc_t* file = _get_cur_proc_fd(fd);
+	proc_file_desc_t* file = _get_file_desc(fd);
 	if (!file)
 		return;
+	//todo
+}
+
+static proc_io_data_t* _proc_init(process_t* proc)
+{
+	ASSERT(!hash_tbl_has(_proc_io, proc->id));
+	proc_io_data_t* res = (proc_io_data_t*)kmalloc(sizeof(proc_io_data_t));
+	memset(res, 0, sizeof(proc_io_data_t));
+	for (uint32_t i = 0; i < 64; i++)
+		res->fds[i] = NULL;
+	res->proc = proc;
+	INIT_LIST_HEAD(&res->open_dirs);
+	hash_tbl_add(_proc_io, proc->id, &res->hash_item);
+	return res;
 }
 
 void io_init()
 {
 	_proc_io = hash_tbl_create(64);
+
+	_kfile_data = (proc_io_data_t*)kmalloc(sizeof(proc_io_data_t));
+	memset(_kfile_data, 0, sizeof(proc_io_data_t));
+	for (uint32_t i = 0; i < 64; i++)
+		_kfile_data->fds[i] = NULL;
 }
 
 void io_proc_start(process_t* p, fd_t fds[3])
 {
-	ASSERT(!hash_tbl_has(_proc_io, p->id));
-	proc_io_data_t* res = (proc_io_data_t*)kmalloc(sizeof(proc_io_data_t));
-	memset(res, 0, sizeof(proc_io_data_t));
-	for (uint32_t i = 0; i < 64; i++)
-		res->fds[i] = NULL;
-	res->proc = p;
-	INIT_LIST_HEAD(&res->open_dirs);
-	hash_tbl_add(_proc_io, p->id, &res->hash_item);
+	proc_io_data_t* data = _proc_init(p);
 
 	fs_node_t* node = fs_get_abs_path("/dev/con1", NULL);
 	//FD 0 Input 
 	if (fds[0] == INVALID_FD)
-		res->fds[0] = _create_file_desc(node, IO_OPEN_R); //input
+		data->fds[0] = _create_file_desc(node, OPEN_READ); //input
 	else
 		io_dup_fd(fds[0], p, 0);
 
 	//FD 1 Output
 	if (fds[1] == INVALID_FD)
-		res->fds[1] = _create_file_desc(node, IO_OPEN_W); //input
+		data->fds[1] = _create_file_desc(node, OPEN_WRITE); //input
 	else
 		io_dup_fd(fds[1], p, 1);
 
 	//FD 2 Error
 	if (fds[2] == INVALID_FD)
-		res->fds[2] = _create_file_desc(node, IO_OPEN_R); //input
+		data->fds[2] = _create_file_desc(node, OPEN_READ); //input
 	else
 		io_dup_fd(fds[2], p, 2);
 }
@@ -465,8 +454,8 @@ _err_exit:
 
 int io_remove(const char* path)
 {
-	proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
-	ASSERT(proc);
+	/*proc_io_data_t* proc = _get_proc_data(sched_cur_proc());
+	ASSERT(proc);*/
 
 	//todo is file open?
 	bool result = false;
@@ -486,7 +475,7 @@ bool io_dup_fd(fd_t source, process_t* dest_p, fd_t dest)
 	if (!io_is_valid_fd(source) || !io_is_valid_fd(dest))
 		return false;
 
-	proc_file_desc_t* desc = _get_file_desc(sched_cur_proc(), source);
+	proc_file_desc_t* desc = _get_file_desc(source);
 	if (!desc)
 		return false;
 

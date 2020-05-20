@@ -2,9 +2,11 @@
 #include <drivers/ioports.h>
 #include <kernel/x86/interrupts.h>
 #include <kernel/utils.h>
-#include <kernel/fault.h>
+#include <kernel/klog.h>
 
 #include <stdio.h>
+
+static const char* _LM = "SERIAL";
 
 #define INTERRUPT_EN_REG 1
 #define INTERRUPT_ID_REG 2
@@ -33,7 +35,7 @@ static uint8_t line_status(uint16_t port)
 static void handle_line_status(uint16_t port)
 {
 	uint8_t status = line_status(port);
-	KLOG(LL_INFO, "Serial", "Port 0x%x status 0x%x", port, status);
+	KLOG(LL_INFO, "Port 0x%x status 0x%x", port, status);
 	
 	bochs_dbg();
 }

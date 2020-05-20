@@ -34,6 +34,7 @@
 #include <kernel/io/io.h>
 #include <kernel/time.h>
 #include <kernel/ktimer.h>
+#include <kernel/klog.h>
 
 #include <stdio.h>
 
@@ -56,6 +57,7 @@ static bool _dir_read_cb2(struct fs_node* parent, struct fs_node* child, void* d
 void kmain(multiboot_data_t* mb_data, uint32_t esp)
 {
 	con_init();
+	klog_init();
 	printf("Hello World %d 0x%x\n", mb_data->mod_count, *((uint8_t*)mb_data->modules->start));
 	memset(ram_disk_buff, 0, RAM_DISK_LEN);
 	mb_init(mb_data);
@@ -78,9 +80,9 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	timer_init(1000, &ktimer_cb);
 	phys_mem_init();
 	pmm_init(16);
-	vmm_init();
-	io_init();
+	vmm_init();	
 	proc_init(vmm_get_kdir(), esp, k_image);
+	io_init();
 	sched_init(proc_kernel_proc());
 	fs_init();
 	ramfs_init(ram_disk_buff, ram_disk_len);
@@ -91,6 +93,7 @@ void kmain(multiboot_data_t* mb_data, uint32_t esp)
 	pci_init();
 	time_init();
 	fatfs_mount_partition(0, 0, 0);
+	klog_init_persistence();
 
 	const char* args[2];
 	args[0] = "shell";
